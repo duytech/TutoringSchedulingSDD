@@ -1,0 +1,4 @@
+@host = http://localhost:5238
+
+### Is the API up, and can it reach the database?
+GET {{host}}/health

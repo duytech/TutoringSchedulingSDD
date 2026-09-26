@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BrightPath.Api/BrightPath.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BrightPath.Api.Tests/BrightPath.Api.Tests.csproj" />
+  </Folder>
+</Solution>
