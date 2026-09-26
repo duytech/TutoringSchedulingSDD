@@ -1,0 +1,30 @@
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.nupkg
+TestResults/
+coverage*/
+
+# Local secrets and overrides (the connection string password stays out of git)
+appsettings.*.local.json
+.env
+.env.*
+
+# Node / Vite (web/)
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
