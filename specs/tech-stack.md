@@ -55,7 +55,7 @@ The brief asks us to explain this split, so it is decided up front.
 
 **Why this split:** anything that must hold even when two receptionists click at the same moment (overlaps) goes in the DB. Policy numbers the owner may change (6/day, 4h, 16:00, opening hours) go in code and config.
 
-**Seed history vs. constraints:** imported rows that break a rule are marked `legacy_violation = true` and left out of the exclusion constraints through the `WHERE` predicate. New writes are still checked in code against **all** active rows, including legacy ones, so the system never adds a new conflict on top of an old one.
+**Seed history vs. constraints:** for each overlapping pair in the import (L007/L008, L033/L034), only the **later** row is marked `legacy_violation = true` and left out of the exclusion constraints through the `WHERE` predicate. The earlier row stays covered, so the DB still guards that slot against new writes. Rules checked only in code (Monday, hours, 6/day) need no flag, because they never block the import. Every seeded rule break is listed by the violation report.
 
 ## Conventions
 

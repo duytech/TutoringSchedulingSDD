@@ -87,3 +87,70 @@ What the feature includes, and why:
 - **Late cancellations are flagged, not billed**, and tutor pay is not tracked.
 - **No move endpoint in the core.** For now a move is a cancel plus a new booking. A linked move is a stretch phase.
 - **No login.** Anyone at the laptop can book or cancel.
+
+## 3. Design
+
+### Data model
+
+PostgreSQL. Only the tables this feature needs.
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `tutors` | `id` (`T1`…), `name`, `subject` | From `tutors.csv`. |
+| `rooms` | `id` (`R1`…`R6`) | Reference data (Q4). |
+| `students` | `id`, `name` (unique) | Built from the names in the export (a name is the identity). |
+| `sessions` | `id`, `tutor_id`, `room_id`, `starts_at`, `ends_at`, `slot`, `cancelled_at`, `moved_to_session_id`, `legacy_violation` | One tutor, one room, one time slot. `slot` is the range `[starts_at, ends_at)`, generated from the two columns. `CHECK` that the length is 60 or 90 minutes. A session is **active** while `cancelled_at` is null. |
+| `attendees` | `id`, `session_id`, `student_id`, `slot`, `status`, `cancelled_at`, `cancelled_by`, `chargeable`, `legacy_violation` | One student in one session. A session has 1 or 2. `status` is `booked`, `cancelled` or `no_show`. `cancelled_by` is `family`, `tutor` or `centre`. `slot` is copied from the session so the database can check a student's overlaps. |
+| `booking_changes` | `id`, `session_id`, `attendee_id`, `kind`, `changed_at`, `changed_by`, `after_cutoff`, `note` | Append-only log. `kind` is `created`, `cancelled` or `moved`. |
+
+- **An exam pair** is one session with two attendees (L009 + L010).
+- **Copying `slot` onto attendees is safe** because a session's time never changes after it is created. There is no update endpoint (see the rejected endpoint below), so the copy cannot go stale.
+- **No-show** keeps the attendee as `no_show`. The session stays active and the slot stays taken.
+- **When the last attendee of a session is cancelled**, the session is cancelled too, and that frees the room and the tutor.
+
+### A booking cancelled or moved after the tutor was told
+
+- **Nothing is deleted or overwritten.** A cancel only sets the status fields, and a time never changes in place.
+- **Every change writes a `booking_changes` row**, including a new booking. `after_cutoff` is true when the change happens after 16:00 on the day before the lesson. So "added after the tutor was told" and "cancelled after the tutor was told" both show up.
+- **Cancel:** the attendee becomes `cancelled`, with who cancelled and when. `chargeable` is true when the **family** cancels less than 4 hours before the start (Q2).
+- **Move** (stretch phase): in one transaction, cancel the old session, create the new one, and point `moved_to_session_id` from the old to the new. The tutor can see both "your 14:00 is gone" and "it is now at 16:00".
+- **Seed:** each cancelled row gets a `cancelled` change at its `cancelled_at`. L005 and L017 both come out as after the cut-off. Booked rows get no `created` change, because the export does not say when they were made.
+
+### Where each rule is enforced
+
+| Rule | Where | How |
+|---|---|---|
+| A room holds one session at a time | **Database** | `EXCLUDE USING gist (room_id WITH =, slot WITH &&)` on active sessions |
+| A tutor is in one room at a time | **Database** | Same, on `tutor_id` |
+| A student is in one place at a time | **Database** | Same, on `attendees.student_id`, for attendees that are not cancelled |
+| 60 or 90 minutes, status values | **Database** | `CHECK` |
+| At most 2 attendees per session | Code | Checked in the same transaction as the insert |
+| At most 6 sessions per tutor per day | Code | Counted in a transaction that holds a lock for that tutor and day, so two receptionists cannot both take the 6th slot |
+| Closed on Monday, opening hours | Code | Config values, so the owner's answers (Q3, Q5) do not need a migration |
+| Late cancellation is chargeable | Code | Worked out at cancel time and stored on the attendee |
+| A change after the cut-off is flagged | Code | Worked out when the change is written and stored in `after_cutoff` |
+
+- **Why this split:** a rule that must hold even when two people click at the same moment goes in the database. An overlap check done in code can always lose a race. A rule the owner may still change (6 a day, 4 hours, 16:00, opening hours) goes in code and config.
+- **Seeded history vs. the constraints:** the export has two overlapping pairs (L007/L008 and L033/L034). Only the **later** row of each pair is marked `legacy_violation` and left out of the constraint. The earlier row is still covered, so the database still guards that slot against new bookings.
+- **Before every write, the code also checks all the rules**, so a 409 can list every conflict at once in plain words. The database is the backstop. If a race gets past the code checks, the constraint error is turned into the same 409.
+
+### API
+
+| Method and path | Does | Returns |
+|---|---|---|
+| `GET /api/schedule?date=2026-03-06` | One day's sessions, grouped by room and by tutor, with attendees, status and change flags. Defaults to the pinned today. | 200 |
+| `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset), `durationMin`, `studentIds` (1 or 2). | 201 with `Location`. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, e.g. `student-overlap: Le Minh Chau is in R3 with T3 at 09:00` |
+| `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`). | 200 with `chargeable` and `afterCutoff`. 409 if already cancelled. |
+| `GET /api/reports/violations` | Every rule the seeded week broke. | 200 |
+
+Stretch, after the cut line: `POST /api/sessions/{id}/move` and `GET /api/tutors/{id}/day?date=`. The model already allows adding a second student to an existing session, but there is no endpoint for it yet.
+
+### Endpoint I rejected: `PUT /api/sessions/{id}`
+
+A general "edit this session" endpoint that changes the time, room or tutor in place.
+
+- **It is exactly the "quietly overwriting" the brief forbids.** After the cut-off, the tutor was told one thing, and a `PUT` replaces it with no trace of what they were told.
+- **One verb would hide several different events.** A new time, a new room and a new tutor affect different people, and each needs its own conflict checks and its own change record.
+- **It would break the copied `slot`** on attendees, which is only safe because times never change in place.
+
+Instead, each change has its own named action (cancel, and later move), and each one leaves a record.
