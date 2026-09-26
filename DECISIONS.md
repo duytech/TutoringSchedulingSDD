@@ -43,3 +43,47 @@ The general rule: **the export is history, and history is a fact.** Rows that br
 - **The rule numbers come from the brief as rendered:** 6 bookings per tutor per day, 4 hours, 16:00, Tuesday to Sunday, 60 or 90 minutes. The brief warns that copied text may not match what is shown, so these values live in config. A misread is then a config change, not a code change.
 - **Cancelled frees the slot, and no-show does not.** This follows the brief. A late family cancellation is charged but **still** frees the room and the slot. L015 (no-show) keeps its slot.
 - **The cut-off and the 4-hour window are independent.** L005 was cancelled at 08:15 for a 14:00 lesson the same day. That is 5h45m before the start, so it is free for the family. But it is after the 16:00 cut-off the day before, so it is shown as a change.
+
+## 2. Choosing what to build
+
+### Features this tool could need
+
+1. **Conflict-safe booking.** Creating or cancelling a lesson is refused if it breaks a centre rule: a student, room or tutor in two places at once, more than 6 a day for a tutor, a Monday, or outside opening hours.
+2. **Today board.** One screen with a room × time grid for today, so the owner can open the laptop and see the day without scrolling.
+3. **Tutor day sheet.** Each tutor's day as one authoritative page, with changes after the cut-off marked, so there is never a "which message is real?".
+4. **Tutor notifications.** The day and any later changes are sent to tutors over WhatsApp or Zalo, instead of Mai typing them.
+5. **Family self-cancel.** A family cancels through a link at night, and the schedule updates straight away instead of the next morning.
+6. **Slot backfill.** When a slot frees up, the next family who wants it is told.
+7. **Late-cancel billing.** Charge the family for a late cancellation and track what the tutor is paid.
+
+### The pick: 1, conflict-safe booking
+
+- **It is the only pain the owner called non-negotiable.** "If the system allows it, the system is broken." The export shows it is still happening: a student in two rooms (L007/L008), a tutor in two rooms (L033/L034), and a tutor with 7 lessons in one day.
+- **Every other feature sits on top of it.** A board, a day sheet or a notification only shows what is in the schedule. If the schedule can hold a double-booking, those features just spread the mistake faster. The schedule has to be right first.
+- **Mai leaves in eight weeks, and the rules leave with her.** Today the rules exist only in her head, and she breaks them "when desperate". Whoever covers for her needs a tool that holds the rules for them.
+- **It fits the time box and can be proven.** The overlap rules are enforced by the database. Each rule has a test that shows the booking being refused.
+
+What the feature includes, and why:
+
+- **Create a session.** This is where a conflict gets in.
+- **Cancel an attendee.** A cancellation frees the slot, so the conflict rules depend on it. It is also where "changed after the tutor was told" happens, and the data model has to survive that.
+- **Read one day as JSON.** This is the minimum needed to see that the rules hold. It is not the Today board (feature 2): there is no grid and no UI.
+
+### Why the others wait
+
+- **2 and 3 (board, day sheet)** are the next cheapest win. They are reads over the same model, and they are only worth building once the data under them can be trusted.
+- **4 (notifications)** needs a WhatsApp/Zalo business account, templates and costs. That is a decision for the owner, not a 2.5-hour build.
+- **5 (self-cancel)** needs families to have links or logins. That is a new group of users with their own security questions.
+- **6 (backfill)** needs a waiting list, and the centre does not keep one today.
+- **7 (billing)** is about money, not about the daily pain anyone described. We only flag a late cancellation as chargeable.
+
+### What I leave broken by choosing it
+
+- **Tutors still get their day from Mai's messages.** The "which message is real?" problem is not solved. Changes are recorded and marked as after the cut-off, but nothing pushes them to the tutor.
+- **A tutor can still drive in for a cancelled lesson** if nobody tells them. The system knows about the cancellation. The tutor does not.
+- **The owner cannot "see today" on a screen yet.** There is only a JSON endpoint, unless the stretch phase for the board gets done.
+- **Families still cancel on WhatsApp at night**, and Mai still enters it the next morning.
+- **Freed slots are not offered to anyone.**
+- **Late cancellations are flagged, not billed**, and tutor pay is not tracked.
+- **No move endpoint in the core.** For now a move is a cancel plus a new booking. A linked move is a stretch phase.
+- **No login.** Anyone at the laptop can book or cancel.
