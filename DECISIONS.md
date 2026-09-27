@@ -98,11 +98,13 @@ PostgreSQL. Only the tables this feature needs.
 |---|---|---|
 | `tutors` | `id` (`T1`…), `name`, `subject` | From `tutors.csv`. |
 | `rooms` | `id` (`R1`…`R6`) | Reference data (Q4). |
-| `students` | `id`, `name` (unique) | Built from the names in the export (a name is the identity). |
-| `sessions` | `id`, `tutor_id`, `room_id`, `starts_at`, `ends_at`, `slot`, `cancelled_at`, `moved_to_session_id`, `legacy_violation` | One tutor, one room, one time slot. `slot` is the range `[starts_at, ends_at)`, generated from the two columns. `CHECK` that the length is 60 or 90 minutes. A session is **active** while `cancelled_at` is null. |
-| `attendees` | `id`, `session_id`, `student_id`, `slot`, `status`, `cancelled_at`, `cancelled_by`, `chargeable`, `legacy_violation` | One student in one session. A session has 1 or 2. `status` is `booked`, `cancelled` or `no_show`. `cancelled_by` is `family`, `tutor` or `centre`. `slot` is copied from the session so the database can check a student's overlaps. |
-| `booking_changes` | `id`, `session_id`, `attendee_id`, `kind`, `changed_at`, `changed_by`, `after_cutoff`, `note` | Append-only log. `kind` is `created`, `cancelled` or `moved`. |
+| `students` | `id` (uuid), `name` (unique) | Built from the names in the export (a name is the identity). |
+| `sessions` | `id` (uuid), `tutor_id`, `room_id`, `starts_at`, `ends_at`, `slot`, `cancelled_at`, `moved_to_session_id`, `legacy_violation` | One tutor, one room, one time slot. `slot` is the range `[starts_at, ends_at)`, generated from the two columns. `CHECK` that the length is 60 or 90 minutes. A session is **active** while `cancelled_at` is null. |
+| `attendees` | `id` (uuid), `session_id`, `student_id`, `slot`, `status`, `cancelled_at`, `cancelled_by`, `chargeable`, `legacy_violation`, `source_lesson_id`, `note` | One student in one session. A session has 1 or 2. `status` is `booked`, `cancelled` or `no_show`. `cancelled_by` is `family`, `tutor` or `centre`. `slot` is copied from the session so the database can check a student's overlaps. `source_lesson_id` keeps the CSV lesson ID (`L001`…), because one CSV row is one attendee and the violation report has to name it. |
+| `booking_changes` | `id` (uuid), `session_id`, `attendee_id`, `kind`, `changed_at`, `changed_by`, `after_cutoff`, `note` | Append-only log. `kind` is `created`, `cancelled` or `moved`. |
 
+- **Keys:** `tutors` and `rooms` keep the codes people use (`T1`, `R1`). The other tables use uuids created in code, so a session, its attendees and its change record can be built together before one insert.
+- **Enum-like columns** (`status`, `cancelled_by`, `kind`) are `text` with a `CHECK`, not Postgres enums, so adding a value later is a small migration.
 - **An exam pair** is one session with two attendees (L009 + L010).
 - **Copying `slot` onto attendees is safe** because a session's time never changes after it is created. There is no update endpoint (see the rejected endpoint below), so the copy cannot go stale.
 - **No-show** keeps the attendee as `no_show`. The session stays active and the slot stays taken.

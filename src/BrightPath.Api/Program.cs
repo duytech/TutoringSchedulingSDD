@@ -8,7 +8,7 @@ var connectionString = builder.Configuration.GetConnectionString("BrightPath")
     ?? throw new InvalidOperationException(
         "Connection string 'BrightPath' is not set. See README for how to point it at your local PostgreSQL.");
 
-builder.Services.AddDbContext<BrightPathDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<BrightPathDbContext>(options => options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 builder.Services.AddHealthChecks().AddDbContextCheck<BrightPathDbContext>("database");
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();

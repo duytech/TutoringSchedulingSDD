@@ -19,7 +19,7 @@ Time box: **150 min**. Estimates are in minutes. Everything above the ✂️ cut
 |---|---|---|---|
 | 5 | Scaffold | Solution, Minimal API project, test project, connection string to local Postgres (`appsettings.Development.json` + user-secrets override), `/health` checks the DB | 8 |
 | 6 | Schema: core tables | EF entities + migration: tutors, rooms (R1–R6), students, sessions, attendees, booking_changes, with CHECKs | 10 |
-| 7 | Schema: exclusion constraints | Raw SQL migration: `btree_gist`, tsrange `slot`, EXCLUDE on room, tutor and student (partial `WHERE active AND NOT legacy_violation`) | 8 |
+| 7 | Schema: exclusion constraints | Raw SQL migration: `btree_gist`, generated tstzrange `slot`, EXCLUDE on room, tutor and student (partial `WHERE active AND NOT legacy_violation`) | 8 |
 | 8 | Seed loader | Import the CSVs. Group rows into Sessions (the exam pair becomes 1 session with 2 attendees). Map `status` and `cancelled_at`. Mark `legacy_violation` | 12 |
 | 9 | Seed violation report | `GET /api/reports/violations` lists every rule the imported week broke | 7 |
 
