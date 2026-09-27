@@ -12,6 +12,10 @@ public sealed class BrightPathDbContext(DbContextOptions<BrightPathDbContext> op
     public DbSet<Attendee> Attendees => Set<Attendee>();
     public DbSet<BookingChange> BookingChanges => Set<BookingChange>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder) =>
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Needed by the EXCLUDE constraints: lets a GiST index compare plain columns with =.
+        modelBuilder.HasPostgresExtension("btree_gist");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BrightPathDbContext).Assembly);
+    }
 }

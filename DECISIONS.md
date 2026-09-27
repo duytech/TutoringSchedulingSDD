@@ -134,6 +134,8 @@ PostgreSQL. Only the tables this feature needs.
 
 - **Why this split:** a rule that must hold even when two people click at the same moment goes in the database. An overlap check done in code can always lose a race. A rule the owner may still change (6 a day, 4 hours, 16:00, opening hours) goes in code and config.
 - **Seeded history vs. the constraints:** the export has two overlapping pairs (L007/L008 and L033/L034). Only the **later** row of each pair is marked `legacy_violation` and left out of the constraint. The earlier row is still covered, so the database still guards that slot against new bookings.
+- **`attendees.slot` is filled by a `BEFORE INSERT` trigger** that copies it from the session. No insert path (the seed loader, the create endpoint) can forget it or set it wrong. Neither `slot` column is mapped in EF: they exist only for the constraints.
+- **Cancelling a session must cancel all its attendees.** The student constraint looks only at the attendee's own `status`, so an attendee left `booked` on a cancelled session would still block that student. Cancel and move keep this, the same way the last attendee cancelled cancels the session.
 - **Before every write, the code also checks all the rules**, so a 409 can list every conflict at once in plain words. The database is the backstop. If a race gets past the code checks, the constraint error is turned into the same 409.
 
 ### API

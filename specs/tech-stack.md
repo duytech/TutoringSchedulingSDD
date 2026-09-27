@@ -42,9 +42,9 @@ The brief asks us to explain this split, so it is decided up front.
 
 | Rule | Where | Mechanism |
 |---|---|---|
-| Room holds one session at a time | **DB** | `EXCLUDE USING gist (room_id WITH =, slot WITH &&) WHERE (active)` |
-| Tutor in one place at a time | **DB** | `EXCLUDE USING gist (tutor_id WITH =, slot WITH &&) WHERE (active)` |
-| Student in one place at a time | **DB** | `slot` is copied onto the attendee row, then `EXCLUDE (student_id WITH =, slot WITH &&) WHERE (active)` |
+| Room holds one session at a time | **DB** | `ex_sessions_room_slot`: `EXCLUDE USING gist (room_id WITH =, slot WITH &&) WHERE (cancelled_at IS NULL AND NOT legacy_violation)` |
+| Tutor in one place at a time | **DB** | `ex_sessions_tutor_slot`: `EXCLUDE USING gist (tutor_id WITH =, slot WITH &&) WHERE (cancelled_at IS NULL AND NOT legacy_violation)` |
+| Student in one place at a time | **DB** | A `BEFORE INSERT` trigger (`trg_attendees_copy_slot`) copies `sessions.slot` onto the attendee row, then `ex_attendees_student_slot`: `EXCLUDE USING gist (student_id WITH =, slot WITH &&) WHERE (status <> 'cancelled' AND NOT legacy_violation)` |
 | Duration is 60 or 90 | **DB** | `CHECK` |
 | Status values | **DB** | `CHECK` / enum |
 | Max 2 attendees per session | **Code** (+ DB trigger if time allows) | Validated in the create/add-attendee handler |

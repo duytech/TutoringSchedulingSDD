@@ -3,6 +3,7 @@ using System;
 using BrightPath.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BrightPath.Api.Data.Migrations
 {
     [DbContext(typeof(BrightPathDbContext))]
-    partial class BrightPathDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260927081810_ExclusionConstraints")]
+    partial class ExclusionConstraints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
