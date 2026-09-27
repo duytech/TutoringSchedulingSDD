@@ -146,5 +146,10 @@ internal static class TestPolicy
         TimeZone = "Asia/Ho_Chi_Minh",
         CutoffLocalTime = new TimeOnly(16, 0),
         LateCancellationWindow = TimeSpan.FromHours(4),
+        MaxSessionsPerTutorPerDay = 6,
+        MaxAttendeesPerSession = 2,
+        ClosedDays = [DayOfWeek.Monday],
+        OpensAt = new TimeOnly(9, 0),
+        ClosesAt = new TimeOnly(21, 30),
     });
 }

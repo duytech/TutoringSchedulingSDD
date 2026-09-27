@@ -13,12 +13,25 @@ public sealed class BookingPolicyOptions
 
     /// <summary>A family cancellation closer than this to the start is chargeable.</summary>
     public required TimeSpan LateCancellationWindow { get; init; }
+
+    /// <summary>Counts sessions, not students: an exam pair is one (Q1).</summary>
+    public required int MaxSessionsPerTutorPerDay { get; init; }
+
+    public required int MaxAttendeesPerSession { get; init; }
+
+    public required DayOfWeek[] ClosedDays { get; init; }
+
+    public required TimeOnly OpensAt { get; init; }
+
+    public required TimeOnly ClosesAt { get; init; }
 }
 
 /// <summary>Time rules shared by the seed loader, create and cancel. Every instant in and out is UTC.</summary>
 public sealed class BookingPolicy(BookingPolicyOptions options)
 {
     private readonly TimeZoneInfo _zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone);
+
+    public BookingPolicyOptions Options => options;
 
     /// <summary>A local date and time at the centre, as a UTC instant.</summary>
     public DateTimeOffset ToInstant(DateOnly date, TimeOnly time)
@@ -29,6 +42,9 @@ public sealed class BookingPolicy(BookingPolicyOptions options)
 
     public DateOnly LocalDate(DateTimeOffset instant) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, _zone).DateTime);
+
+    public TimeOnly LocalTime(DateTimeOffset instant) =>
+        TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, _zone).DateTime);
 
     /// <summary>
     /// True when the change is at or after the cut-off on the calendar day before the lesson,

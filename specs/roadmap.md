@@ -28,7 +28,7 @@ Time box: **150 min**. Estimates are in minutes. Everything above the ✂️ cut
 | # | Phase | Output | Est |
 |---|---|---|---|
 | 10 | Pinned clock + Today read | Fixed `TimeProvider` (2026-03-06 10:00 +07:00). `GET /api/schedule?date=` (defaults to today), grouped by room and tutor | 8 |
-| 11 | Create session | `POST /api/sessions` with code rules (Monday/hours, 6 per tutor per day, ≤2 attendees). A DB exclusion violation maps to **409 ProblemDetails** listing the conflicts | 15 |
+| 11 | Create session | `POST /api/sessions` with code rules (Monday/hours, 6 per tutor per day, ≤2 attendees), checked by the `ScheduleRules` and `BookingPolicy` settings from phase 9. A DB exclusion violation maps to **409 ProblemDetails** listing the conflicts | 15 |
 | 12 | Integration tests: conflicts | Throwaway test DB on local Postgres (created and dropped per run). One test each for student, room, tutor, tutor-load, Monday, and a valid exam pair | 12 |
 | 13 | Cancel attendee | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` with `cancelledBy` (family/tutor/centre). Late (<4h) → `chargeable`. The slot is freed. A `BookingChange` is written with `after_cutoff` | 12 |
 | 14 | README | Prerequisites (local PostgreSQL, `btree_gist`, DB user rights, how to set the connection string), run commands (`dotnet run`, `dotnet test`) and **what I saw** (seed violations, sample 409) | 5 |

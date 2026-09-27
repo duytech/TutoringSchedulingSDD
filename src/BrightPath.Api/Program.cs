@@ -1,5 +1,6 @@
 using BrightPath.Api.Data;
 using BrightPath.Api.Domain;
+using BrightPath.Api.Endpoints;
 using BrightPath.Api.Seed;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -18,6 +19,10 @@ builder.Services.AddSingleton(bookingPolicy);
 builder.Services.AddDbContext<BrightPathDbContext>(options => options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 builder.Services.AddHealthChecks().AddDbContextCheck<BrightPathDbContext>("database");
 builder.Services.AddProblemDetails();
+
+// Bad input that fails binding (e.g. ?from=not-a-date) is a 400, not a 500.
+builder.Services.Configure<ExceptionHandlerOptions>(options =>
+    options.StatusCodeSelector = ex => ex is BadHttpRequestException bad ? bad.StatusCode : StatusCodes.Status500InternalServerError);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -45,5 +50,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
+app.MapReportEndpoints();
 
 app.Run();

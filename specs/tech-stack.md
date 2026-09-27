@@ -30,8 +30,8 @@ Chosen for speed of delivery by a senior .NET developer, and so the **database i
 /DECISIONS.md               ← deliverable (phases 1–4 of the brief)
 /README.md                  ← prerequisites, run commands + what I saw
 /specs/                     ← this constitution
-/seed/                      ← lessons_export.csv, tutors.csv (copied from .assignment)
 /src/BrightPath.Api/        ← Minimal API, EF Core, seed loader
+/src/BrightPath.Api/Seed/   ← lessons_export.csv, tutors.csv (copied from .assignment), seed loader
 /tests/BrightPath.Api.Tests/← integration tests
 /web/                       ← React + Vite Today view
 ```

@@ -139,6 +139,7 @@ PostgreSQL. Only the tables this feature needs.
 - **`attendees.slot` is filled by a `BEFORE INSERT` trigger** that copies it from the session. No insert path (the seed loader, the create endpoint) can forget it or set it wrong. Neither `slot` column is mapped in EF: they exist only for the constraints.
 - **Cancelling a session must cancel all its attendees.** The student constraint looks only at the attendee's own `status`, so an attendee left `booked` on a cancelled session would still block that student. Cancel and move keep this, the same way the last attendee cancelled cancels the session.
 - **Before every write, the code also checks all the rules**, so a 409 can list every conflict at once in plain words. The database is the backstop. If a race gets past the code checks, the constraint error is turned into the same 409.
+- **The code rules are written once**, in one rule set. The violation report runs it over the loaded schedule, and create runs it over the new session and that day's sessions. The report and the 409 use the same rule codes, so they cannot disagree about what a rule means.
 
 ### API
 
@@ -147,7 +148,7 @@ PostgreSQL. Only the tables this feature needs.
 | `GET /api/schedule?date=2026-03-06` | One day's sessions, grouped by room and by tutor, with attendees, status and change flags. Defaults to the pinned today. | 200 |
 | `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset), `durationMin`, `studentIds` (1 or 2). | 201 with `Location`. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, e.g. `student-overlap: Le Minh Chau is in R3 with T3 at 09:00` |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`). | 200 with `chargeable` and `afterCutoff`. 409 if already cancelled. |
-| `GET /api/reports/violations` | Every rule the seeded week broke. | 200 |
+| `GET /api/reports/violations?from=&to=` | Every rule the loaded schedule breaks. `from` and `to` are optional local dates. One item per problem (rule code, date, sessions, lesson IDs, a plain message), so an overlapping pair is one item. Late cancellations and changes after the cut-off are allowed, so they are not listed. | 200. 400 if `from` is after `to` |
 
 Stretch, after the cut line: `POST /api/sessions/{id}/move` and `GET /api/tutors/{id}/day?date=`. The model already allows adding a second student to an existing session, but there is no endpoint for it yet.
 

@@ -2,3 +2,9 @@
 
 ### Is the API up, and can it reach the database?
 GET {{host}}/health
+
+### Every rule the loaded schedule breaks (the imported week gives 4)
+GET {{host}}/api/reports/violations
+
+### Only Friday 2026-03-06 (T1's 7 sessions)
+GET {{host}}/api/reports/violations?from=2026-03-06&to=2026-03-06
