@@ -42,6 +42,8 @@ The general rule: **the export is history, and history is a fact.** Rows that br
 - **A student is identified by their name.** The export has no student ID and no family record. The same name means the same child.
 - **The rule numbers come from the brief as rendered:** 6 bookings per tutor per day, 4 hours, 16:00, Tuesday to Sunday, 60 or 90 minutes. The brief warns that copied text may not match what is shown, so these values live in config. A misread is then a config change, not a code change.
 - **Cancelled frees the slot, and no-show does not.** This follows the brief. A late family cancellation is charged but **still** frees the room and the slot. L015 (no-show) keeps its slot.
+- **Who cancelled is read from the note.** The export has no such column, but the notes say it: "family cancelled" (L005) is the family, "tutor sick" (L017) is the tutor. A note with no such word leaves it unknown.
+- **When two seeded rows overlap at the same start time, the higher lesson ID is the "later" one.** So L008 is flagged rather than L007, and L034 rather than L033.
 - **The cut-off and the 4-hour window are independent.** L005 was cancelled at 08:15 for a 14:00 lesson the same day. That is 5h45m before the start, so it is free for the family. But it is after the 16:00 cut-off the day before, so it is shown as a change.
 
 ## 2. Choosing what to build
