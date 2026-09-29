@@ -51,7 +51,12 @@ export function SessionCard({ session, placement, tutorColour }: Props) {
         <div
           className="card__badge"
           title={lateChanges
-            .map((c) => `${c.kind} by ${c.changedBy ?? 'unknown'} on ${localDate(c.changedAt)} at ${localTime(c.changedAt)}`)
+            .map((c) => {
+              // A change without an attendee is about the whole session (the last student out cancels it too).
+              const who = session.attendees.find((a) => a.id === c.attendeeId)?.studentName ?? 'Session'
+              const when = `${localDate(c.changedAt)} at ${localTime(c.changedAt)}`
+              return `${who}: ${c.kind} by ${c.changedBy ?? 'unknown'} on ${when}`
+            })
             .join('\n')}
         >
           changed after tutor was told
