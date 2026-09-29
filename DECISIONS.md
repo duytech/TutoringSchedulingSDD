@@ -83,7 +83,7 @@ What the feature includes, and why:
 
 - **Tutors still get their day from Mai's messages.** The "which message is real?" problem is not solved. Changes are recorded and marked as after the cut-off, but nothing pushes them to the tutor.
 - **A tutor can still drive in for a cancelled lesson** if nobody tells them. The system knows about the cancellation. The tutor does not.
-- **The owner cannot "see today" on a screen yet.** There is only a JSON endpoint, unless the stretch phase for the board gets done.
+- **The owner cannot "see today" on a screen yet.** There is only a JSON endpoint. The stretch phase for the board was not built (§4).
 - **Families still cancel on WhatsApp at night**, and Mai still enters it the next morning.
 - **Freed slots are not offered to anyone.**
 - **Late cancellations are flagged, not billed**, and tutor pay is not tracked.
@@ -165,3 +165,44 @@ A general "edit this session" endpoint that changes the time, room or tutor in p
 - **It would break the copied `slot`** on attendees, which is only safe because times never change in place.
 
 Instead, each change has its own named action (cancel, and later move), and each one leaves a record.
+
+## 4. Reflection
+
+### Where it stopped
+
+- Phases 1–15 of the roadmap are done: the design, the schema with its constraints, the seed, the violation report, today's schedule, create, cancel, the integration tests and the README.
+- The stretch phases were **not built**: the React Today view, the changes badge, move, and the tutor day endpoint. The Today view exists only as `GET /api/schedule` JSON.
+- **Time:** within the 2.5-hour box. The cut line did its job: the stretch phases were the ones left out.
+
+### Next week
+
+1. **Tutor day sheet and Today board** (features 2 and 3). They are reads over a model that now holds, and they fix what the pick left broken: "which message is real?", and the owner not being able to see today on a screen.
+2. **Move**: one transaction that cancels the old session, creates the new one and links them through `moved_to_session_id`, so a tutor sees "your 14:00 is gone" and "it is now at 16:00" together.
+3. **The owner's answers to Q1–Q7.** Most of them change only config (the load count, the hours, the pair limit). Q6 would need a "day sent to the tutor" record.
+4. **Login, so `changed_by` names a person** and not only family, tutor or centre. It is also the first step before families can cancel for themselves (feature 5).
+5. **Decide on notifications with the owner** (feature 4). The account, the templates and the cost come before any code.
+
+### Known weak spots
+
+- **One slot is guarded by code only.** L034's session is flagged and left out of the room constraint, so the database would not refuse a second session in R2 on 03-10 at 09:00. The create check still does, because L034 is always read. (L034's tutor slot and L008's student slot stay covered through L033 and L007.) Fix: once the owner says what really happened that day, cancel or move L034 and drop its flag.
+- **The counting rules live in code only.** The 6-a-day load (under an advisory lock) and the 2-per-session limit are not in the database. Anything that writes without going through the API skips them. Fix: a trigger, if another writer ever appears.
+- **No login.** Anyone at the laptop can book or cancel, and `cancelledBy` is whatever the request says.
+- **The export can be loaded once**, into an empty database. There is no import path for a later week's export.
+- **The API tests share one database** and stay apart only because each test books on a date of its own. A new test that reuses a date can break another one. The convention is written in the test classes, not enforced.
+- **The pinned clock gives every change in a run the same time.** The view puts a student's cancel before the session's, but two changes of the same kind at the same time come back in no fixed order.
+- **Startup logs every SQL statement** in Development, and the first start logs a `fail` line that is not an error. The README says so, but it is noise.
+
+### Where the AI helped
+
+- **Reading:** listing where the brief and the export disagree (the exam pair, the Monday lesson L032, T1's 7 sessions, L034) and turning them into questions for the owner.
+- **Specs:** one requirements, plan and validation per phase (`specs/<date>-<phase>/`), with the open decisions asked before any code.
+- **Code and tests:** the endpoints, the rule set, the seed loader and the tests, written to the spec, then reviewed and run by me.
+- **Catching mistakes:** the race tests hold a transaction open instead of firing parallel requests, which would pass with no guard at all. The health test was migrating and seeding my dev database on every `dotnet test`. Removing each guard by hand proved its test fails. The README was followed from a dropped database before it was committed.
+
+### An AI suggestion I threw away
+
+**Clean the export before loading it:** drop or fix the rows that break the rules (L008, L034, L032), so the constraints can be switched on over clean data.
+
+- **The export is what the centre actually ran.** Dropping a row deletes a lesson a family came to, and maybe paid for. Fixing it invents a time or a room nobody used.
+- **The broken rows are the evidence for the pick.** The violation report shows the owner the four breaks in plain words. A clean import would hide the exact problem this feature exists to stop.
+- **Flagging only the later row of each pair keeps the earlier row under the constraints**, so the database still guards those slots against new bookings. The price is the one slot above that only code guards, and it is named.

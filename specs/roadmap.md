@@ -48,6 +48,8 @@ Time box: **150 min**. Estimates are in minutes. Everything above the ✂️ cut
 
 If phase 16 is skipped, `DECISIONS.md` §4 says so honestly, and the Today view is still available as JSON from phase 10.
 
+**Status:** phases 16–19 were not built. `DECISIONS.md` §4 says so, and the Today view is JSON only.
+
 ## Definition of done (every phase)
 
 - It builds, and the existing tests pass.
