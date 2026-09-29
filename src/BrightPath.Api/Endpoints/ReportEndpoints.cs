@@ -35,30 +35,10 @@ public static class ReportEndpoints
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var sessions = db.Sessions.AsNoTracking().Where(s => s.CancelledAt == null);
-        if (from is { } f)
-        {
-            var start = policy.ToInstant(f, TimeOnly.MinValue);
-            sessions = sessions.Where(s => s.StartsAt >= start);
-        }
-        if (to is { } t)
-        {
-            var end = policy.ToInstant(t.AddDays(1), TimeOnly.MinValue);
-            sessions = sessions.Where(s => s.StartsAt < end);
-        }
-
-        var ruleSessions = await sessions
-            .Select(s => new RuleSession(
-                s.Id,
-                s.TutorId,
-                s.Tutor.Name,
-                s.RoomId,
-                s.StartsAt,
-                s.EndsAt,
-                s.CancelledAt != null,
-                s.Attendees
-                    .Select(a => new RuleAttendee(a.StudentId, a.Student.Name, a.Status, a.SourceLessonId))
-                    .ToList()))
+        var ruleSessions = await db.Sessions.AsNoTracking()
+            .Where(s => s.CancelledAt == null)
+            .StartingBetween(from, to, policy)
+            .ToRuleSessions()
             .ToListAsync(ct);
 
         return TypedResults.Ok(new ViolationReport(ScheduleRules.Check(ruleSessions, policy)));

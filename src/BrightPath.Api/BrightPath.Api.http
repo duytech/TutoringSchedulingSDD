@@ -12,6 +12,61 @@ GET {{host}}/api/schedule?date=2026-03-03
 ### The exam pair as one session, and a flagged overlap (L008)
 GET {{host}}/api/schedule?date=2026-03-04
 
+### Student ids are made at seed time: paste them from GET /api/schedule (attendees[].studentId)
+@vuHaMy = 00000000-0000-0000-0000-000000000000
+@tranBaoLong = 00000000-0000-0000-0000-000000000000
+
+### Book T2 in R4 on Saturday 13:00 (201, Location: /api/sessions/{id})
+POST {{host}}/api/sessions
+Content-Type: application/json
+
+{
+  "tutorId": "T2",
+  "roomId": "R4",
+  "startsAt": "2026-03-07T13:00:00+07:00",
+  "durationMin": 60,
+  "studentIds": ["{{vuHaMy}}"]
+}
+
+### Into L028's room, tutor and student at once (409 with three conflicts)
+POST {{host}}/api/sessions
+Content-Type: application/json
+
+{
+  "tutorId": "T3",
+  "roomId": "R3",
+  "startsAt": "2026-03-07T10:00:00+07:00",
+  "durationMin": 60,
+  "studentIds": ["{{tranBaoLong}}"]
+}
+
+### An 8th session for T1 on Friday (409 tutor-load)
+POST {{host}}/api/sessions
+Content-Type: application/json
+
+{
+  "tutorId": "T1",
+  "roomId": "R4",
+  "startsAt": "2026-03-06T14:30:00+07:00",
+  "durationMin": 60,
+  "studentIds": ["{{vuHaMy}}"]
+}
+
+### Bad input: 45 minutes and no offset on startsAt (400)
+POST {{host}}/api/sessions
+Content-Type: application/json
+
+{
+  "tutorId": "T2",
+  "roomId": "R4",
+  "startsAt": "2026-03-07T13:00:00",
+  "durationMin": 45,
+  "studentIds": ["{{vuHaMy}}"]
+}
+
+### One session (paste the id from a Location header)
+GET {{host}}/api/sessions/00000000-0000-0000-0000-000000000000
+
 ### Every rule the loaded schedule breaks (the imported week gives 4)
 GET {{host}}/api/reports/violations
 

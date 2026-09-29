@@ -28,27 +28,7 @@ public static class ScheduleEndpoints
     {
         var now = clock.GetUtcNow();
         var day = date ?? policy.LocalDate(now);
-        var start = policy.ToInstant(day, TimeOnly.MinValue);
-        var end = policy.ToInstant(day.AddDays(1), TimeOnly.MinValue);
-
-        var sessions = await db.Sessions.AsNoTracking()
-            .Where(s => s.StartsAt >= start && s.StartsAt < end)
-            .Select(s => new DaySession(
-                s.Id,
-                s.TutorId,
-                s.Tutor.Name,
-                s.RoomId,
-                s.StartsAt,
-                s.EndsAt,
-                s.CancelledAt,
-                s.MovedToSessionId,
-                s.LegacyViolation,
-                s.Attendees
-                    .Select(a => new DayAttendee(
-                        a.Id, a.StudentId, a.Student.Name, a.SourceLessonId, a.Status, a.CancelledAt,
-                        a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
-                    .ToList()))
-            .ToListAsync(ct);
+        var sessions = await db.Sessions.AsNoTracking().StartingOn(day, policy).ToDaySessions().ToListAsync(ct);
 
         // BookingChange has no navigation from Session, so its rows come in a query of their own.
         var sessionIds = sessions.Select(s => s.Id).ToList();

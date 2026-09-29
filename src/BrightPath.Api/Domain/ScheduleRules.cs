@@ -36,6 +36,11 @@ public static class RuleCodes
     /// <summary>Also the order a report lists them in, within one date.</summary>
     public static readonly string[] All =
         [RoomOverlap, TutorOverlap, StudentOverlap, TutorLoad, ClosedDay, OutsideHours, TooManyAttendees];
+
+    /// <summary>
+    /// Create only, so not in <see cref="All"/>: history is always in the past, and the report must not flag it.
+    /// </summary>
+    public const string InThePast = "in-the-past";
 }
 
 /// <summary>
@@ -84,9 +89,13 @@ public static class ScheduleRules
         OverlappingPairs(sessions, s => s.TutorId).Select(p => c.Violation(
             RuleCodes.TutorOverlap,
             [p.A, p.B],
-            c.SameStart(p.A, p.B)
-                ? $"{Tutor(p.A)} is in {p.A.RoomId} and {p.B.RoomId} at {c.Time(p.A)}."
-                : $"{Tutor(p.A)} is in {p.A.RoomId} at {c.Time(p.A)} and in {p.B.RoomId} at {c.Time(p.B)}."));
+            (p.A.RoomId == p.B.RoomId, c.SameStart(p.A, p.B)) switch
+            {
+                (true, true) => $"{Tutor(p.A)} has two sessions in {p.A.RoomId} at {c.Time(p.A)}.",
+                (true, false) => $"{Tutor(p.A)} has two sessions in {p.A.RoomId}, at {c.Time(p.A)} and {c.Time(p.B)}.",
+                (false, true) => $"{Tutor(p.A)} is in {p.A.RoomId} and {p.B.RoomId} at {c.Time(p.A)}.",
+                (false, false) => $"{Tutor(p.A)} is in {p.A.RoomId} at {c.Time(p.A)} and in {p.B.RoomId} at {c.Time(p.B)}.",
+            }));
 
     private static IEnumerable<ScheduleViolation> StudentOverlaps(List<RuleSession> sessions, Context c) =>
         sessions

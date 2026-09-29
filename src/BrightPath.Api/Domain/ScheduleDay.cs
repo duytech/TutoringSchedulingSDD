@@ -121,7 +121,8 @@ public static class ScheduleDay
                 .ToList());
     }
 
-    private static ScheduleSessionView View(
+    /// <summary>One session as the schedule shows it. Also the body of a create and of GET /api/sessions/{id}.</summary>
+    public static ScheduleSessionView View(
         DaySession s, IEnumerable<BookingChange> changes, DateTimeOffset now, BookingPolicy policy)
     {
         var changeViews = changes

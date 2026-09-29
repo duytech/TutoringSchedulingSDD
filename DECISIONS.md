@@ -115,7 +115,7 @@ PostgreSQL. Only the tables this feature needs.
 ### A booking cancelled or moved after the tutor was told
 
 - **Nothing is deleted or overwritten.** A cancel only sets the status fields, and a time never changes in place.
-- **Every change writes a `booking_changes` row**, including a new booking. `after_cutoff` is true when the change happens after 16:00 on the day before the lesson. So "added after the tutor was told" and "cancelled after the tutor was told" both show up.
+- **Every change writes a `booking_changes` row**, including a new booking (a `created` change for the whole session, `changed_by` = `centre`, since the receptionist books). `after_cutoff` is true when the change happens after 16:00 on the day before the lesson. So "added after the tutor was told" and "cancelled after the tutor was told" both show up.
 - **Cancel:** the attendee becomes `cancelled`, with who cancelled and when. `chargeable` is true when the **family** cancels less than 4 hours before the start (Q2).
 - **Move** (stretch phase): in one transaction, cancel the old session, create the new one, and point `moved_to_session_id` from the old to the new. The tutor can see both "your 14:00 is gone" and "it is now at 16:00".
 - **Seed:** each cancelled row gets a `cancelled` change at its `cancelled_at`. L005 and L017 both come out as after the cut-off. Booked rows get no `created` change, because the export does not say when they were made.
@@ -131,6 +131,7 @@ PostgreSQL. Only the tables this feature needs.
 | At most 2 attendees per session | Code | Checked in the same transaction as the insert |
 | At most 6 sessions per tutor per day | Code | Counted in a transaction that holds a lock for that tutor and day, so two receptionists cannot both take the 6th slot |
 | Closed on Monday, opening hours | Code | Config values, so the owner's answers (Q3, Q5) do not need a migration |
+| A new booking cannot start in the past | Code | Against the pinned clock, on create only. History is all in the past, so the report does not check it |
 | Late cancellation is chargeable | Code | Worked out at cancel time and stored on the attendee |
 | A change after the cut-off is flagged | Code | Worked out when the change is written and stored in `after_cutoff` |
 
@@ -146,7 +147,8 @@ PostgreSQL. Only the tables this feature needs.
 | Method and path | Does | Returns |
 |---|---|---|
 | `GET /api/schedule?date=2026-03-06` | One day's sessions, defaulting to the pinned today. A flat `sessions` list (cancelled ones included, with attendees, their changes, `changedAfterCutoff`, `legacyViolation`, and a `state` of `past`, `in-progress` or `upcoming` against the clock), plus `rooms` and `tutors` indexes that hold session IDs only. Every room and tutor is listed, even with nothing that day. Times are local (`+07:00`). | 200. 400 for a bad date |
-| `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset), `durationMin`, `studentIds` (1 or 2). | 201 with `Location`. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, e.g. `student-overlap: Le Minh Chau is in R3 with T3 at 09:00` |
+| `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset; without one it is refused, not guessed), `durationMin`, `studentIds` (ids from the schedule). Checks the new session with that day's sessions and lists only the conflicts it is part of, plus `in-the-past`. | 201 with `Location: /api/sessions/{id}` and the session. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, all at once, in the report's shape, e.g. `student-overlap: Le Minh Chau is in R3 with T3 and in R2 with T2 at 09:00` |
+| `GET /api/sessions/{id}` | One session, in the same shape as an item of the schedule. | 200. 404 |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`). | 200 with `chargeable` and `afterCutoff`. 409 if already cancelled. |
 | `GET /api/reports/violations?from=&to=` | Every rule the loaded schedule breaks. `from` and `to` are optional local dates. One item per problem (rule code, date, sessions, lesson IDs, a plain message), so an overlapping pair is one item. Late cancellations and changes after the cut-off are allowed, so they are not listed. | 200. 400 if `from` is after `to` |
 

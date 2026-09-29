@@ -55,6 +55,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 app.MapScheduleEndpoints();
+app.MapSessionEndpoints();
 app.MapReportEndpoints();
 
 app.Run();
