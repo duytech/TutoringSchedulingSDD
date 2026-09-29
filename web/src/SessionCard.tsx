@@ -1,0 +1,62 @@
+import type { CSSProperties } from 'react'
+import type { ScheduleSession } from './api'
+import { localDate, localTime } from './dates'
+import type { Placement } from './layout'
+
+const FLAG_TITLE = 'Loaded from the export; breaks a centre rule. See /api/reports/violations.'
+
+interface Props {
+  session: ScheduleSession
+  placement: Placement
+  tutorColour: string
+}
+
+export function SessionCard({ session, placement, tutorColour }: Props) {
+  const flagged = session.legacyViolation || session.attendees.some((a) => a.legacyViolation)
+  const lateChanges = session.changes.filter((c) => c.afterCutoff)
+  const classes = ['card', `card--${session.state}`, session.cancelled ? 'card--cancelled' : ''].filter(Boolean)
+
+  const style = {
+    gridColumn: placement.column + 2,
+    gridRow: `${placement.rowStart + 2} / span ${placement.rowSpan}`,
+    width: `calc(${100 / placement.lanes}% - 4px)`,
+    marginLeft: `calc(${(100 * placement.lane) / placement.lanes}% + 2px)`,
+    '--tutor': tutorColour,
+  } as CSSProperties
+
+  return (
+    <article className={classes.join(' ')} style={style} aria-label={`${session.tutorName} in ${session.roomId}`}>
+      <header className="card__head">
+        <span className="card__time">
+          {localTime(session.startsAt)}–{localTime(session.endsAt)}
+        </span>
+        <span className="card__tutor">
+          {session.tutorId} {session.tutorName}
+        </span>
+        {flagged && (
+          <span className="card__flag" title={FLAG_TITLE}>
+            ⚑
+          </span>
+        )}
+      </header>
+      <ul className="card__students">
+        {session.attendees.map((a) => (
+          <li key={a.id} className={a.status === 'cancelled' ? 'student--cancelled' : undefined}>
+            {a.studentName}
+            {a.lessonId && <span className="card__lesson"> {a.lessonId}</span>}
+          </li>
+        ))}
+      </ul>
+      {session.changedAfterCutoff && (
+        <div
+          className="card__badge"
+          title={lateChanges
+            .map((c) => `${c.kind} by ${c.changedBy ?? 'unknown'} on ${localDate(c.changedAt)} at ${localTime(c.changedAt)}`)
+            .join('\n')}
+        >
+          changed after tutor was told
+        </div>
+      )}
+    </article>
+  )
+}

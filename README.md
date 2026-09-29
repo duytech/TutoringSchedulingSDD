@@ -53,6 +53,21 @@ Each run creates one throwaway database `brightpath_test_<guid>` on the same ser
 - the races: two bookings for one room, two bookings for a tutor's last slot of the day, and two cancels of a pair. Each race test holds a transaction open, so it fails if its guard is removed;
 - the pinned clock, and moving it.
 
+## Web: the Today view
+
+A read-only page with a room × time grid for one day: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, and a badge on lessons changed after the tutor was told. It needs Node 20 or later, and the API running.
+
+```bash
+cd web
+npm install
+npm run dev     # http://localhost:5173, forwards /api to the API on :5238
+npm test        # the grid layout
+```
+
+`←` and `→` move a day, `Today` goes back to the API's pinned today, and the date stays in the URL (`?date=2026-03-04`).
+
+![The Today view on the pinned day](docs/today-view.png)
+
 ## Try it
 
 Run these on a freshly loaded database. They use `curl` and [`jq`](https://jqlang.org/). Without `jq`, use the Scalar UI.

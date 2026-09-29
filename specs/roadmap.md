@@ -42,13 +42,13 @@ Time box: **150 min**. Estimates are in minutes. Everything above the ✂️ cut
 | # | Phase | Output | Est |
 |---|---|---|---|
 | 16 | React Today view | Vite + TS, one page: room × time grid for the pinned date, with cancelled lessons struck through | 20 |
-| 17 | Changes badge in UI | Mark lessons with an `after_cutoff` change ("changed after tutor was told") | 8 |
+| 17 | Changes badge in UI | Mark lessons with an `after_cutoff` change ("changed after tutor was told"). Merged into phase 16 | 8 |
 | 18 | Move session | `POST /api/sessions/{id}/move` = cancel the old session + create a new one linked through `moved_to_session_id`, in one transaction | 12 |
 | 19 | Tutor day endpoint | `GET /api/tutors/{id}/day?date=` gives one tutor's authoritative day, including changes | 8 |
 
 If phase 16 is skipped, `DECISIONS.md` §4 says so honestly, and the Today view is still available as JSON from phase 10.
 
-**Status:** phases 16–19 were not built. `DECISIONS.md` §4 says so, and the Today view is JSON only.
+**Status:** phases 16 and 17 (merged into 16) were built after the time box. Phases 18 and 19 were not. `DECISIONS.md` §4 says so.
 
 ## Definition of done (every phase)
 

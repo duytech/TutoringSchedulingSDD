@@ -1,0 +1,63 @@
+import type { CSSProperties } from 'react'
+import type { ScheduleDay } from './api'
+import { localDate } from './dates'
+import { layoutDay, minutesOf, OPENING, rowCount } from './layout'
+import { SessionCard } from './SessionCard'
+
+interface Props {
+  day: ScheduleDay
+  tutorColours: Map<string, string>
+}
+
+export function DayGrid({ day, tutorColours }: Props) {
+  const roomIds = day.rooms.map((r) => r.id)
+  const rows = rowCount(OPENING)
+  const opens = minutesOf(`T${OPENING.opens}`)
+  const placements = layoutDay(day.sessions, roomIds)
+
+  const labels = Array.from({ length: rows / 2 }, (_, i) => opens + i * 30)
+  const nowRow = localDate(day.now) === day.date ? (minutesOf(day.now) - opens) / OPENING.stepMin : null
+  const showNow = nowRow !== null && nowRow >= 0 && nowRow <= rows
+
+  const gridStyle = { '--rooms': roomIds.length, '--rows': rows } as CSSProperties
+
+  return (
+    <div className="grid" style={gridStyle}>
+      <div className="grid__corner" />
+      {roomIds.map((id, i) => (
+        <div key={id} className="grid__room" style={{ gridColumn: i + 2 }}>
+          {id}
+        </div>
+      ))}
+
+      {labels.map((minutes, i) => (
+        <div
+          key={minutes}
+          className={`grid__line ${minutes % 60 === 0 ? 'grid__line--hour' : ''}`}
+          style={{ gridRow: i * 2 + 2 }}
+        >
+          <span className="grid__time">
+            {String(Math.floor(minutes / 60)).padStart(2, '0')}:{String(minutes % 60).padStart(2, '0')}
+          </span>
+        </div>
+      ))}
+
+      {day.sessions.map((s) => (
+        <SessionCard
+          key={s.id}
+          session={s}
+          placement={placements.get(s.id)!}
+          tutorColour={tutorColours.get(s.tutorId) ?? 'gray'}
+        />
+      ))}
+
+      {showNow && (
+        <div
+          className="grid__now"
+          style={{ gridRow: Math.floor(nowRow) + 2, top: `${(nowRow % 1) * 100}%` }}
+          title={`Now: ${day.now.slice(11, 16)}`}
+        />
+      )}
+    </div>
+  )
+}

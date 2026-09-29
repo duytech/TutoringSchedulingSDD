@@ -83,7 +83,7 @@ What the feature includes, and why:
 
 - **Tutors still get their day from Mai's messages.** The "which message is real?" problem is not solved. Changes are recorded and marked as after the cut-off, but nothing pushes them to the tutor.
 - **A tutor can still drive in for a cancelled lesson** if nobody tells them. The system knows about the cancellation. The tutor does not.
-- **The owner cannot "see today" on a screen yet.** There is only a JSON endpoint. The stretch phase for the board was not built (§4).
+- **The owner can see a day on a screen, but only read it.** The Today view (a room × time grid, built after the time box, §4) shows the schedule. Booking and cancelling still go through the API.
 - **Families still cancel on WhatsApp at night**, and Mai still enters it the next morning.
 - **Freed slots are not offered to anyone.**
 - **Late cancellations are flagged, not billed**, and tutor pay is not tracked.
@@ -171,12 +171,13 @@ Instead, each change has its own named action (cancel, and later move), and each
 ### Where it stopped
 
 - Phases 1–15 of the roadmap are done: the design, the schema with its constraints, the seed, the violation report, today's schedule, create, cancel, the integration tests and the README.
-- The stretch phases were **not built**: the React Today view, the changes badge, move, and the tutor day endpoint. The Today view exists only as `GET /api/schedule` JSON.
-- **Time:** within the 2.5-hour box. The cut line did its job: the stretch phases were the ones left out.
+- **Time:** phases 1–15 fit within the 2.5-hour box. The cut line did its job.
+- **After the box**, in about 30 more minutes, I built stretch phase 16, the React Today view (`web/`), with phase 17's "changed after tutor was told" badge merged in. It is a read-only room × time grid over `GET /api/schedule`.
+- Move and the tutor day endpoint (phases 18 and 19) were **not built**.
 
 ### Next week
 
-1. **Tutor day sheet and Today board** (features 2 and 3). They are reads over a model that now holds, and they fix what the pick left broken: "which message is real?", and the owner not being able to see today on a screen.
+1. **Tutor day sheet** (feature 3). It is a read over a model that now holds, like the Today board, and it fixes what the pick left broken: "which message is real?".
 2. **Move**: one transaction that cancels the old session, creates the new one and links them through `moved_to_session_id`, so a tutor sees "your 14:00 is gone" and "it is now at 16:00" together.
 3. **The owner's answers to Q1–Q7.** Most of them change only config (the load count, the hours, the pair limit). Q6 would need a "day sent to the tutor" record.
 4. **Login, so `changed_by` names a person** and not only family, tutor or centre. It is also the first step before families can cancel for themselves (feature 5).
@@ -190,6 +191,7 @@ Instead, each change has its own named action (cancel, and later move), and each
 - **The export can be loaded once**, into an empty database. There is no import path for a later week's export.
 - **The API tests share one database** and stay apart only because each test books on a date of its own. A new test that reuses a date can break another one. The convention is written in the test classes, not enforced.
 - **The pinned clock gives every change in a run the same time.** The view puts a student's cancel before the session's, but two changes of the same kind at the same time come back in no fixed order.
+- **The Today view repeats the opening hours.** The grid's 09:00–21:30 is a constant in `web/src/layout.ts`, a copy of `BookingPolicy` in config. If the owner changes the hours (Q3), both must change. Fix: send the hours with the schedule.
 - **Startup logs every SQL statement** in Development, and the first start logs a `fail` line that is not an error. The README says so, but it is noise.
 
 ### Where the AI helped
