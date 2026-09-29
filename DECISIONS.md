@@ -116,9 +116,9 @@ PostgreSQL. Only the tables this feature needs.
 
 - **Nothing is deleted or overwritten.** A cancel only sets the status fields, and a time never changes in place.
 - **Every change writes a `booking_changes` row**, including a new booking (a `created` change for the whole session, `changed_by` = `centre`, since the receptionist books). `after_cutoff` is true when the change happens after 16:00 on the day before the lesson. So "added after the tutor was told" and "cancelled after the tutor was told" both show up.
-- **Cancel:** the attendee becomes `cancelled`, with who cancelled and when. `chargeable` is true when the **family** cancels less than 4 hours before the start (Q2).
+- **Cancel:** the attendee becomes `cancelled`, with who cancelled and when (always now, never backdated). `chargeable` is true when the **family** cancels less than 4 hours before the start (Q2). When that was the last attendee still booked, the session is cancelled too and gets a `cancelled` change of its own (`attendee_id` null), so the tutor sees "your 14:00 is gone" as its own line. A session that has already started cannot be cancelled: that is a lesson or a no-show.
 - **Move** (stretch phase): in one transaction, cancel the old session, create the new one, and point `moved_to_session_id` from the old to the new. The tutor can see both "your 14:00 is gone" and "it is now at 16:00".
-- **Seed:** each cancelled row gets a `cancelled` change at its `cancelled_at`. L005 and L017 both come out as after the cut-off. Booked rows get no `created` change, because the export does not say when they were made.
+- **Seed:** each cancelled row gets a `cancelled` change at its `cancelled_at`. L005 and L017 both come out as after the cut-off. Booked rows get no `created` change, because the export does not say when they were made, and cancelled sessions get no session change, because history is not rewritten.
 
 ### Where each rule is enforced
 
@@ -132,7 +132,9 @@ PostgreSQL. Only the tables this feature needs.
 | At most 6 sessions per tutor per day | Code | Counted in a transaction that holds a lock for that tutor and day, so two receptionists cannot both take the 6th slot |
 | Closed on Monday, opening hours | Code | Config values, so the owner's answers (Q3, Q5) do not need a migration |
 | A new booking cannot start in the past | Code | Against the pinned clock, on create only. History is all in the past, so the report does not check it |
+| A started session cannot be cancelled | Code | Against the pinned clock, at cancel time |
 | Late cancellation is chargeable | Code | Worked out at cancel time and stored on the attendee |
+| The last attendee out cancels the session | Code | The cancel locks the session row (`FOR UPDATE`) before it reads the attendees, so two cancels of a pair at once take turns and the second one sees the first |
 | A change after the cut-off is flagged | Code | Worked out when the change is written and stored in `after_cutoff` |
 
 - **Why this split:** a rule that must hold even when two people click at the same moment goes in the database. An overlap check done in code can always lose a race. A rule the owner may still change (6 a day, 4 hours, 16:00, opening hours) goes in code and config.
@@ -149,7 +151,7 @@ PostgreSQL. Only the tables this feature needs.
 | `GET /api/schedule?date=2026-03-06` | One day's sessions, defaulting to the pinned today. A flat `sessions` list (cancelled ones included, with attendees, their changes, `changedAfterCutoff`, `legacyViolation`, and a `state` of `past`, `in-progress` or `upcoming` against the clock), plus `rooms` and `tutors` indexes that hold session IDs only. Every room and tutor is listed, even with nothing that day. Times are local (`+07:00`). | 200. 400 for a bad date |
 | `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset; without one it is refused, not guessed), `durationMin`, `studentIds` (ids from the schedule). Checks the new session with that day's sessions and lists only the conflicts it is part of, plus `in-the-past`. | 201 with `Location: /api/sessions/{id}` and the session. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, all at once, in the report's shape, e.g. `student-overlap: Le Minh Chau is in R3 with T3 and in R2 with T2 at 09:00` |
 | `GET /api/sessions/{id}` | One session, in the same shape as an item of the schedule. | 200. 404 |
-| `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`). | 200 with `chargeable` and `afterCutoff`. 409 if already cancelled. |
+| `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`), optional `note`. | 200 with the session view (the attendee's `chargeable`, the change with `afterCutoff`, `cancelled` if the session went too). 404 if the attendee is not in that session. **409** with `already-started` and/or `already-cancelled`. 400 for bad input |
 | `GET /api/reports/violations?from=&to=` | Every rule the loaded schedule breaks. `from` and `to` are optional local dates. One item per problem (rule code, date, sessions, lesson IDs, a plain message), so an overlapping pair is one item. Late cancellations and changes after the cut-off are allowed, so they are not listed. | 200. 400 if `from` is after `to` |
 
 Stretch, after the cut line: `POST /api/sessions/{id}/move` and `GET /api/tutors/{id}/day?date=`. The model already allows adding a second student to an existing session, but there is no endpoint for it yet.

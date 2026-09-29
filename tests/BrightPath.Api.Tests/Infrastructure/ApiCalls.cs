@@ -25,6 +25,11 @@ public static class ApiCalls
             studentIds,
         });
 
+    public static Task<HttpResponseMessage> Cancel(
+        HttpClient client, Guid sessionId, Guid attendeeId, string cancelledBy, string? note = null) =>
+        client.PostAsJsonAsync(
+            $"/api/sessions/{sessionId}/attendees/{attendeeId}/cancel", new { cancelledBy, note });
+
     public static async Task<ScheduleSessionView> ReadSession(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ScheduleSessionView>(Json))!;
 

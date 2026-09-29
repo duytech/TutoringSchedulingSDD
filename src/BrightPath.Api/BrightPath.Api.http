@@ -72,3 +72,25 @@ GET {{host}}/api/reports/violations
 
 ### Only Friday 2026-03-06 (T1's 7 sessions)
 GET {{host}}/api/reports/violations?from=2026-03-06&to=2026-03-06
+
+### Cancel one student (ids from GET /api/schedule: sessions[].id and attendees[].id)
+@sessionId = 00000000-0000-0000-0000-000000000000
+@attendeeId = 00000000-0000-0000-0000-000000000000
+
+### A family cancel (L020 at 10:30 today is chargeable: under 4 hours)
+POST {{host}}/api/sessions/{{sessionId}}/attendees/{{attendeeId}}/cancel
+Content-Type: application/json
+
+{ "cancelledBy": "family", "note": "flu" }
+
+### A tutor cancel is never charged to the family
+POST {{host}}/api/sessions/{{sessionId}}/attendees/{{attendeeId}}/cancel
+Content-Type: application/json
+
+{ "cancelledBy": "tutor" }
+
+### Bad input: unknown cancelledBy (400)
+POST {{host}}/api/sessions/{{sessionId}}/attendees/{{attendeeId}}/cancel
+Content-Type: application/json
+
+{ "cancelledBy": "teacher" }

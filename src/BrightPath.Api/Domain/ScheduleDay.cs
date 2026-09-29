@@ -127,6 +127,8 @@ public static class ScheduleDay
     {
         var changeViews = changes
             .OrderBy(c => c.ChangedAt)
+            // The last attendee's cancel and the session's share a time: the student goes first, then the session.
+            .ThenBy(c => c.AttendeeId is null)
             .Select(c => new ScheduleChangeView(
                 c.Kind, c.AttendeeId, policy.ToLocal(c.ChangedAt), c.ChangedBy, c.AfterCutoff, c.Note))
             .ToList();

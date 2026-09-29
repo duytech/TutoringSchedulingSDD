@@ -41,6 +41,12 @@ public static class RuleCodes
     /// Create only, so not in <see cref="All"/>: history is always in the past, and the report must not flag it.
     /// </summary>
     public const string InThePast = "in-the-past";
+
+    /// <summary>Cancel only: a session that has started is a lesson or a no-show, not a cancellation.</summary>
+    public const string AlreadyStarted = "already-started";
+
+    /// <summary>Cancel only.</summary>
+    public const string AlreadyCancelled = "already-cancelled";
 }
 
 /// <summary>

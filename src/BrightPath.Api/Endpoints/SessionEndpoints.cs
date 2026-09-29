@@ -11,9 +11,12 @@ namespace BrightPath.Api.Endpoints;
 public sealed record CreateSessionRequest(
     string? TutorId, string? RoomId, string? StartsAt, int? DurationMin, Guid[]? StudentIds);
 
+public sealed record CancelAttendeeRequest(string? CancelledBy, string? Note);
+
 public static partial class SessionEndpoints
 {
     private static readonly int[] Durations = [60, 90];
+    private const int MaxNoteLength = 500;
 
     public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder app)
     {
@@ -36,6 +39,18 @@ public static partial class SessionEndpoints
             .WithSummary("One session, in the same shape as an item of /api/schedule")
             .Produces<ScheduleSessionView>()
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        sessions.MapPost("/{id:guid}/attendees/{attendeeId:guid}/cancel", Cancel)
+            .WithName("CancelAttendee")
+            .WithSummary("Cancel one student's place, freeing the slot")
+            .WithDescription(
+                "cancelledBy is family, tutor or centre. Only a family cancel less than 4 hours before the start is " +
+                "chargeable. The change is flagged afterCutoff after 16:00 the day before. When no one else is " +
+                "booked, the session is cancelled too. A 409 lists already-started and already-cancelled.")
+            .Produces<ScheduleSessionView>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         return app;
     }
@@ -165,6 +180,100 @@ public static partial class SessionEndpoints
 
         var view = await LoadView(db, sessionId, now, policy, ct);
         return TypedResults.Created($"/api/sessions/{sessionId}", view);
+    }
+
+    private static async Task<IResult> Cancel(
+        Guid id, Guid attendeeId, CancelAttendeeRequest request, BrightPathDbContext db, BookingPolicy policy,
+        TimeProvider clock, CancellationToken ct)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (request.CancelledBy is not { } cancelledBy || !CancelledBy.All.Contains(cancelledBy))
+        {
+            errors["cancelledBy"] = [$"Must be one of: {string.Join(", ", CancelledBy.All)}."];
+        }
+
+        if (request.Note is { Length: > MaxNoteLength })
+        {
+            errors["note"] = [$"At most {MaxNoteLength} characters."];
+        }
+
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        // Two cancels on one session take turns, so the last one out always sees the other one gone
+        // and cancels the session.
+        var session = await db.Sessions
+            .FromSql($"SELECT * FROM sessions WHERE id = {id} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        var attendees = session is null
+            ? []
+            : await db.Attendees.Include(a => a.Student).Where(a => a.SessionId == id).ToListAsync(ct);
+        var attendee = attendees.SingleOrDefault(a => a.Id == attendeeId);
+        if (session is null || attendee is null)
+        {
+            return TypedResults.Problem(
+                title: "Attendee not found",
+                detail: $"Session {id} has no attendee {attendeeId}.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var now = clock.GetUtcNow();
+        var decision = CancelCheck.Decide(
+            new CancelSession(
+                session.Id,
+                session.StartsAt,
+                attendees
+                    .Select(a => new CancelAttendee(
+                        a.Id, a.Student.Name, a.Status, a.CancelledAt, a.CancelledBy, a.SourceLessonId))
+                    .ToList()),
+            attendeeId,
+            request.CancelledBy!,
+            now,
+            policy);
+        if (decision.Conflicts.Count > 0)
+        {
+            return Conflict(decision.Conflicts);
+        }
+
+        attendee.Status = AttendeeStatus.Cancelled;
+        attendee.CancelledAt = now;
+        attendee.CancelledBy = request.CancelledBy;
+        attendee.Chargeable = decision.Chargeable;
+        db.BookingChanges.Add(new BookingChange
+        {
+            Id = Guid.CreateVersion7(),
+            SessionId = id,
+            AttendeeId = attendeeId,
+            Kind = ChangeKind.Cancelled,
+            ChangedAt = now,
+            ChangedBy = request.CancelledBy,
+            AfterCutoff = decision.AfterCutoff,
+            Note = request.Note,
+        });
+
+        if (decision.CancelsSession)
+        {
+            // The last one out cancels the session, with a change of its own so the tutor sees the slot is gone.
+            session.CancelledAt = now;
+            db.BookingChanges.Add(new BookingChange
+            {
+                Id = Guid.CreateVersion7(),
+                SessionId = id,
+                Kind = ChangeKind.Cancelled,
+                ChangedAt = now,
+                ChangedBy = request.CancelledBy,
+                AfterCutoff = decision.AfterCutoff,
+            });
+        }
+
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return TypedResults.Ok(await LoadView(db, id, now, policy, ct));
     }
 
     private static async Task<IResult> GetSession(
