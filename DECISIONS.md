@@ -17,6 +17,7 @@ These are the questions I would ask first. Each has the default I build with whi
 | Q5 | Mai breaks the 6-per-day rule "when she is desperate", and L032 was moved onto a closed Monday. Should the receptionist ever be allowed to **override a rule**? | **No.** Every rule is a hard refusal (409). The owner said the load rule must be enforced. | If yes: create takes an `overrideReason`, which is stored as a change record. It would apply only to policy rules (load, Monday, hours). It would **never** apply to overlaps, since a student in two places is the one thing the owner said must never happen. |
 | Q6 | What does "**after the tutor was told**" mean? Is it the 16:00 cut-off the day before, or the moment Mai actually sends the message? | The **cut-off** is the moment. Any change to a lesson after 16:00 the day before (including same-day changes) is marked `after_cutoff`. | If it is the real send time, we need a "day published to tutor" record per tutor per day, and the flag compares against that time instead of a fixed 16:00. |
 | Q7 | What are the **limits of an exam pair**? Always at most 2 students? Any two students, or only the same subject or level? Only in exam season? | Up to **2 attendees** per session, any two students, any time of year. A second student can be added to an existing session if they are free. | If 3 are allowed, the limit becomes a config value. If pairs are only for exam season or must share a subject, the create check adds a date range or a subject match. |
+| Q8 | When a **family moves** a lesson less than 4 hours before it starts, is that charged like a late cancellation? | **No.** A move is never chargeable: the lesson still happens, only later. | If yes: the move marks the old attendees `chargeable` with the same rule as cancel (`BookingPolicy.IsChargeable`), in one place in the move endpoint. |
 
 ### Where the brief and the data disagree
 
@@ -87,7 +88,7 @@ What the feature includes, and why:
 - **Families still cancel on WhatsApp at night**, and Mai still enters it the next morning.
 - **Freed slots are not offered to anyone.**
 - **Late cancellations are flagged, not billed**, and tutor pay is not tracked.
-- **No move endpoint in the core.** For now a move is a cancel plus a new booking. A linked move is a stretch phase.
+- **A move is a separate, later endpoint** (built after the time box, §4). In the core, a move was a cancel plus a new booking with nothing linking the two.
 - **No login.** Anyone at the laptop can book or cancel.
 
 ## 3. Design
@@ -117,7 +118,7 @@ PostgreSQL. Only the tables this feature needs.
 - **Nothing is deleted or overwritten.** A cancel only sets the status fields, and a time never changes in place.
 - **Every change writes a `booking_changes` row**, including a new booking (a `created` change for the whole session, `changed_by` = `centre`, since the receptionist books). `after_cutoff` is true when the change happens after 16:00 on the day before the lesson. So "added after the tutor was told" and "cancelled after the tutor was told" both show up.
 - **Cancel:** the attendee becomes `cancelled`, with who cancelled and when (always now, never backdated). `chargeable` is true when the **family** cancels less than 4 hours before the start (Q2). When that was the last attendee still booked, the session is cancelled too and gets a `cancelled` change of its own (`attendee_id` null), so the tutor sees "your 14:00 is gone" as its own line. A session that has already started cannot be cancelled: that is a lesson or a no-show.
-- **Move** (stretch phase): in one transaction, cancel the old session, create the new one, and point `moved_to_session_id` from the old to the new. The tutor can see both "your 14:00 is gone" and "it is now at 16:00".
+- **Move:** in one transaction, cancel the old session (and its booked attendees, never chargeable, Q8), create the new one with the same tutor and students, and point `moved_to_session_id` from the old to the new. Both sessions get a `moved` change: the old one says `to 2026-03-07 16:00 in R4`, the new one `from 2026-03-07 14:00 in R3`, each flagged against its own start. The tutor can see both "your 14:00 is gone" and "it is now at 16:00".
 - **Seed:** each cancelled row gets a `cancelled` change at its `cancelled_at`. L005 and L017 both come out as after the cut-off. Booked rows get no `created` change, because the export does not say when they were made, and cancelled sessions get no session change, because history is not rewritten.
 
 ### Where each rule is enforced
@@ -134,6 +135,7 @@ PostgreSQL. Only the tables this feature needs.
 | A new booking cannot start in the past | Code | Against the pinned clock, on create only. History is all in the past, so the report does not check it |
 | A started session cannot be cancelled | Code | Against the pinned clock, at cancel time |
 | Late cancellation is chargeable | Code | Worked out at cancel time and stored on the attendee |
+| A move gives up the old slot and takes the new one | Code | The new slot passes every create rule with the old session left out of its day. A started or cancelled session cannot be moved. The move locks the old row (`FOR UPDATE`) and the new tutor-day, and cancels the old session **before** inserting the new one, so a move that overlaps its own old slot is not refused by the constraints |
 | The last attendee out cancels the session | Code | The cancel locks the session row (`FOR UPDATE`) before it reads the attendees, so two cancels of a pair at once take turns and the second one sees the first |
 | A change after the cut-off is flagged | Code | Worked out when the change is written and stored in `after_cutoff` |
 
@@ -152,9 +154,10 @@ PostgreSQL. Only the tables this feature needs.
 | `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset; without one it is refused, not guessed), `durationMin`, `studentIds` (ids from the schedule). Checks the new session with that day's sessions and lists only the conflicts it is part of, plus `in-the-past`. | 201 with `Location: /api/sessions/{id}` and the session. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, all at once, in the report's shape, e.g. `student-overlap: Le Minh Chau is in R3 with T3 and in R2 with T2 at 09:00` |
 | `GET /api/sessions/{id}` | One session, in the same shape as an item of the schedule. | 200. 404 |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`), optional `note`. | 200 with the session view (the attendee's `chargeable`, the change with `afterCutoff`, `cancelled` if the session went too). 404 if the attendee is not in that session. **409** with `already-started` and/or `already-cancelled`. 400 for bad input |
+| `POST /api/sessions/{id}/move` | Body: `startsAt` (with offset), optional `roomId` and `durationMin` (default: unchanged), `movedBy` (`family`, `tutor` or `centre`), optional `note`. The tutor never changes. | 201 with `Location` and the new session. The old one keeps `movedTo` (id, time, room). 400 for bad input or nothing to move. 404. **409** with `already-started`, `already-cancelled` and the create conflicts |
 | `GET /api/reports/violations?from=&to=` | Every rule the loaded schedule breaks. `from` and `to` are optional local dates. One item per problem (rule code, date, sessions, lesson IDs, a plain message), so an overlapping pair is one item. Late cancellations and changes after the cut-off are allowed, so they are not listed. | 200. 400 if `from` is after `to` |
 
-Stretch, after the cut line: `POST /api/sessions/{id}/move` and `GET /api/tutors/{id}/day?date=`. The model already allows adding a second student to an existing session, but there is no endpoint for it yet.
+Stretch, after the cut line and not built: `GET /api/tutors/{id}/day?date=`. The model already allows adding a second student to an existing session, but there is no endpoint for it yet.
 
 ### Endpoint I rejected: `PUT /api/sessions/{id}`
 
@@ -164,7 +167,7 @@ A general "edit this session" endpoint that changes the time, room or tutor in p
 - **One verb would hide several different events.** A new time, a new room and a new tutor affect different people, and each needs its own conflict checks and its own change record.
 - **It would break the copied `slot`** on attendees, which is only safe because times never change in place.
 
-Instead, each change has its own named action (cancel, and later move), and each one leaves a record.
+Instead, each change has its own named action (cancel, and move), and each one leaves a record.
 
 ## 4. Reflection
 
@@ -173,24 +176,25 @@ Instead, each change has its own named action (cancel, and later move), and each
 - Phases 1–15 of the roadmap are done: the design, the schema with its constraints, the seed, the violation report, today's schedule, create, cancel, the integration tests and the README.
 - **Time:** phases 1–15 fit within the 2.5-hour box. The cut line did its job.
 - **After the box**, in about 30 more minutes, I built stretch phase 16, the React Today view (`web/`), with phase 17's "changed after tutor was told" badge merged in. It is a read-only room × time grid over `GET /api/schedule`.
-- Move and the tutor day endpoint (phases 18 and 19) were **not built**.
+- Then, in about 20 more minutes, stretch phase 18: **move** (`POST /api/sessions/{id}/move`), with a "moved →" label on the old card in the Today view.
+- The tutor day endpoint (phase 19) was **not built**.
 
 ### Next week
 
 1. **Tutor day sheet** (feature 3). It is a read over a model that now holds, like the Today board, and it fixes what the pick left broken: "which message is real?".
-2. **Move**: one transaction that cancels the old session, creates the new one and links them through `moved_to_session_id`, so a tutor sees "your 14:00 is gone" and "it is now at 16:00" together.
-3. **The owner's answers to Q1–Q7.** Most of them change only config (the load count, the hours, the pair limit). Q6 would need a "day sent to the tutor" record.
-4. **Login, so `changed_by` names a person** and not only family, tutor or centre. It is also the first step before families can cancel for themselves (feature 5).
-5. **Decide on notifications with the owner** (feature 4). The account, the templates and the cost come before any code.
+2. **The owner's answers to Q1–Q8.** Most of them change only config (the load count, the hours, the pair limit). Q6 would need a "day sent to the tutor" record.
+3. **Login, so `changed_by` names a person** and not only family, tutor or centre. It is also the first step before families can cancel for themselves (feature 5).
+4. **Decide on notifications with the owner** (feature 4). The account, the templates and the cost come before any code.
 
 ### Known weak spots
 
-- **One slot is guarded by code only.** L034's session is flagged and left out of the room constraint, so the database would not refuse a second session in R2 on 03-10 at 09:00. The create check still does, because L034 is always read. (L034's tutor slot and L008's student slot stay covered through L033 and L007.) Fix: once the owner says what really happened that day, cancel or move L034 and drop its flag.
+- **One slot is guarded by code only.** L034's session is flagged and left out of the room constraint, so the database would not refuse a second session in R2 on 03-10 at 09:00. The create check still does, because L034 is always read. (L034's tutor slot and L008's student slot stay covered through L033 and L007.) Fix: once the owner says what really happened that day, move or cancel L034. Moving it is now one call, and the report drops the 03-10 overlap.
 - **The counting rules live in code only.** The 6-a-day load (under an advisory lock) and the 2-per-session limit are not in the database. Anything that writes without going through the API skips them. Fix: a trigger, if another writer ever appears.
 - **No login.** Anyone at the laptop can book or cancel, and `cancelledBy` is whatever the request says.
 - **The export can be loaded once**, into an empty database. There is no import path for a later week's export.
 - **The API tests share one database** and stay apart only because each test books on a date of its own. A new test that reuses a date can break another one. The convention is written in the test classes, not enforced.
 - **The pinned clock gives every change in a run the same time.** The view puts a student's cancel before the session's, but two changes of the same kind at the same time come back in no fixed order.
+- **A move inside an over-loaded day is refused.** Moving one of T1's 7 sessions on 03-06 to another time that day still leaves 7, so it gets `tutor-load`. Cancel one first. It follows from Q5 (no override), but a receptionist may find it surprising.
 - **The Today view repeats the opening hours.** The grid's 09:00–21:30 is a constant in `web/src/layout.ts`, a copy of `BookingPolicy` in config. If the owner changes the hours (Q3), both must change. Fix: send the hours with the schedule.
 - **Startup logs every SQL statement** in Development, and the first start logs a `fail` line that is not an error. The README says so, but it is noise.
 

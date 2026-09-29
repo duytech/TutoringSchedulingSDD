@@ -25,6 +25,12 @@ export interface ScheduleAttendee {
   note: string | null
 }
 
+export interface MovedTo {
+  id: string
+  startsAt: string
+  roomId: string
+}
+
 export interface ScheduleSession {
   id: string
   tutorId: string
@@ -37,6 +43,8 @@ export interface ScheduleSession {
   cancelled: boolean
   cancelledAt: string | null
   movedToSessionId: string | null
+  /** Where a moved session went. It may be on another day. */
+  movedTo: MovedTo | null
   legacyViolation: boolean
   changedAfterCutoff: boolean
   attendees: ScheduleAttendee[]

@@ -30,6 +30,13 @@ public static class ApiCalls
         client.PostAsJsonAsync(
             $"/api/sessions/{sessionId}/attendees/{attendeeId}/cancel", new { cancelledBy, note });
 
+    /// <summary><paramref name="localStart"/> is <c>yyyy-MM-dd HH:mm</c> in the centre's time (+07:00).</summary>
+    public static Task<HttpResponseMessage> Move(
+        HttpClient client, Guid sessionId, string localStart, string movedBy, string? roomId = null) =>
+        client.PostAsJsonAsync(
+            $"/api/sessions/{sessionId}/move",
+            new { startsAt = $"{localStart.Replace(' ', 'T')}:00+07:00", roomId, movedBy });
+
     public static async Task<ScheduleSessionView> ReadSession(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ScheduleSessionView>(Json))!;
 

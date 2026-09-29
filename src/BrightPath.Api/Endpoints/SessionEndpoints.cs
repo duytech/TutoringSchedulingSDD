@@ -13,6 +13,10 @@ public sealed record CreateSessionRequest(
 
 public sealed record CancelAttendeeRequest(string? CancelledBy, string? Note);
 
+/// <summary><c>roomId</c> and <c>durationMin</c> default to the old session's. The tutor never changes.</summary>
+public sealed record MoveSessionRequest(
+    string? StartsAt, string? RoomId, int? DurationMin, string? MovedBy, string? Note);
+
 public static partial class SessionEndpoints
 {
     private static readonly int[] Durations = [60, 90];
@@ -48,6 +52,19 @@ public static partial class SessionEndpoints
                 "chargeable. The change is flagged afterCutoff after 16:00 the day before. When no one else is " +
                 "booked, the session is cancelled too. A 409 lists already-started and already-cancelled.")
             .Produces<ScheduleSessionView>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        sessions.MapPost("/{id:guid}/move", Move)
+            .WithName("MoveSession")
+            .WithSummary("Move a session to a new time, room or length, linking the old one to the new one")
+            .WithDescription(
+                "In one transaction the old session is cancelled, the new one is created, and the old one points at " +
+                "the new one (movedTo). Both get a 'moved' change. The new slot passes the same rules as a new " +
+                "booking, with the old session left out. A move is never chargeable. A 409 lists already-started, " +
+                "already-cancelled and the create conflicts.")
+            .Produces<ScheduleSessionView>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
@@ -276,6 +293,166 @@ public static partial class SessionEndpoints
         return TypedResults.Ok(await LoadView(db, id, now, policy, ct));
     }
 
+    private static async Task<IResult> Move(
+        Guid id, MoveSessionRequest request, BrightPathDbContext db, BookingPolicy policy, TimeProvider clock,
+        CancellationToken ct)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (!TryParseWithOffset(request.StartsAt, out var startsAt))
+        {
+            errors["startsAt"] = ["A local time with its offset is required, e.g. 2026-03-07T13:00:00+07:00."];
+        }
+
+        if (request.RoomId is { } roomId && !await db.Rooms.AnyAsync(r => r.Id == roomId, ct))
+        {
+            errors["roomId"] = [$"No room '{roomId}'."];
+        }
+
+        if (request.DurationMin is { } duration && !Durations.Contains(duration))
+        {
+            errors["durationMin"] = ["Must be 60 or 90."];
+        }
+
+        if (request.MovedBy is not { } movedBy || !CancelledBy.All.Contains(movedBy))
+        {
+            errors["movedBy"] = [$"Must be one of: {string.Join(", ", CancelledBy.All)}."];
+        }
+
+        if (request.Note is { Length: > MaxNoteLength })
+        {
+            errors["note"] = [$"At most {MaxNoteLength} characters."];
+        }
+
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        // A move and a cancel of the same session take turns, so a session cannot be moved after it was cancelled.
+        var old = await db.Sessions
+            .FromSql($"SELECT * FROM sessions WHERE id = {id} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (old is null)
+        {
+            return TypedResults.Problem(
+                title: "Session not found", detail: $"No session {id}.", statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var attendees = await db.Attendees.Include(a => a.Student).Where(a => a.SessionId == id).ToListAsync(ct);
+        var source = new MoveSource(
+            old.Id, old.RoomId, old.StartsAt, old.EndsAt, old.CancelledAt,
+            attendees.Select(a => a.SourceLessonId).OfType<string>().Order(StringComparer.Ordinal).ToList());
+
+        var startsUtc = startsAt.ToUniversalTime();
+        var newRoomId = request.RoomId ?? old.RoomId;
+        var newDuration = request.DurationMin ?? (int)(old.EndsAt - old.StartsAt).TotalMinutes;
+        if (MoveCheck.IsNoop(source, startsUtc, newRoomId, newDuration))
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["startsAt"] = ["Nothing to move: same time, room and length."],
+            });
+        }
+
+        var now = clock.GetUtcNow();
+        var date = policy.LocalDate(startsUtc);
+        var tutorName = await db.Tutors.Where(t => t.Id == old.TutorId).Select(t => t.Name).SingleAsync(ct);
+        var booked = attendees.Where(a => a.Status == AttendeeStatus.Booked).ToList();
+        var newId = Guid.CreateVersion7();
+        var candidate = new RuleSession(
+            newId, old.TutorId, tutorName, newRoomId, startsUtc, startsUtc.AddMinutes(newDuration), Cancelled: false,
+            booked.Select(a => new RuleAttendee(a.StudentId, a.Student.Name, AttendeeStatus.Booked, null)).ToList());
+
+        // Same lock as create: the new day's tutor load is counted with no other booking for that tutor in between.
+        var lockKey = BookingLocks.TutorDay(old.TutorId, date);
+        await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", ct);
+
+        var sameDay = await db.Sessions.AsNoTracking()
+            .Where(s => s.CancelledAt == null)
+            .StartingOn(date, policy)
+            .ToRuleSessions()
+            .ToListAsync(ct);
+
+        var conflicts = MoveCheck.Conflicts(source, candidate, sameDay, now, policy);
+        if (conflicts.Count > 0)
+        {
+            return Conflict(conflicts);
+        }
+
+        // Give the old slot up first, so a move that overlaps it (14:00 -> 14:30 in the same room) does not
+        // collide with its own old row in the constraints. A move is never chargeable (Q8).
+        old.CancelledAt = now;
+        foreach (var attendee in booked)
+        {
+            attendee.Status = AttendeeStatus.Cancelled;
+            attendee.CancelledAt = now;
+            attendee.CancelledBy = request.MovedBy;
+            attendee.Chargeable = false;
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var (noteOnOld, noteOnNew) = MoveCheck.Notes(source, startsUtc, newRoomId, request.Note, policy);
+        db.Sessions.Add(new Session
+        {
+            Id = newId,
+            TutorId = old.TutorId,
+            RoomId = newRoomId,
+            StartsAt = candidate.StartsAt,
+            EndsAt = candidate.EndsAt,
+            Attendees = booked
+                .Select(a => new Attendee
+                {
+                    Id = Guid.CreateVersion7(),
+                    SessionId = newId,
+                    StudentId = a.StudentId,
+                    Status = AttendeeStatus.Booked,
+                })
+                .ToList(),
+        });
+        old.MovedToSessionId = newId;
+        db.BookingChanges.AddRange(
+            new BookingChange
+            {
+                Id = Guid.CreateVersion7(),
+                SessionId = old.Id,
+                Kind = ChangeKind.Moved,
+                ChangedAt = now,
+                ChangedBy = request.MovedBy,
+                AfterCutoff = policy.IsAfterCutoff(now, old.StartsAt),
+                Note = noteOnOld,
+            },
+            new BookingChange
+            {
+                Id = Guid.CreateVersion7(),
+                SessionId = newId,
+                Kind = ChangeKind.Moved,
+                ChangedAt = now,
+                ChangedBy = request.MovedBy,
+                AfterCutoff = policy.IsAfterCutoff(now, startsUtc),
+                Note = noteOnNew,
+            });
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.ExclusionViolation,
+        } pg)
+        {
+            // A race got past the code checks. Disposing the transaction rolls back the cancel too.
+            return Conflict([RaceConflict(pg.ConstraintName, candidate, date)]);
+        }
+
+        var view = await LoadView(db, newId, now, policy, ct);
+        return TypedResults.Created($"/api/sessions/{newId}", view);
+    }
+
     private static async Task<IResult> GetSession(
         Guid id, BrightPathDbContext db, BookingPolicy policy, TimeProvider clock, CancellationToken ct)
     {
@@ -296,7 +473,8 @@ public static partial class SessionEndpoints
         }
 
         var changes = await db.BookingChanges.AsNoTracking().Where(c => c.SessionId == id).ToListAsync(ct);
-        return ScheduleDay.View(session, changes, now, policy);
+        var moveTargets = await db.Sessions.AsNoTracking().MoveTargetsAsync([session], ct);
+        return ScheduleDay.View(session, changes, now, policy, moveTargets);
     }
 
     private static IResult Conflict(IReadOnlyList<ScheduleViolation> conflicts) =>

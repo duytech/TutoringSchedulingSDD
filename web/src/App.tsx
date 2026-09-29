@@ -99,7 +99,7 @@ export default function App() {
       )}
 
       {day && day.sessions.length === 0 && <p className="message">No sessions on this day.</p>}
-      {day && <DayGrid day={day} tutorColours={tutorColours} />}
+      {day && <DayGrid day={day} tutorColours={tutorColours} onGoToDate={go} />}
     </main>
   )
 }

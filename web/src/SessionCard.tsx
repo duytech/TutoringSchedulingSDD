@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { ScheduleSession } from './api'
 import { localDate, localTime } from './dates'
+import { movedLabel } from './labels'
 import type { Placement } from './layout'
 
 const FLAG_TITLE = 'Loaded from the export; breaks a centre rule. See /api/reports/violations.'
@@ -9,11 +10,15 @@ interface Props {
   session: ScheduleSession
   placement: Placement
   tutorColour: string
+  /** The date the grid shows, to tell a move within the day from a move to another day. */
+  shownDate: string
+  onGoToDate: (date: string) => void
 }
 
-export function SessionCard({ session, placement, tutorColour }: Props) {
+export function SessionCard({ session, placement, tutorColour, shownDate, onGoToDate }: Props) {
   const flagged = session.legacyViolation || session.attendees.some((a) => a.legacyViolation)
   const lateChanges = session.changes.filter((c) => c.afterCutoff)
+  const moved = session.movedTo ? movedLabel(shownDate, session.movedTo) : null
   const classes = ['card', `card--${session.state}`, session.cancelled ? 'card--cancelled' : ''].filter(Boolean)
 
   const style = {
@@ -47,6 +52,21 @@ export function SessionCard({ session, placement, tutorColour }: Props) {
           </li>
         ))}
       </ul>
+      {moved &&
+        (moved.otherDate ? (
+          <button
+            type="button"
+            className="card__moved"
+            title={moved.text}
+            onClick={() => onGoToDate(moved.otherDate!)}
+          >
+            {moved.text}
+          </button>
+        ) : (
+          <div className="card__moved" title={moved.text}>
+            {moved.text}
+          </div>
+        ))}
       {session.changedAfterCutoff && (
         <div
           className="card__badge"

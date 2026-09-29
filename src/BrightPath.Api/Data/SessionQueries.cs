@@ -1,4 +1,5 @@
 using BrightPath.Api.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Api.Data;
 
@@ -40,6 +41,25 @@ public static class SessionQueries
             s.Attendees
                 .Select(a => new RuleAttendee(a.StudentId, a.Student.Name, a.Status, a.SourceLessonId))
                 .ToList()));
+
+    /// <summary>
+    /// Where the moved ones among <paramref name="sessions"/> went, by id. A target can be on another day, so it is
+    /// loaded by id rather than taken from the same day's sessions. Start times are UTC.
+    /// </summary>
+    public static async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(
+        this IQueryable<Session> all, IEnumerable<DaySession> sessions, CancellationToken ct)
+    {
+        var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
+        if (targetIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await all
+            .Where(s => targetIds.Contains(s.Id))
+            .Select(s => new MovedToView(s.Id, s.StartsAt, s.RoomId))
+            .ToDictionaryAsync(t => t.Id, ct);
+    }
 
     public static IQueryable<DaySession> ToDaySessions(this IQueryable<Session> sessions) =>
         sessions.Select(s => new DaySession(

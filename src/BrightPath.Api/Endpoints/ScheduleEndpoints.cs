@@ -38,7 +38,8 @@ public static class ScheduleEndpoints
 
         var roomIds = await db.Rooms.AsNoTracking().Select(r => r.Id).ToListAsync(ct);
         var tutors = await db.Tutors.AsNoTracking().ToListAsync(ct);
+        var moveTargets = await db.Sessions.AsNoTracking().MoveTargetsAsync(sessions, ct);
 
-        return TypedResults.Ok(ScheduleDay.Build(day, now, sessions, changes, roomIds, tutors, policy));
+        return TypedResults.Ok(ScheduleDay.Build(day, now, sessions, changes, roomIds, tutors, policy, moveTargets));
     }
 }

@@ -56,7 +56,7 @@ Each run creates one throwaway database `brightpath_test_<guid>` on the same ser
 
 ## Web: the Today view
 
-A read-only page with a room × time grid for one day: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, and a badge on lessons changed after the tutor was told. It needs the API running. In Visual Studio, `BrightPath.Web` is in the solution: F5 on it runs `npm run dev`, and its Vitest tests show in Test Explorer.
+A read-only page with a room × time grid for one day: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, a badge on lessons changed after the tutor was told, and `moved →` on a lesson that was moved, pointing to where it went. It needs the API running. In Visual Studio, `BrightPath.Web` is in the solution: F5 on it runs `npm run dev`, and its Vitest tests show in Test Explorer.
 
 ```bash
 cd web

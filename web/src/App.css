@@ -188,6 +188,14 @@ body {
   list-style: none;
 }
 
+/* A card in a half-width lane is narrow: keep every line on one line so none is pushed out of the card. */
+.card__students li,
+.card__moved {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .card__lesson {
   color: var(--muted);
   font-size: 10px;
@@ -196,6 +204,26 @@ body {
 .student--cancelled {
   text-decoration: line-through;
   color: var(--muted);
+}
+
+.card__moved {
+  display: block;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+}
+
+button.card__moved {
+  color: #2f6fdb;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .card__badge {

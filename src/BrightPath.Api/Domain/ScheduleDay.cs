@@ -44,6 +44,7 @@ public sealed record ScheduleSessionView(
     bool Cancelled,
     DateTimeOffset? CancelledAt,
     Guid? MovedToSessionId,
+    MovedToView? MovedTo,
     bool LegacyViolation,
     bool ChangedAfterCutoff,
     IReadOnlyList<ScheduleAttendeeView> Attendees,
@@ -68,6 +69,9 @@ public sealed record ScheduleChangeView(
     string? ChangedBy,
     bool AfterCutoff,
     string? Note);
+
+/// <summary>Where a moved session went. It may be on another day, so it is loaded by id, not from the day.</summary>
+public sealed record MovedToView(Guid Id, DateTimeOffset StartsAt, string RoomId);
 
 public sealed record RoomDay(string Id, IReadOnlyList<Guid> SessionIds);
 
@@ -95,7 +99,8 @@ public static class ScheduleDay
         IEnumerable<BookingChange> changes,
         IEnumerable<string> roomIds,
         IEnumerable<Tutor> tutors,
-        BookingPolicy policy)
+        BookingPolicy policy,
+        IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
     {
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
@@ -104,7 +109,7 @@ public static class ScheduleDay
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
-            .Select(s => View(s, changesBySession[s.Id], now, policy))
+            .Select(s => View(s, changesBySession[s.Id], now, policy, moveTargets))
             .ToList();
 
         return new ScheduleDayView(
@@ -121,9 +126,16 @@ public static class ScheduleDay
                 .ToList());
     }
 
-    /// <summary>One session as the schedule shows it. Also the body of a create and of GET /api/sessions/{id}.</summary>
+    /// <summary>
+    /// One session as the schedule shows it. Also the body of a create, a move and GET /api/sessions/{id}.
+    /// <paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.
+    /// </summary>
     public static ScheduleSessionView View(
-        DaySession s, IEnumerable<BookingChange> changes, DateTimeOffset now, BookingPolicy policy)
+        DaySession s,
+        IEnumerable<BookingChange> changes,
+        DateTimeOffset now,
+        BookingPolicy policy,
+        IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
     {
         var changeViews = changes
             .OrderBy(c => c.ChangedAt)
@@ -145,6 +157,9 @@ public static class ScheduleDay
             s.CancelledAt is not null,
             Local(s.CancelledAt, policy),
             s.MovedToSessionId,
+            s.MovedToSessionId is { } to && moveTargets?.GetValueOrDefault(to) is { } target
+                ? target with { StartsAt = policy.ToLocal(target.StartsAt) }
+                : null,
             s.LegacyViolation,
             changeViews.Any(c => c.AfterCutoff),
             s.Attendees
