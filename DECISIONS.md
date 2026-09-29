@@ -82,7 +82,7 @@ What the feature includes, and why:
 
 ### What I leave broken by choosing it
 
-- **Tutors still get their day from Mai's messages.** The "which message is real?" problem is not solved. Changes are recorded and marked as after the cut-off, but nothing pushes them to the tutor.
+- **Tutors still get their day from Mai's messages.** The tutor day page (built after the time box, §4) shows each tutor's day with the changes after the cut-off at the top, so there is one version that is real. But a tutor has to open it: nothing sends it to them.
 - **A tutor can still drive in for a cancelled lesson** if nobody tells them. The system knows about the cancellation. The tutor does not.
 - **The owner can see a day on a screen, but only read it.** The Today view (a room × time grid, built after the time box, §4) shows the schedule. Booking and cancelling still go through the API.
 - **Families still cancel on WhatsApp at night**, and Mai still enters it the next morning.
@@ -155,9 +155,10 @@ PostgreSQL. Only the tables this feature needs.
 | `GET /api/sessions/{id}` | One session, in the same shape as an item of the schedule. | 200. 404 |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`), optional `note`. | 200 with the session view (the attendee's `chargeable`, the change with `afterCutoff`, `cancelled` if the session went too). 404 if the attendee is not in that session. **409** with `already-started` and/or `already-cancelled`. 400 for bad input |
 | `POST /api/sessions/{id}/move` | Body: `startsAt` (with offset), optional `roomId` and `durationMin` (default: unchanged), `movedBy` (`family`, `tutor` or `centre`), optional `note`. The tutor never changes. | 201 with `Location` and the new session. The old one keeps `movedTo` (id, time, room). 400 for bad input or nothing to move. 404. **409** with `already-started`, `already-cancelled` and the create conflicts |
+| `GET /api/tutors/{id}/day?date=` | One tutor's day, defaulting to the pinned today: their sessions in the schedule's shape (cancelled and moved ones included), the `cutoff` (16:00 the day before), `final` once it has passed, and `changesAfterCutoff`, a flat list, oldest first, of every change made after it, each with its session's time and room and the student's name. | 200, with empty lists on a day off. 400 for a bad date. 404 for an unknown tutor |
 | `GET /api/reports/violations?from=&to=` | Every rule the loaded schedule breaks. `from` and `to` are optional local dates. One item per problem (rule code, date, sessions, lesson IDs, a plain message), so an overlapping pair is one item. Late cancellations and changes after the cut-off are allowed, so they are not listed. | 200. 400 if `from` is after `to` |
 
-Stretch, after the cut line and not built: `GET /api/tutors/{id}/day?date=`. The model already allows adding a second student to an existing session, but there is no endpoint for it yet.
+The model already allows adding a second student to an existing session, but there is no endpoint for it yet.
 
 ### Endpoint I rejected: `PUT /api/sessions/{id}`
 
@@ -177,20 +178,19 @@ Instead, each change has its own named action (cancel, and move), and each one l
 - **Time:** phases 1–15 fit within the 2.5-hour box. The cut line did its job.
 - **After the box**, in about 30 more minutes, I built stretch phase 16, the React Today view (`web/`), with phase 17's "changed after tutor was told" badge merged in. It is a read-only room × time grid over `GET /api/schedule`.
 - Then, in about 20 more minutes, stretch phase 18: **move** (`POST /api/sessions/{id}/move`), with a "moved →" label on the old card in the Today view.
-- The tutor day endpoint (phase 19) was **not built**.
+- Then, in about 20 more minutes, stretch phase 19: **the tutor day** (`GET /api/tutors/{id}/day`), one tutor's day with the changes after the cut-off listed at the top, and a page for it in the web app, linked from the Today view.
 
 ### Next week
 
-1. **Tutor day sheet** (feature 3). It is a read over a model that now holds, like the Today board, and it fixes what the pick left broken: "which message is real?".
-2. **The owner's answers to Q1–Q8.** Most of them change only config (the load count, the hours, the pair limit). Q6 would need a "day sent to the tutor" record.
-3. **Login, so `changed_by` names a person** and not only family, tutor or centre. It is also the first step before families can cancel for themselves (feature 5).
-4. **Decide on notifications with the owner** (feature 4). The account, the templates and the cost come before any code.
+1. **Get the tutor day sheet to the tutor** (features 3 and 4). The sheet exists, but a tutor has to open it. Decide with the owner how it reaches them (a link in the message Mai already sends, or WhatsApp/Zalo, whose account, templates and cost come before any code), and with it Q6: if "told" is the moment the day is sent, a "day sent to the tutor" record replaces the fixed 16:00.
+2. **The owner's answers to Q1–Q8.** Most of them change only config (the load count, the hours, the pair limit).
+3. **Login, so `changed_by` names a person** and not only family, tutor or centre. It is also the first step before families can cancel for themselves (feature 5), and before a tutor sees only their own day.
 
 ### Known weak spots
 
 - **One slot is guarded by code only.** L034's session is flagged and left out of the room constraint, so the database would not refuse a second session in R2 on 03-10 at 09:00. The create check still does, because L034 is always read. (L034's tutor slot and L008's student slot stay covered through L033 and L007.) Fix: once the owner says what really happened that day, move or cancel L034. Moving it is now one call, and the report drops the 03-10 overlap.
 - **The counting rules live in code only.** The 6-a-day load (under an advisory lock) and the 2-per-session limit are not in the database. Anything that writes without going through the API skips them. Fix: a trigger, if another writer ever appears.
-- **No login.** Anyone at the laptop can book or cancel, and `cancelledBy` is whatever the request says.
+- **No login.** Anyone at the laptop can book or cancel, and `cancelledBy` is whatever the request says. Any tutor's day can be opened by anyone.
 - **The export can be loaded once**, into an empty database. There is no import path for a later week's export.
 - **The API tests share one database** and stay apart only because each test books on a date of its own. A new test that reuses a date can break another one. The convention is written in the test classes, not enforced.
 - **The pinned clock gives every change in a run the same time.** The view puts a student's cancel before the session's, but two changes of the same kind at the same time come back in no fixed order.

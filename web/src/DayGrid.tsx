@@ -6,11 +6,11 @@ import { SessionCard } from './SessionCard'
 
 interface Props {
   day: ScheduleDay
-  tutorColours: Map<string, string>
+  tutorColour: (tutorId: string) => string
   onGoToDate: (date: string) => void
 }
 
-export function DayGrid({ day, tutorColours, onGoToDate }: Props) {
+export function DayGrid({ day, tutorColour, onGoToDate }: Props) {
   const roomIds = day.rooms.map((r) => r.id)
   const rows = rowCount(OPENING)
   const opens = minutesOf(`T${OPENING.opens}`)
@@ -48,7 +48,7 @@ export function DayGrid({ day, tutorColours, onGoToDate }: Props) {
           key={s.id}
           session={s}
           placement={placements.get(s.id)!}
-          tutorColour={tutorColours.get(s.tutorId) ?? 'gray'}
+          tutorColour={tutorColour(s.tutorId)}
           shownDate={day.date}
           onGoToDate={onGoToDate}
         />

@@ -42,6 +42,14 @@ public static class SessionQueries
                 .Select(a => new RuleAttendee(a.StudentId, a.Student.Name, a.Status, a.SourceLessonId))
                 .ToList()));
 
+    /// <summary>The changes of <paramref name="sessions"/>. BookingChange has no navigation from Session.</summary>
+    public static Task<List<BookingChange>> ChangesOfAsync(
+        this IQueryable<BookingChange> all, IEnumerable<DaySession> sessions, CancellationToken ct)
+    {
+        var sessionIds = sessions.Select(s => s.Id).ToList();
+        return all.Where(c => sessionIds.Contains(c.SessionId)).ToListAsync(ct);
+    }
+
     /// <summary>
     /// Where the moved ones among <paramref name="sessions"/> went, by id. A target can be on another day, so it is
     /// loaded by id rather than taken from the same day's sessions. Start times are UTC.

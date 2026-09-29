@@ -1,5 +1,5 @@
 using BrightPath.Api.Domain;
-using BrightPath.Api.Seed;
+using BrightPath.Api.Tests.Infrastructure;
 
 namespace BrightPath.Api.Tests;
 
@@ -151,23 +151,11 @@ public sealed class ScheduleDayTests
         Assert.Equal(TimeSpan.Zero, clock.GetUtcNow().Offset);
     }
 
-    /// <summary>The real export through <see cref="SeedPlanner"/>, viewed on one date at the pinned now.</summary>
+    /// <summary>The real export, viewed on one date at the pinned now.</summary>
     private static ScheduleDayView Export(DateOnly date)
     {
-        var plan = SeedPlanner.Plan(
-            SeedCsv.ReadTutors(Path.Combine(SeedCsv.Directory, "tutors.csv")),
-            SeedCsv.ReadLessons(Path.Combine(SeedCsv.Directory, "lessons_export.csv")),
-            Policy);
-        var tutors = plan.Tutors.ToDictionary(t => t.Id, t => t.Name);
-        var students = plan.Students.ToDictionary(s => s.Id, s => s.Name);
-        var sessions = plan.Sessions.Select(s => new DaySession(
-            s.Id, s.TutorId, tutors[s.TutorId], s.RoomId, s.StartsAt, s.EndsAt, s.CancelledAt, s.MovedToSessionId,
-            s.LegacyViolation,
-            s.Attendees.Select(a => new DayAttendee(
-                a.Id, a.StudentId, students[a.StudentId], a.SourceLessonId, a.Status, a.CancelledAt, a.CancelledBy,
-                a.Chargeable, a.LegacyViolation, a.Note)).ToList()));
-
-        return ScheduleDay.Build(date, PinnedNow, sessions, plan.Changes, Rooms, plan.Tutors, Policy);
+        var export = SeedExport.Load(Policy);
+        return ScheduleDay.Build(date, PinnedNow, export.Sessions, export.Changes, Rooms, export.Tutors, Policy);
     }
 
     private static ScheduleDayView Build(DateTimeOffset now, params DaySession[] sessions) =>

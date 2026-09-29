@@ -9,6 +9,7 @@
   --badge-bg: #fff3bf;
   --badge-fg: #7a5a00;
   --error-bg: #ffe3e3;
+  --link: #2f6fdb;
   --row: 14px;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -27,6 +28,7 @@
     --badge-bg: #4a3b00;
     --badge-fg: #ffe58f;
     --error-bg: #4a1f1f;
+    --link: #7fa8ff;
   }
 }
 
@@ -79,6 +81,11 @@ body {
   background: var(--card-bg);
   color: var(--fg);
   cursor: pointer;
+}
+
+.top a,
+.message a {
+  color: var(--link);
 }
 
 .message {
@@ -221,7 +228,7 @@ body {
 }
 
 button.card__moved {
-  color: #2f6fdb;
+  color: var(--link);
   cursor: pointer;
   text-decoration: underline;
 }
@@ -235,6 +242,45 @@ button.card__moved {
   color: var(--badge-fg);
   font-size: 10px;
   cursor: help;
+}
+
+/* Tutor sheet: the late changes first, then the day as a list of cards */
+
+.changes {
+  margin: 8px 0 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 14px;
+}
+
+.changes h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.changes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 640px;
+}
+
+.card--row {
+  padding: 6px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.card--row .card__lesson,
+.card--row .card__badge {
+  font-size: 12px;
 }
 
 .card--past {

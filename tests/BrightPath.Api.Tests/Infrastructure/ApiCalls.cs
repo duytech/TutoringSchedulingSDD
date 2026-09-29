@@ -44,6 +44,16 @@ public static class ApiCalls
         (await client.GetFromJsonAsync<ScheduleDayView>(
             date is null ? "/api/schedule" : $"/api/schedule?date={date}", Json))!;
 
+    public static Task<HttpResponseMessage> GetTutorDay(HttpClient client, string tutorId, string? date = null) =>
+        client.GetAsync(date is null ? $"/api/tutors/{tutorId}/day" : $"/api/tutors/{tutorId}/day?date={date}");
+
+    public static async Task<TutorDaySheetView> TutorDay(HttpClient client, string tutorId, string? date = null)
+    {
+        var response = await GetTutorDay(client, tutorId, date);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<TutorDaySheetView>(Json))!;
+    }
+
     public static async Task<IReadOnlyList<Conflict>> ReadConflicts(HttpResponseMessage response)
     {
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

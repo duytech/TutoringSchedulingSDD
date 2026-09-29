@@ -8,7 +8,8 @@ const FLAG_TITLE = 'Loaded from the export; breaks a centre rule. See /api/repor
 
 interface Props {
   session: ScheduleSession
-  placement: Placement
+  /** Where the card sits in the room grid. Without it, the card is a row of the tutor's list and names the room. */
+  placement?: Placement
   tutorColour: string
   /** The date the grid shows, to tell a move within the day from a move to another day. */
   shownDate: string
@@ -19,13 +20,20 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
   const flagged = session.legacyViolation || session.attendees.some((a) => a.legacyViolation)
   const lateChanges = session.changes.filter((c) => c.afterCutoff)
   const moved = session.movedTo ? movedLabel(shownDate, session.movedTo) : null
-  const classes = ['card', `card--${session.state}`, session.cancelled ? 'card--cancelled' : ''].filter(Boolean)
+  const classes = [
+    'card',
+    `card--${session.state}`,
+    session.cancelled ? 'card--cancelled' : '',
+    placement ? '' : 'card--row',
+  ].filter(Boolean)
 
   const style = {
-    gridColumn: placement.column + 2,
-    gridRow: `${placement.rowStart + 2} / span ${placement.rowSpan}`,
-    width: `calc(${100 / placement.lanes}% - 4px)`,
-    marginLeft: `calc(${(100 * placement.lane) / placement.lanes}% + 2px)`,
+    ...(placement && {
+      gridColumn: placement.column + 2,
+      gridRow: `${placement.rowStart + 2} / span ${placement.rowSpan}`,
+      width: `calc(${100 / placement.lanes}% - 4px)`,
+      marginLeft: `calc(${(100 * placement.lane) / placement.lanes}% + 2px)`,
+    }),
     '--tutor': tutorColour,
   } as CSSProperties
 
@@ -35,9 +43,7 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
         <span className="card__time">
           {localTime(session.startsAt)}–{localTime(session.endsAt)}
         </span>
-        <span className="card__tutor">
-          {session.tutorId} {session.tutorName}
-        </span>
+        <span className="card__tutor">{placement ? `${session.tutorId} ${session.tutorName}` : session.roomId}</span>
         {flagged && (
           <span className="card__flag" title={FLAG_TITLE}>
             ⚑

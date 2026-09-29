@@ -1,4 +1,4 @@
-// The shape of GET /api/schedule, as the API sends it (ScheduleDayView in the API).
+// The shapes of GET /api/schedule and GET /api/tutors/{id}/day, as the API sends them.
 // Times are local ISO strings with the centre's offset, e.g. "2026-03-06T10:30:00+07:00".
 
 export type SessionState = 'past' | 'in-progress' | 'upcoming'
@@ -70,6 +70,33 @@ export interface ScheduleDay {
   tutors: TutorDay[]
 }
 
+/** A change after the cut-off, with enough of its session to read on its own (TutorChangeView in the API). */
+export interface TutorChange {
+  sessionId: string
+  sessionStartsAt: string
+  roomId: string
+  kind: ScheduleChange['kind']
+  attendeeId: string | null
+  /** Null for a change to the whole session. */
+  studentName: string | null
+  changedAt: string
+  changedBy: string | null
+  note: string | null
+}
+
+/** The shape of GET /api/tutors/{id}/day (TutorDaySheetView in the API). */
+export interface TutorDaySheet {
+  tutorId: string
+  tutorName: string
+  date: string
+  now: string
+  /** 16:00 the day before: from then on, the tutor counts as told. */
+  cutoff: string
+  final: boolean
+  sessions: ScheduleSession[]
+  changesAfterCutoff: TutorChange[]
+}
+
 export class ApiError extends Error {
   readonly status: number | null
 
@@ -80,10 +107,20 @@ export class ApiError extends Error {
 }
 
 /** One day's schedule. Without a date, the API's own today (its pinned clock), not the browser's. */
-export async function fetchDay(date?: string): Promise<ScheduleDay> {
+export function fetchDay(date?: string): Promise<ScheduleDay> {
+  return getJson<ScheduleDay>(date ? `/api/schedule?date=${date}` : '/api/schedule')
+}
+
+/** One tutor's day. An unknown tutor throws an ApiError with status 404. */
+export function fetchTutorDay(tutorId: string, date?: string): Promise<TutorDaySheet> {
+  const path = `/api/tutors/${encodeURIComponent(tutorId)}/day`
+  return getJson<TutorDaySheet>(date ? `${path}?date=${date}` : path)
+}
+
+async function getJson<T>(url: string): Promise<T> {
   let response: Response
   try {
-    response = await fetch(date ? `/api/schedule?date=${date}` : '/api/schedule')
+    response = await fetch(url)
   } catch {
     throw new ApiError('Cannot reach the API.', null)
   }
@@ -94,5 +131,5 @@ export async function fetchDay(date?: string): Promise<ScheduleDay> {
   if (!response.ok) {
     throw new ApiError(`The API answered ${response.status}.`, response.status)
   }
-  return (await response.json()) as ScheduleDay
+  return (await response.json()) as T
 }

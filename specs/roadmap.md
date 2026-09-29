@@ -48,7 +48,7 @@ Time box: **150 min**. Estimates are in minutes. Everything above the ✂️ cut
 
 If phase 16 is skipped, `DECISIONS.md` §4 says so honestly, and the Today view is still available as JSON from phase 10.
 
-**Status:** phases 16, 17 (merged into 16) and 18 were built after the time box. Phase 19 was not. `DECISIONS.md` §4 says so.
+**Status:** phases 16, 17 (merged into 16), 18 and 19 were built after the time box. `DECISIONS.md` §4 says so.
 
 ## Definition of done (every phase)
 

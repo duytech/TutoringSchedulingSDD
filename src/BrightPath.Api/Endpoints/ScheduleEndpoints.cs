@@ -29,12 +29,7 @@ public static class ScheduleEndpoints
         var now = clock.GetUtcNow();
         var day = date ?? policy.LocalDate(now);
         var sessions = await db.Sessions.AsNoTracking().StartingOn(day, policy).ToDaySessions().ToListAsync(ct);
-
-        // BookingChange has no navigation from Session, so its rows come in a query of their own.
-        var sessionIds = sessions.Select(s => s.Id).ToList();
-        var changes = await db.BookingChanges.AsNoTracking()
-            .Where(c => sessionIds.Contains(c.SessionId))
-            .ToListAsync(ct);
+        var changes = await db.BookingChanges.AsNoTracking().ChangesOfAsync(sessions, ct);
 
         var roomIds = await db.Rooms.AsNoTracking().Select(r => r.Id).ToListAsync(ct);
         var tutors = await db.Tutors.AsNoTracking().ToListAsync(ct);

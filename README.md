@@ -67,6 +67,8 @@ npm test        # the grid layout
 
 `←` and `→` move a day, `Today` goes back to the API's pinned today, and the date stays in the URL (`?date=2026-03-04`).
 
+Each tutor in the header line (`T1 Ngoc Anh 7 · …`) links to **that tutor's day** (`?tutor=T1&date=2026-03-06`): their lessons as a list by time, whether the day is final yet (16:00 the day before), and a "Changed after you were told" box at the top. It reads `GET /api/tutors/{id}/day`.
+
 ![The Today view on the pinned day](docs/today-view.png)
 
 ## Try it
@@ -98,6 +100,9 @@ curl -s -X POST "$API/api/sessions" -H 'Content-Type: application/json' \
 L020=$(curl -s "$API/api/schedule" | jq -r '.sessions[] | select(any(.attendees[]; .lessonId == "L020")) | "\(.id)/attendees/\(.attendees[0].id)"')
 curl -s -X POST "$API/api/sessions/$L020/cancel" -H 'Content-Type: application/json' \
   -d '{"cancelledBy":"family"}' | jq '{startsAt, cancelled, attendees: [.attendees[] | {lessonId, status, cancelledBy, chargeable}], changes}'
+
+# 7. T3's day: what changed after they were told
+curl -s "$API/api/tutors/T3/day" | jq '{tutorName, date, cutoff, final, changesAfterCutoff: [.changesAfterCutoff[] | {kind, studentName, changedBy, changedAt}]}'
 ```
 
 ## What I saw
