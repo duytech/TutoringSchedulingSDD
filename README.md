@@ -3,6 +3,7 @@
 One feature from the Bright Path brief: **book and cancel lessons without ever putting a student, a room or a tutor in two places at once**, and keep a record of every change so a tutor can see what changed after they were told. It is an ASP.NET Core Minimal API on PostgreSQL. The overlap rules are enforced by the database itself (exclusion constraints), and the centre's policy rules are checked in code.
 
 - Why this feature, the data model and the rule split: [`DECISIONS.md`](DECISIONS.md).
+- Why the write endpoints still open a transaction next to the exclusion constraints: [`TRANSACTIONS.md`](TRANSACTIONS.md).
 - The plan, phase by phase: [`specs/roadmap.md`](specs/roadmap.md).
 - **Today is pinned to Friday 2026-03-06 10:00 (+07:00)**, inside the exported week. Nothing reads the real clock.
 
