@@ -37,7 +37,7 @@ The general rule: **the export is history, and history is a fact.** Rows that br
 
 ### Assumptions I had to invent
 
-- **Today is pinned to Friday 2026-03-06, 10:00 (+07:00).** It is the busiest day in the export and shows the tutor-overload case. At 10:00 some of the day's lessons are already over and some have not started, so the 4-hour late-cancellation window can be shown on real rows. The clock is injected, and nothing reads the real time.
+- **Today is pinned to Friday 2026-03-06, 10:00 (+07:00).** It is the busiest day in the export and shows the tutor-overload case. At 10:00 some of the day's lessons are already over and some have not started, so the 4-hour late-cancellation window can be shown on real rows. The clock is injected from `Clock:Now` in config, and nothing reads the real time. Removing the key switches to the real time.
 - **All times are local to Da Nang (Asia/Ho_Chi_Minh, +07:00).** The CSV lesson times have no offset. The `cancelled_at` values do, and they are all +07:00.
 - **A student is identified by their name.** The export has no student ID and no family record. The same name means the same child.
 - **The rule numbers come from the brief as rendered:** 6 bookings per tutor per day, 4 hours, 16:00, Tuesday to Sunday, 60 or 90 minutes. The brief warns that copied text may not match what is shown, so these values live in config. A misread is then a config change, not a code change.
@@ -145,7 +145,7 @@ PostgreSQL. Only the tables this feature needs.
 
 | Method and path | Does | Returns |
 |---|---|---|
-| `GET /api/schedule?date=2026-03-06` | One day's sessions, grouped by room and by tutor, with attendees, status and change flags. Defaults to the pinned today. | 200 |
+| `GET /api/schedule?date=2026-03-06` | One day's sessions, defaulting to the pinned today. A flat `sessions` list (cancelled ones included, with attendees, their changes, `changedAfterCutoff`, `legacyViolation`, and a `state` of `past`, `in-progress` or `upcoming` against the clock), plus `rooms` and `tutors` indexes that hold session IDs only. Every room and tutor is listed, even with nothing that day. Times are local (`+07:00`). | 200. 400 for a bad date |
 | `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset), `durationMin`, `studentIds` (1 or 2). | 201 with `Location`. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, e.g. `student-overlap: Le Minh Chau is in R3 with T3 at 09:00` |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`). | 200 with `chargeable` and `afterCutoff`. 409 if already cancelled. |
 | `GET /api/reports/violations?from=&to=` | Every rule the loaded schedule breaks. `from` and `to` are optional local dates. One item per problem (rule code, date, sessions, lesson IDs, a plain message), so an overlapping pair is one item. Late cancellations and changes after the cut-off are allowed, so they are not listed. | 200. 400 if `from` is after `to` |

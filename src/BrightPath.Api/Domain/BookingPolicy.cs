@@ -26,7 +26,7 @@ public sealed class BookingPolicyOptions
     public required TimeOnly ClosesAt { get; init; }
 }
 
-/// <summary>Time rules shared by the seed loader, create and cancel. Every instant in and out is UTC.</summary>
+/// <summary>Time rules shared by the seed loader, create and cancel. Every instant in and out is UTC, except <see cref="ToLocal"/>.</summary>
 public sealed class BookingPolicy(BookingPolicyOptions options)
 {
     private readonly TimeZoneInfo _zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone);
@@ -45,6 +45,9 @@ public sealed class BookingPolicy(BookingPolicyOptions options)
 
     public TimeOnly LocalTime(DateTimeOffset instant) =>
         TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, _zone).DateTime);
+
+    /// <summary>The instant with the centre's offset, for showing in the API (+07:00, not UTC).</summary>
+    public DateTimeOffset ToLocal(DateTimeOffset instant) => TimeZoneInfo.ConvertTime(instant, _zone);
 
     /// <summary>
     /// True when the change is at or after the cut-off on the calendar day before the lesson,

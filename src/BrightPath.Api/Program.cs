@@ -15,6 +15,10 @@ var bookingPolicy = new BookingPolicy(
     builder.Configuration.GetSection(BookingPolicyOptions.Section).Get<BookingPolicyOptions>()
     ?? throw new InvalidOperationException($"Config section '{BookingPolicyOptions.Section}' is missing."));
 
+// Today is pinned (DECISIONS §1). Removing Clock:Now switches to the real time.
+var pinnedNow = builder.Configuration.GetValue<DateTimeOffset?>("Clock:Now");
+builder.Services.AddSingleton(pinnedNow is { } now ? new FixedTimeProvider(now) : TimeProvider.System);
+
 builder.Services.AddSingleton(bookingPolicy);
 builder.Services.AddDbContext<BrightPathDbContext>(options => options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 builder.Services.AddHealthChecks().AddDbContextCheck<BrightPathDbContext>("database");
@@ -50,6 +54,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
+app.MapScheduleEndpoints();
 app.MapReportEndpoints();
 
 app.Run();
