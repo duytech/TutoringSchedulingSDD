@@ -106,7 +106,7 @@ public static partial class SessionEndpoints
 
         // Tutor load is a count, so no constraint can guard it. Bookings for the same tutor and day take turns,
         // and each one reads the day only after the one before has committed.
-        var lockKey = $"tutor-day:{tutor.Id}:{date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}";
+        var lockKey = BookingLocks.TutorDay(tutor.Id, date);
         await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", ct);
 
         var sameDay = await db.Sessions.AsNoTracking()

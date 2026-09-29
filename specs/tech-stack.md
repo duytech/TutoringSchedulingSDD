@@ -13,7 +13,7 @@ Chosen for speed of delivery by a senior .NET developer, and so the **database i
 | ORM | **EF Core 10 + Npgsql** | Migrations and LINQ for reads. Raw SQL in a migration for constraints EF cannot model. |
 | Database | **PostgreSQL (local install, localhost:5432)** | `btree_gist` **exclusion constraints** on time ranges stop overlaps at the DB level, even under races. |
 | Frontend | **React + Vite + TypeScript** | A single Today view page. The Vite dev proxy calls the API, so no CORS setup is needed. |
-| Tests | **xUnit + WebApplicationFactory** against the local Postgres | End-to-end tests against a real Postgres. Each test run creates a throwaway database (`brightpath_test_<guid>`), migrates it, and drops it afterwards. Each business rule has one test that proves it is enforced. |
+| Tests | **xUnit + WebApplicationFactory** against the local Postgres | End-to-end tests against a real Postgres. Each test run creates one throwaway database (`brightpath_test_<guid>`), migrates and seeds it, and drops it afterwards. The API tests share it, each booking on a date of its own. Each business rule has one test that proves it is enforced. Races are forced by holding a transaction open in the test, not by parallel requests, so a missing guard fails the test. |
 | Clock | `TimeProvider` (fixed, from `Clock:Now` in config) | Today is pinned to 2026-03-06 10:00 (+07:00). Tests and runs can move the clock by overriding `Clock:Now` (e.g. `Clock__Now`). Without the key, the real time is used. |
 | Local infra | None. Uses the PostgreSQL already installed on the machine | No Docker. The API runs with `dotnet run`. It applies migrations and seeds on startup when the DB is empty. |
 
