@@ -10,4 +10,9 @@
   <Folder Name="/tests/">
     <Project Path="tests/BrightPath.Api.Tests/BrightPath.Api.Tests.csproj" />
   </Folder>
+  <Folder Name="/web/">
+    <Project Path="web/BrightPath.Web.esproj">
+      <Build />
+    </Project>
+  </Folder>
 </Solution>

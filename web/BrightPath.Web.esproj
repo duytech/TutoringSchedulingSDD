@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6778455">
+
+  <!-- The React Today view as a JavaScript project, so it sits in the solution next to the API. Visual Studio runs
+       `npm run dev` on F5 and shows the Vitest tests. `dotnet build` of the solution runs `npm install` (when
+       node_modules is missing) and `npm run build`, so building the whole solution needs Node. -->
+
+  <PropertyGroup>
+    <StartupCommand>npm run dev</StartupCommand>
+    <JavaScriptTestRoot>src\</JavaScriptTestRoot>
+    <JavaScriptTestFramework>Vitest</JavaScriptTestFramework>
+    <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
+  </PropertyGroup>
+
+</Project>

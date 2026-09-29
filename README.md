@@ -9,6 +9,7 @@ One feature from the Bright Path brief: **book and cancel lessons without ever p
 ## Prerequisites
 
 - .NET 10 SDK.
+- Node 20 or later. The solution includes the web project (`web/BrightPath.Web.esproj`), so `dotnet build` and `dotnet test` at the root also run `npm install` and `npm run build` in `web/`.
 - PostgreSQL 13 or later on `localhost:5432`. The `btree_gist` extension ships with the standard installers.
 - A database user that can `CREATE DATABASE` (the app creates `brightpath`, and each test run creates its own database) and `CREATE EXTENSION btree_gist` (a superuser, or the owner of the database).
 
@@ -55,7 +56,7 @@ Each run creates one throwaway database `brightpath_test_<guid>` on the same ser
 
 ## Web: the Today view
 
-A read-only page with a room × time grid for one day: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, and a badge on lessons changed after the tutor was told. It needs Node 20 or later, and the API running.
+A read-only page with a room × time grid for one day: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, and a badge on lessons changed after the tutor was told. It needs the API running. In Visual Studio, `BrightPath.Web` is in the solution: F5 on it runs `npm run dev`, and its Vitest tests show in Test Explorer.
 
 ```bash
 cd web
