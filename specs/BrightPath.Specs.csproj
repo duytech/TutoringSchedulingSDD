@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.NoTargets/3.7.134">
+
+  <!-- Builds nothing. It only shows the specs in the IDE: the SDK's default glob picks up every file under
+       specs/, so a new phase's spec appears without editing the solution. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>
