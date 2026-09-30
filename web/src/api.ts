@@ -105,6 +105,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Anything a fetch threw, as an ApiError: one already is, anything else has no status. */
+export function asApiError(cause: unknown): ApiError {
+  return cause instanceof ApiError ? cause : new ApiError(String(cause), null)
+}
+
 /** One day's schedule. Without a date, the API's own today (its pinned clock), not the browser's. */
 export function fetchDay(date?: string): Promise<ScheduleDay> {
   return getJson<ScheduleDay>(date ? `/api/schedule?date=${date}` : '/api/schedule')

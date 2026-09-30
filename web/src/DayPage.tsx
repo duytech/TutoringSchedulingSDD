@@ -1,21 +1,59 @@
-import { useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { fetchDay, fetchRooms, fetchTutors, type ScheduleDay, type Tutor } from './api'
+import {
+  asApiError,
+  fetchDay,
+  fetchRooms,
+  fetchTutors,
+  type ApiError,
+  type Room,
+  type ScheduleDay,
+  type Tutor,
+} from './api'
 import { tutorColour } from './colours'
 import { longDate } from './dates'
 import { DayGrid } from './DayGrid'
 import { ApiErrorMessage, PageHeader } from './PageHeader'
 import { onDate, useDate } from './useDate'
-import { useLoad } from './useLoad'
+
+interface DayData {
+  day: ScheduleDay
+  rooms: Room[]
+  tutors: Tutor[]
+}
 
 /** One day as a grid: a column per room, a card per session. */
 export function DayPage() {
   const [date, onGoToDate] = useDate()
-  const load = useCallback(async () => {
-    const [day, rooms, tutors] = await Promise.all([fetchDay(date ?? undefined), fetchRooms(), fetchTutors()])
-    return { day, rooms, tutors }
+  // The last answer stays on screen while the next date loads, so the page does not flash.
+  const [data, setData] = useState<DayData | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
+  // The date the last answer was for. Undefined until the first one arrives.
+  const [loadedDate, setLoadedDate] = useState<string | null>()
+
+  useEffect(() => {
+    // Once the date moves on, this answer is stale and is dropped.
+    let current = true
+    Promise.all([fetchDay(date ?? undefined), fetchRooms(), fetchTutors()])
+      .then(([day, rooms, tutors]) => {
+        if (current) {
+          setData({ day, rooms, tutors })
+          setError(null)
+          setLoadedDate(date)
+        }
+      })
+      .catch((cause: unknown) => {
+        if (current) {
+          setError(asApiError(cause))
+          setLoadedDate(date)
+        }
+      })
+    return () => {
+      current = false
+    }
   }, [date])
-  const { data, error, loading } = useLoad(date ?? '', load)
+
+  const loading = loadedDate !== date
   const day = data?.day ?? null
 
   return (
