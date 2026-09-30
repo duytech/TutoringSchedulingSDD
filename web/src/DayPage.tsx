@@ -1,21 +1,16 @@
 import { useCallback } from 'react'
+import { Link } from 'react-router'
 import { fetchDay, fetchRooms, fetchTutors, type ScheduleDay, type Tutor } from './api'
 import { tutorColour } from './colours'
 import { longDate } from './dates'
 import { DayGrid } from './DayGrid'
 import { ApiErrorMessage, PageHeader } from './PageHeader'
-import type { Link, Place } from './place'
+import { onDate, useDate } from './useDate'
 import { useLoad } from './useLoad'
 
-interface Props {
-  /** None means the API's today. */
-  date: string | null
-  onGoToDate: (date: string | null) => void
-  linkTo: (place: Place) => Link
-}
-
 /** One day as a grid: a column per room, a card per session. */
-export function DayPage({ date, onGoToDate, linkTo }: Props) {
+export function DayPage() {
+  const [date, onGoToDate] = useDate()
   const load = useCallback(async () => {
     const [day, rooms, tutors] = await Promise.all([fetchDay(date ?? undefined), fetchRooms(), fetchTutors()])
     return { day, rooms, tutors }
@@ -32,13 +27,7 @@ export function DayPage({ date, onGoToDate, linkTo }: Props) {
         loading={loading}
         onGoToDate={onGoToDate}
       >
-        {data && (
-          <TutorLoads
-            day={data.day}
-            tutors={data.tutors}
-            linkTo={(tutor) => linkTo({ date: data.day.date, tutor })}
-          />
-        )}
+        {data && <TutorLoads day={data.day} tutors={data.tutors} />}
       </PageHeader>
 
       {error && <ApiErrorMessage error={error} />}
@@ -56,14 +45,14 @@ export function DayPage({ date, onGoToDate, linkTo }: Props) {
 }
 
 /** "T1 Ngoc Anh 7 · T2 Pham Duc 2 · T3 Le Thu 1": active sessions per tutor that day, each a link to their sheet. */
-function TutorLoads({ day, tutors, linkTo }: { day: ScheduleDay; tutors: Tutor[]; linkTo: (tutor: string) => Link }) {
+function TutorLoads({ day, tutors }: { day: ScheduleDay; tutors: Tutor[] }) {
   const active = day.sessions.filter((session) => !session.cancelled)
   return tutors.map((tutor, index) => (
     <span key={tutor.id}>
       {index > 0 && ' · '}
-      <a {...linkTo(tutor.id)}>
+      <Link to={onDate(`/tutors/${encodeURIComponent(tutor.id)}`, day.date)}>
         {tutor.id} {tutor.name} {active.filter((session) => session.tutorId === tutor.id).length}
-      </a>
+      </Link>
     </span>
   ))
 }

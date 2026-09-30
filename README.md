@@ -85,9 +85,9 @@ npm test        # the grid layout
 npm run lint    # oxlint, then type-aware ESLint (typescript-eslint)
 ```
 
-`←` and `→` move a day, `Today` goes back to the API's pinned today, and the date stays in the URL (`?date=2026-03-04`).
+The room grid is at `/rooms` (`/` goes there too). `←` and `→` move a day, `Today` goes back to the API's pinned today, and the date stays in the URL (`/rooms?date=2026-03-04`).
 
-Each tutor in the header line (`T1 Ngoc Anh 7 · …`) links to **that tutor's day** (`?tutor=T1&date=2026-03-06`): their lessons as a list by time, whether the day is final yet (16:00 the day before), and a "Changed after you were told" box at the top. It reads `GET /api/tutors/{id}/day`.
+Each tutor in the header line (`T1 Ngoc Anh 7 · …`) links to **that tutor's day** (`/tutors/T1?date=2026-03-06`): their lessons as a list by time, whether the day is final yet (16:00 the day before), and a "Changed after you were told" box at the top. It reads `GET /api/tutors/{id}/day`. Back returns to the grid; moving the day does not add to the history. Old links (`/?tutor=T1&date=…`) still land on the right page.
 
 ![The Today view on the pinned day](docs/today-view.png)
 

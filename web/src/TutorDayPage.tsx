@@ -1,23 +1,19 @@
 import { useCallback } from 'react'
+import { Link, useParams } from 'react-router'
 import { fetchTutorDay } from './api'
 import { tutorColour } from './colours'
 import { longDate } from './dates'
 import { cutoffLine } from './labels'
 import { ApiErrorMessage, PageHeader } from './PageHeader'
-import type { Link, Place } from './place'
 import { TutorSheet } from './TutorSheet'
+import { onDate, useDate } from './useDate'
 import { useLoad } from './useLoad'
 
-interface Props {
-  tutor: string
-  /** None means the API's today. */
-  date: string | null
-  onGoToDate: (date: string | null) => void
-  linkTo: (place: Place) => Link
-}
-
 /** One tutor's day: their lessons by time, and what changed after they were told. */
-export function TutorDayPage({ tutor, date, onGoToDate, linkTo }: Props) {
+export function TutorDayPage() {
+  // The route is /tutors/:tutorId, so the id is always there.
+  const { tutorId: tutor = '' } = useParams()
+  const [date, onGoToDate] = useDate()
   const load = useCallback(() => fetchTutorDay(tutor, date ?? undefined), [tutor, date])
   const { data, error, loading } = useLoad(`${tutor}/${date ?? ''}`, load)
   // A sheet left over from before the tutor changed would show the wrong tutor, so only a match counts.
@@ -34,14 +30,14 @@ export function TutorDayPage({ tutor, date, onGoToDate, linkTo }: Props) {
       >
         {sheet && (
           <>
-            {cutoffLine(sheet)} · <a {...linkTo({ date: sheet.date, tutor: null })}>← All rooms</a>
+            {cutoffLine(sheet)} · <Link to={onDate('/rooms', sheet.date)}>← All rooms</Link>
           </>
         )}
       </PageHeader>
 
       {error?.status === 404 ? (
         <p className="message message--error" role="alert">
-          No tutor {tutor}. <a {...linkTo({ date, tutor: null })}>← All rooms</a>
+          No tutor {tutor}. <Link to={onDate('/rooms', date)}>← All rooms</Link>
         </p>
       ) : (
         error && <ApiErrorMessage error={error} />
