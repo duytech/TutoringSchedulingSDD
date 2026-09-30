@@ -48,7 +48,7 @@ dotnet run --project src/BrightPath.Api
 dotnet test
 ```
 
-Each run creates one throwaway database `brightpath_test_<guid>` on the same server, migrates it, loads the export, and drops it at the end. Your `brightpath` database is never touched. The tests cover:
+The tests are in two projects. `tests/BrightPath.Api.UnitTests` needs no database, so it runs on its own with `dotnet test tests/BrightPath.Api.UnitTests`. `tests/BrightPath.Api.IntegrationTests` needs the same Postgres as the app. Each integration run creates one throwaway database `brightpath_test_<guid>` on the same server, migrates it, loads the export, and drops it at the end. Your `brightpath` database is never touched. The tests cover:
 
 - every rule, as unit tests on the real export;
 - each conflict, a valid exam pair and each cancel case, through HTTP;
@@ -170,7 +170,8 @@ Seeded 3 tutors, 6 students, 33 sessions, 34 attendees, 2 booking changes; legac
 **Tests.** All green, on their own database.
 
 ```
-Passed!  - Failed:     0, Passed:   100, Skipped:     0, Total:   100, Duration: 3 s - BrightPath.Api.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   108, Skipped:     0, Total:   108, Duration: 585 ms - BrightPath.Api.UnitTests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    29, Skipped:     0, Total:    29, Duration: 2 s - BrightPath.Api.IntegrationTests.dll (net10.0)
 ```
 
 ## Troubleshooting

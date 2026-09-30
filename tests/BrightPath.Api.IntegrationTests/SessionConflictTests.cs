@@ -1,8 +1,8 @@
 using System.Net;
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>
 /// One test per rule, through HTTP on a real Postgres. The rules themselves are proven in BookingCheckTests;

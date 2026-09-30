@@ -1,10 +1,10 @@
 using System.Net;
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>
 /// Cancel through HTTP. The shared host keeps 03-06 and 03-07 as the export, so these tests move the clock to

@@ -1,9 +1,9 @@
 using System.Net;
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>
 /// The tutor day over HTTP. The pinned day is only read. The writes happen with the clock moved to Wednesday

@@ -1,7 +1,7 @@
 using BrightPath.Api.Domain;
 using BrightPath.Api.Seed;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.UnitTests;
 
 public sealed class BookingCheckTests
 {

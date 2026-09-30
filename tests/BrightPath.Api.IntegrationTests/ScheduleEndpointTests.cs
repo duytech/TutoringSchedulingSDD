@@ -1,8 +1,8 @@
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>The schedule over HTTP, with the clock read from config. No other test books on 03-06 or 03-07.</summary>
 [Collection(ApiCollection.Name)]

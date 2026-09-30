@@ -1,7 +1,7 @@
 using BrightPath.Api.Domain;
 using BrightPath.Api.Seed;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.UnitTests;
 
 /// <summary>The real export, planned without a database.</summary>
 public sealed class SeedPlannerTests

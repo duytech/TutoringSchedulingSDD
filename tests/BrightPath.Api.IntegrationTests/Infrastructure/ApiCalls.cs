@@ -4,7 +4,7 @@ using System.Text.Json;
 using BrightPath.Api.Domain;
 using Npgsql;
 
-namespace BrightPath.Api.Tests.Infrastructure;
+namespace BrightPath.Api.IntegrationTests.Infrastructure;
 
 public sealed record Conflict(string Rule, IReadOnlyList<Guid> SessionIds, IReadOnlyList<string> LessonIds, string Message);
 

@@ -1,9 +1,9 @@
 using BrightPath.Api.Data;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 [Collection(ApiCollection.Name)]
 public sealed class HealthEndpointTests(BrightPathApiFactory factory)

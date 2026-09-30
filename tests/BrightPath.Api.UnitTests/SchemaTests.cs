@@ -1,7 +1,7 @@
 using BrightPath.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.UnitTests;
 
 public sealed class SchemaTests
 {

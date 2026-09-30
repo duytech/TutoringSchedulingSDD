@@ -1,10 +1,10 @@
 using System.Net;
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>
 /// Move through HTTP. Like the cancel tests, the clock is moved to Tuesday 2026-03-24 10:00 so the export's days

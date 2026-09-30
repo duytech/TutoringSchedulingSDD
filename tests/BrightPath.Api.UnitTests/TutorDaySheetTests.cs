@@ -1,7 +1,7 @@
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.UnitTests.Infrastructure;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.UnitTests;
 
 public sealed class TutorDaySheetTests
 {

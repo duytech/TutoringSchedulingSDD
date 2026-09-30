@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
-namespace BrightPath.Api.Tests.Infrastructure;
+namespace BrightPath.Api.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// The API on a throwaway database (<c>brightpath_test_&lt;guid&gt;</c>) on the local Postgres. Startup migrates it

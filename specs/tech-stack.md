@@ -32,7 +32,8 @@ Chosen for speed of delivery by a senior .NET developer, and so the **database i
 /specs/                     ← this constitution
 /src/BrightPath.Api/        ← Minimal API, EF Core, seed loader
 /src/BrightPath.Api/Seed/   ← lessons_export.csv, tutors.csv (copied from .assignment), seed loader
-/tests/BrightPath.Api.Tests/← integration tests
+/tests/BrightPath.Api.UnitTests/        ← unit tests, no database
+/tests/BrightPath.Api.IntegrationTests/ ← integration tests, throwaway database
 /web/                       ← React + Vite Today view
 ```
 

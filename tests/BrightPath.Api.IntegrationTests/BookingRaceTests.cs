@@ -1,9 +1,9 @@
 using System.Net;
 using BrightPath.Api.Domain;
-using BrightPath.Api.Tests.Infrastructure;
+using BrightPath.Api.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrightPath.Api.Tests;
+namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>
 /// Two receptionists booking at the same moment. Parallel requests usually run one after the other, so they would

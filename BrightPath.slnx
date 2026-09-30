@@ -9,7 +9,8 @@
     <Project Path="src/BrightPath.Api/BrightPath.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/BrightPath.Api.Tests/BrightPath.Api.Tests.csproj" />
+    <Project Path="tests/BrightPath.Api.IntegrationTests/BrightPath.Api.IntegrationTests.csproj" />
+    <Project Path="tests/BrightPath.Api.UnitTests/BrightPath.Api.UnitTests.csproj" />
   </Folder>
   <Folder Name="/web/">
     <Project Path="web/BrightPath.Web.esproj">

@@ -1,7 +1,7 @@
 using BrightPath.Api.Domain;
 using BrightPath.Api.Seed;
 
-namespace BrightPath.Api.Tests.Infrastructure;
+namespace BrightPath.Api.UnitTests.Infrastructure;
 
 /// <summary>The real export through <see cref="SeedPlanner"/>, as the day views read it. No database.</summary>
 internal sealed record SeedExport(
