@@ -25,6 +25,6 @@ public sealed class GetSessionHandler(IScheduleReader reader, BookingPolicy poli
 
         var changes = await reader.ChangesOfAsync([session], ct);
         var moveTargets = await reader.MoveTargetsAsync([session], ct);
-        return ScheduleDay.View(session, changes, now, policy, moveTargets);
+        return ScheduleDay.BuildSessionView(session, changes, now, policy, moveTargets);
     }
 }

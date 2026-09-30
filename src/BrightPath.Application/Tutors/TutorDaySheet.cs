@@ -27,7 +27,7 @@ public sealed record TutorChangeView(
     string? Note);
 
 /// <summary>
-/// The tutor day sheet (DECISIONS §2, feature 3). Each session is <see cref="ScheduleDay.View"/>, so the sheet
+/// The tutor day sheet (DECISIONS §2, feature 3). Each session is <see cref="ScheduleDay.BuildSessionView"/>, so the sheet
 /// and the schedule cannot show a session differently. Pure: no I/O, no database.
 /// </summary>
 public static class TutorDaySheet
@@ -48,7 +48,7 @@ public static class TutorDaySheet
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
-            .Select(s => ScheduleDay.View(s, changesBySession[s.Id], now, policy, moveTargets))
+            .Select(s => ScheduleDay.BuildSessionView(s, changesBySession[s.Id], now, policy, moveTargets))
             .ToList();
 
         // View has already put each session's changes in order, so a stable sort by time keeps the attendee's

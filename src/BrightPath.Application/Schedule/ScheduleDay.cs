@@ -102,7 +102,7 @@ public static class ScheduleDay
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
-            .Select(s => View(s, changesBySession[s.Id], now, policy, moveTargets))
+            .Select(s => BuildSessionView(s, changesBySession[s.Id], now, policy, moveTargets))
             .ToList();
 
         return new ScheduleDayView(date, policy.ToLocal(now), views);
@@ -112,7 +112,7 @@ public static class ScheduleDay
     /// One session as the schedule shows it. Also the body of a create, a move and GET /api/sessions/{id}.
     /// <paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.
     /// </summary>
-    public static ScheduleSessionView View(
+    public static ScheduleSessionView BuildSessionView(
         DaySession s,
         IEnumerable<BookingChange> changes,
         DateTimeOffset now,
