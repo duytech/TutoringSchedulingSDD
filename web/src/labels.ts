@@ -3,10 +3,10 @@ import { localDate, localTime } from './dates'
 
 /** "2026-03-11" → "Wed 11 Mar". */
 export function shortDate(date: string): string {
-  const d = new Date(`${date}T00:00:00Z`)
+  const day = new Date(`${date}T00:00:00Z`)
   const part = (options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(d)
-  return `${part({ weekday: 'short' })} ${d.getUTCDate()} ${part({ month: 'short' })}`
+    new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(day)
+  return `${part({ weekday: 'short' })} ${day.getUTCDate()} ${part({ month: 'short' })}`
 }
 
 /**

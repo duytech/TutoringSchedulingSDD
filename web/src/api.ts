@@ -126,7 +126,7 @@ export function fetchTutorDay(tutorId: string, date?: string): Promise<TutorDayS
   return getJson<TutorDaySheet>(date ? `${path}?date=${date}` : path)
 }
 
-async function getJson<T>(url: string): Promise<T> {
+async function getJson<TResult>(url: string): Promise<TResult> {
   let response: Response
   try {
     response = await fetch(url)
@@ -140,5 +140,5 @@ async function getJson<T>(url: string): Promise<T> {
   if (!response.ok) {
     throw new ApiError(`The API answered ${response.status}.`, response.status)
   }
-  return (await response.json()) as T
+  return (await response.json()) as TResult
 }

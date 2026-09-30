@@ -19,8 +19,8 @@ const TUTOR_COLOURS = ['#2f6fdb', '#d9822b', '#2a9d6f', '#9b51e0', '#c2410c', '#
 
 /** A tutor keeps one colour on the grid and on their own sheet: T1 is the first colour, T2 the second, and so on. */
 function tutorColour(tutorId: string): string {
-  const n = Number(tutorId.replace(/\D/g, '')) || 1
-  return TUTOR_COLOURS[(n - 1) % TUTOR_COLOURS.length]
+  const tutorNumber = Number(tutorId.replace(/\D/g, '')) || 1
+  return TUTOR_COLOURS[(tutorNumber - 1) % TUTOR_COLOURS.length]
 }
 
 /** What the page shows: a date (none means the API's today), and a tutor's sheet or, without one, the room grid. */
@@ -48,7 +48,7 @@ function urlOf({ date, tutor }: Place): string {
 
 interface Link {
   href: string
-  onClick: (e: MouseEvent) => void
+  onClick: (event: MouseEvent) => void
 }
 
 type Shown =
@@ -73,15 +73,15 @@ export default function App() {
     let current = true
     // The previous page stays on screen until the new one arrives, so the page does not flash.
     load(place)
-      .then((s) => {
+      .then((loaded) => {
         if (current) {
-          setShown(s)
+          setShown(loaded)
           setError(null)
         }
       })
-      .catch((e: unknown) => {
+      .catch((cause: unknown) => {
         if (current) {
-          setError(e instanceof ApiError ? e : new ApiError(String(e), null))
+          setError(cause instanceof ApiError ? cause : new ApiError(String(cause), null))
         }
       })
       .finally(() => {
@@ -108,9 +108,9 @@ export default function App() {
   /** A real link (it opens in a new tab too) that a plain click follows without a reload. */
   const linkTo = (next: Place): Link => ({
     href: urlOf(next),
-    onClick: (e: MouseEvent) => {
-      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-        e.preventDefault()
+    onClick: (event: MouseEvent) => {
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey && event.button === 0) {
+        event.preventDefault()
         goTo(next)
       }
     },
@@ -183,7 +183,7 @@ export default function App() {
       {dayView && (
         <DayGrid
           day={dayView.day}
-          roomIds={dayView.rooms.map((r) => r.id)}
+          roomIds={dayView.rooms.map((room) => room.id)}
           tutorColour={tutorColour}
           onGoToDate={go}
         />
@@ -195,12 +195,12 @@ export default function App() {
 
 /** "T1 Ngoc Anh 7 · T2 Pham Duc 2 · T3 Le Thu 1": active sessions per tutor that day, each a link to their sheet. */
 function TutorLoads({ day, tutors, linkTo }: { day: ScheduleDay; tutors: Tutor[]; linkTo: (tutor: string) => Link }) {
-  const active = day.sessions.filter((s) => !s.cancelled)
-  return tutors.map((t, i) => (
-    <span key={t.id}>
-      {i > 0 && ' · '}
-      <a {...linkTo(t.id)}>
-        {t.id} {t.name} {active.filter((s) => s.tutorId === t.id).length}
+  const active = day.sessions.filter((session) => !session.cancelled)
+  return tutors.map((tutor, index) => (
+    <span key={tutor.id}>
+      {index > 0 && ' · '}
+      <a {...linkTo(tutor.id)}>
+        {tutor.id} {tutor.name} {active.filter((session) => session.tutorId === tutor.id).length}
       </a>
     </span>
   ))

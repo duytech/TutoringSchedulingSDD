@@ -17,8 +17,8 @@ interface Props {
 }
 
 export function SessionCard({ session, placement, tutorColour, shownDate, onGoToDate }: Props) {
-  const flagged = session.legacyViolation || session.attendees.some((a) => a.legacyViolation)
-  const lateChanges = session.changes.filter((c) => c.afterCutoff)
+  const flagged = session.legacyViolation || session.attendees.some((attendee) => attendee.legacyViolation)
+  const lateChanges = session.changes.filter((change) => change.afterCutoff)
   const moved = session.movedTo ? movedLabel(shownDate, session.movedTo) : null
   const movedToDate = moved?.otherDate
   const classes = [
@@ -52,10 +52,10 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
         )}
       </header>
       <ul className="card__students">
-        {session.attendees.map((a) => (
-          <li key={a.id} className={a.status === 'cancelled' ? 'student--cancelled' : undefined}>
-            {a.studentName}
-            {a.lessonId && <span className="card__lesson"> {a.lessonId}</span>}
+        {session.attendees.map((attendee) => (
+          <li key={attendee.id} className={attendee.status === 'cancelled' ? 'student--cancelled' : undefined}>
+            {attendee.studentName}
+            {attendee.lessonId && <span className="card__lesson"> {attendee.lessonId}</span>}
           </li>
         ))}
       </ul>
@@ -78,11 +78,11 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
         <div
           className="card__badge"
           title={lateChanges
-            .map((c) => {
+            .map((change) => {
               // A change without an attendee is about the whole session (the last student out cancels it too).
-              const who = session.attendees.find((a) => a.id === c.attendeeId)?.studentName ?? 'Session'
-              const when = `${localDate(c.changedAt)} at ${localTime(c.changedAt)}`
-              return `${who}: ${c.kind} by ${c.changedBy ?? 'unknown'} on ${when}`
+              const who = session.attendees.find((attendee) => attendee.id === change.attendeeId)?.studentName ?? 'Session'
+              const when = `${localDate(change.changedAt)} at ${localTime(change.changedAt)}`
+              return `${who}: ${change.kind} by ${change.changedBy ?? 'unknown'} on ${when}`
             })
             .join('\n')}
         >

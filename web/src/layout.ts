@@ -54,9 +54,9 @@ export function layoutDay(
 
   for (const [column, roomId] of roomIds.entries()) {
     const inRoom = sessions
-      .filter((s) => s.roomId === roomId)
-      .map((s) => ({ id: s.id, start: minutesOf(s.startsAt), end: minutesOf(s.endsAt) }))
-      .sort((a, b) => a.start - b.start || a.end - b.end)
+      .filter((session) => session.roomId === roomId)
+      .map((session) => ({ id: session.id, start: minutesOf(session.startsAt), end: minutesOf(session.endsAt) }))
+      .sort((left, right) => left.start - right.start || left.end - right.end)
 
     // Sessions that overlap, directly or through a chain, form one group. Each takes the first lane that is
     // free at its start, and the whole group shares the same lane count so the cards line up.
@@ -64,33 +64,33 @@ export function layoutDay(
     let laneEnds: number[] = []
     let groupEnd = -1
     const closeGroup = () => {
-      for (const g of group) {
+      for (const member of group) {
         // Every id in the group was placed when it joined the group.
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const p = placements.get(g.id)!
-        placements.set(g.id, { ...p, lane: g.lane, lanes: laneEnds.length })
+        const placed = placements.get(member.id)!
+        placements.set(member.id, { ...placed, lane: member.lane, lanes: laneEnds.length })
       }
       group = []
       laneEnds = []
     }
 
-    for (const s of inRoom) {
-      if (s.start >= groupEnd) {
+    for (const interval of inRoom) {
+      if (interval.start >= groupEnd) {
         closeGroup()
       }
-      let lane = laneEnds.findIndex((end) => end <= s.start)
+      let lane = laneEnds.findIndex((end) => end <= interval.start)
       if (lane === -1) {
         lane = laneEnds.length
-        laneEnds.push(s.end)
+        laneEnds.push(interval.end)
       } else {
-        laneEnds[lane] = s.end
+        laneEnds[lane] = interval.end
       }
-      groupEnd = Math.max(groupEnd, s.end)
-      group.push({ id: s.id, lane })
-      placements.set(s.id, {
+      groupEnd = Math.max(groupEnd, interval.end)
+      group.push({ id: interval.id, lane })
+      placements.set(interval.id, {
         column,
-        rowStart: (s.start - opens) / window.stepMin,
-        rowSpan: (s.end - s.start) / window.stepMin,
+        rowStart: (interval.start - opens) / window.stepMin,
+        rowSpan: (interval.end - interval.start) / window.stepMin,
         lane,
         lanes: 1,
       })

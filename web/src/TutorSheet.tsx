@@ -16,8 +16,8 @@ export function TutorSheet({ sheet, tutorColour, onGoToDate }: Props) {
         <section className="changes" aria-label="Changed after you were told">
           <h2>Changed after you were told</h2>
           <ul>
-            {sheet.changesAfterCutoff.map((c, i) => (
-              <li key={`${c.sessionId}-${c.attendeeId ?? 'session'}-${c.kind}-${i}`}>{changeLine(c)}</li>
+            {sheet.changesAfterCutoff.map((change, index) => (
+              <li key={`${change.sessionId}-${change.attendeeId ?? 'session'}-${change.kind}-${index}`}>{changeLine(change)}</li>
             ))}
           </ul>
         </section>
@@ -27,10 +27,10 @@ export function TutorSheet({ sheet, tutorColour, onGoToDate }: Props) {
         <p className="message">No lessons on this day.</p>
       ) : (
         <div className="sheet">
-          {sheet.sessions.map((s) => (
+          {sheet.sessions.map((session) => (
             <SessionCard
-              key={s.id}
-              session={s}
+              key={session.id}
+              session={session}
               tutorColour={tutorColour}
               shownDate={sheet.date}
               onGoToDate={onGoToDate}

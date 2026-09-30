@@ -1,17 +1,17 @@
 // Calendar dates as "YYYY-MM-DD" strings, done in UTC so the browser's zone never shifts a day.
 
 export function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
+  const day = new Date(`${date}T00:00:00Z`)
+  day.setUTCDate(day.getUTCDate() + days)
+  return day.toISOString().slice(0, 10)
 }
 
 /** "2026-03-06" → "Friday 6 March 2026". */
 export function longDate(date: string): string {
-  const d = new Date(`${date}T00:00:00Z`)
+  const day = new Date(`${date}T00:00:00Z`)
   const part = (options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(d)
-  return `${part({ weekday: 'long' })} ${d.getUTCDate()} ${part({ month: 'long' })} ${d.getUTCFullYear()}`
+    new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(day)
+  return `${part({ weekday: 'long' })} ${day.getUTCDate()} ${part({ month: 'long' })} ${day.getUTCFullYear()}`
 }
 
 /** "2026-03-06T10:30:00+07:00" → "10:30", the centre's local time as sent. */

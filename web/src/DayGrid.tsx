@@ -17,7 +17,7 @@ export function DayGrid({ day, roomIds, tutorColour, onGoToDate }: Props) {
   const opens = minutesOf(`T${OPENING.opens}`)
   const placements = layoutDay(day.sessions, roomIds)
 
-  const labels = Array.from({ length: rows / 2 }, (_, i) => opens + i * 30)
+  const labels = Array.from({ length: rows / 2 }, (_, index) => opens + index * 30)
   const nowRow = localDate(day.now) === day.date ? (minutesOf(day.now) - opens) / OPENING.stepMin : null
   const showNow = nowRow !== null && nowRow >= 0 && nowRow <= rows
 
@@ -26,17 +26,17 @@ export function DayGrid({ day, roomIds, tutorColour, onGoToDate }: Props) {
   return (
     <div className="grid" style={gridStyle}>
       <div className="grid__corner" />
-      {roomIds.map((id, i) => (
-        <div key={id} className="grid__room" style={{ gridColumn: i + 2 }}>
+      {roomIds.map((id, index) => (
+        <div key={id} className="grid__room" style={{ gridColumn: index + 2 }}>
           {id}
         </div>
       ))}
 
-      {labels.map((minutes, i) => (
+      {labels.map((minutes, index) => (
         <div
           key={minutes}
           className={`grid__line ${minutes % 60 === 0 ? 'grid__line--hour' : ''}`}
-          style={{ gridRow: i * 2 + 2 }}
+          style={{ gridRow: index * 2 + 2 }}
         >
           <span className="grid__time">
             {String(Math.floor(minutes / 60)).padStart(2, '0')}:{String(minutes % 60).padStart(2, '0')}
@@ -44,12 +44,12 @@ export function DayGrid({ day, roomIds, tutorColour, onGoToDate }: Props) {
         </div>
       ))}
 
-      {day.sessions.map((s) => (
+      {day.sessions.map((session) => (
         <SessionCard
-          key={s.id}
-          session={s}
-          placement={placements.get(s.id)}
-          tutorColour={tutorColour(s.tutorId)}
+          key={session.id}
+          session={session}
+          placement={placements.get(session.id)}
+          tutorColour={tutorColour(session.tutorId)}
           shownDate={day.date}
           onGoToDate={onGoToDate}
         />
