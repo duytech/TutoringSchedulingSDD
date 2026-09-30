@@ -1,4 +1,5 @@
 using BrightPath.Application.Reports;
+using BrightPath.Application.Rooms;
 using BrightPath.Application.Schedule;
 using BrightPath.Application.Sessions;
 using BrightPath.Application.Tutors;
@@ -13,6 +14,8 @@ public static class DependencyInjection
     {
         services.AddScoped<GetScheduleHandler>();
         services.AddScoped<GetTutorDayHandler>();
+        services.AddScoped<GetRoomsHandler>();
+        services.AddScoped<GetTutorsHandler>();
         services.AddScoped<GetViolationsHandler>();
         services.AddScoped<GetSessionHandler>();
         services.AddScoped<CreateSessionHandler>();

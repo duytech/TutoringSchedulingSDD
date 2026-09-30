@@ -98,7 +98,11 @@ Run these on a freshly loaded database. They use `curl` and [`jq`](https://jqlan
 API=http://localhost:5238
 
 # 1. Today: the busiest day of the export
-curl -s "$API/api/schedule" | jq '{date, now, sessions: (.sessions | length), rooms: [.rooms[] | "\(.id): \(.sessionIds | length)"]}'
+curl -s "$API/api/schedule" | jq '{date, now, sessions: (.sessions | length), rooms: [.sessions | group_by(.roomId)[] | "\(.[0].roomId): \(length)"]}'
+
+# The rooms and tutors are reference data, with endpoints of their own
+curl -s "$API/api/rooms" | jq -c 'map(.id)'
+curl -s "$API/api/tutors" | jq -c 'map("\(.id) \(.name)")'
 
 # 2. The rules the export already broke
 curl -s "$API/api/reports/violations" | jq '.violations[] | {rule, date, lessonIds, message}'
@@ -138,7 +142,7 @@ Seeded 3 tutors, 6 students, 33 sessions, 34 attendees, 2 booking changes; legac
 
 ```json
 { "date": "2026-03-06", "now": "2026-03-06T10:00:00+07:00", "sessions": 10,
-  "rooms": ["R1: 7", "R2: 2", "R3: 1", "R4: 0", "R5: 0", "R6: 0"] }
+  "rooms": ["R1: 7", "R2: 2", "R3: 1"] }
 ```
 
 **2. The export breaks the rules four times.** It is loaded as history and flagged, not fixed or dropped.

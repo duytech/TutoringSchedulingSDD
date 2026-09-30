@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
+using BrightPath.Application.Rooms;
 using BrightPath.Application.Schedule;
 using BrightPath.Application.Tutors;
 using BrightPath.Domain;
@@ -45,6 +46,12 @@ public static class ApiCalls
     public static async Task<ScheduleDayView> Schedule(HttpClient client, string? date = null) =>
         (await client.GetFromJsonAsync<ScheduleDayView>(
             date is null ? "/api/schedule" : $"/api/schedule?date={date}", Json))!;
+
+    public static async Task<IReadOnlyList<RoomView>> Rooms(HttpClient client) =>
+        (await client.GetFromJsonAsync<List<RoomView>>("/api/rooms", Json))!;
+
+    public static async Task<IReadOnlyList<TutorView>> Tutors(HttpClient client) =>
+        (await client.GetFromJsonAsync<List<TutorView>>("/api/tutors", Json))!;
 
     public static Task<HttpResponseMessage> GetTutorDay(HttpClient client, string tutorId, string? date = null) =>
         client.GetAsync(date is null ? $"/api/tutors/{tutorId}/day" : $"/api/tutors/{tutorId}/day?date={date}");

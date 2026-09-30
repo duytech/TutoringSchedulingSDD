@@ -1,5 +1,15 @@
 import { useEffect, useState, type MouseEvent } from 'react'
-import { ApiError, fetchDay, fetchTutorDay, type ScheduleDay, type TutorDaySheet } from './api'
+import {
+  ApiError,
+  fetchDay,
+  fetchRooms,
+  fetchTutorDay,
+  fetchTutors,
+  type Room,
+  type ScheduleDay,
+  type Tutor,
+  type TutorDaySheet,
+} from './api'
 import { addDays, localDate, localTime, longDate } from './dates'
 import { DayGrid } from './DayGrid'
 import { cutoffLine } from './labels'
@@ -41,12 +51,16 @@ interface Link {
   onClick: (e: MouseEvent) => void
 }
 
-type Shown ={ kind: 'day'; day: ScheduleDay } | { kind: 'tutor'; sheet: TutorDaySheet }
+type Shown =
+  | { kind: 'day'; day: ScheduleDay; rooms: Room[]; tutors: Tutor[] }
+  | { kind: 'tutor'; sheet: TutorDaySheet }
 
 function load({ date, tutor }: Place): Promise<Shown> {
   return tutor
     ? fetchTutorDay(tutor, date ?? undefined).then((sheet) => ({ kind: 'tutor', sheet }) as const)
-    : fetchDay(date ?? undefined).then((day) => ({ kind: 'day', day }) as const)
+    : Promise.all([fetchDay(date ?? undefined), fetchRooms(), fetchTutors()]).then(
+        ([day, rooms, tutors]) => ({ kind: 'day', day, rooms, tutors }) as const,
+      )
 }
 
 export default function App() {
@@ -107,7 +121,8 @@ export default function App() {
   const isToday = date !== null && now !== null && localDate(now) === date
   // A page left over from before the tutor changed would show the wrong tutor, so only a match counts.
   const sheet = shown?.kind === 'tutor' && shown.sheet.tutorId === place.tutor ? shown.sheet : null
-  const day = shown?.kind === 'day' && place.tutor === null ? shown.day : null
+  const dayView = shown?.kind === 'day' && place.tutor === null ? shown : null
+  const day = dayView?.day ?? null
   const unknownTutor = place.tutor !== null && error?.status === 404
 
   return (
@@ -123,7 +138,13 @@ export default function App() {
           </h1>
           <p className="top__sub">
             {isToday && now && <>Now {localTime(now)} · </>}
-            {day && <TutorLoads day={day} linkTo={(tutor) => linkTo({ date: day.date, tutor })} />}
+            {dayView && (
+              <TutorLoads
+                day={dayView.day}
+                tutors={dayView.tutors}
+                linkTo={(tutor) => linkTo({ date: dayView.day.date, tutor })}
+              />
+            )}
             {sheet && (
               <>
                 {cutoffLine(sheet)} · <a {...linkTo({ date: sheet.date, tutor: null })}>← All rooms</a>
@@ -159,20 +180,27 @@ export default function App() {
       )}
 
       {day && day.sessions.length === 0 && <p className="message">No sessions on this day.</p>}
-      {day && <DayGrid day={day} tutorColour={tutorColour} onGoToDate={go} />}
+      {dayView && (
+        <DayGrid
+          day={dayView.day}
+          roomIds={dayView.rooms.map((r) => r.id)}
+          tutorColour={tutorColour}
+          onGoToDate={go}
+        />
+      )}
       {sheet && <TutorSheet sheet={sheet} tutorColour={tutorColour(sheet.tutorId)} onGoToDate={go} />}
     </main>
   )
 }
 
 /** "T1 Ngoc Anh 7 · T2 Pham Duc 2 · T3 Le Thu 1": active sessions per tutor that day, each a link to their sheet. */
-function TutorLoads({ day, linkTo }: { day: ScheduleDay; linkTo: (tutor: string) => Link }) {
-  const active = new Set(day.sessions.filter((s) => !s.cancelled).map((s) => s.id))
-  return day.tutors.map((t, i) => (
+function TutorLoads({ day, tutors, linkTo }: { day: ScheduleDay; tutors: Tutor[]; linkTo: (tutor: string) => Link }) {
+  const active = day.sessions.filter((s) => !s.cancelled)
+  return tutors.map((t, i) => (
     <span key={t.id}>
       {i > 0 && ' · '}
       <a {...linkTo(t.id)}>
-        {t.id} {t.name} {t.sessionIds.filter((id) => active.has(id)).length}
+        {t.id} {t.name} {active.filter((s) => s.tutorId === t.id).length}
       </a>
     </span>
   ))

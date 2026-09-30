@@ -18,8 +18,8 @@ public sealed class ScheduleEndpointTests(BrightPathApiFactory factory)
         Assert.Equal(DateTimeOffset.Parse("2026-03-06T10:00:00+07:00"), day.Now);
         Assert.Equal(TimeSpan.FromHours(7), day.Now.Offset);
         Assert.Equal(10, day.Sessions.Count);
-        Assert.Equal(7, day.Rooms.Single(r => r.Id == "R1").SessionIds.Count);
-        Assert.All(day.Rooms.Where(r => r.Id is "R4" or "R5" or "R6"), r => Assert.Empty(r.SessionIds));
+        Assert.Equal(7, day.Sessions.Count(s => s.RoomId == "R1"));
+        Assert.DoesNotContain(day.Sessions, s => s.RoomId is "R4" or "R5" or "R6");
 
         var past = day.Sessions.Where(s => s.State == SessionState.Past).SelectMany(s => s.Attendees).Select(a => a.LessonId);
         Assert.Equal(["L018", "L019"], past.Order());

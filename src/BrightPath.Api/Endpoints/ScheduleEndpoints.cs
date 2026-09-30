@@ -10,11 +10,11 @@ public static class ScheduleEndpoints
 
         schedule.MapGet("/", GetSchedule)
             .WithName("GetSchedule")
-            .WithSummary("One day's schedule, grouped by room and by tutor")
+            .WithSummary("One day's schedule")
             .WithDescription(
                 "Every session whose local start date is the given date (default: today on the pinned clock), " +
                 "cancelled ones included, with attendees, changes and a state relative to now. " +
-                "rooms and tutors list every room and tutor with the IDs of their sessions that day.")
+                "The rooms and tutors come from /api/rooms and /api/tutors.")
             .Produces<ScheduleDayView>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 

@@ -30,9 +30,7 @@ public sealed record DayAttendee(
 public sealed record ScheduleDayView(
     DateOnly Date,
     DateTimeOffset Now,
-    IReadOnlyList<ScheduleSessionView> Sessions,
-    IReadOnlyList<RoomDay> Rooms,
-    IReadOnlyList<TutorDay> Tutors);
+    IReadOnlyList<ScheduleSessionView> Sessions);
 
 public sealed record ScheduleSessionView(
     Guid Id,
@@ -75,10 +73,6 @@ public sealed record ScheduleChangeView(
 /// <summary>Where a moved session went. It may be on another day, so it is loaded by id, not from the day.</summary>
 public sealed record MovedToView(Guid Id, DateTimeOffset StartsAt, string RoomId);
 
-public sealed record RoomDay(string Id, IReadOnlyList<Guid> SessionIds);
-
-public sealed record TutorDay(string Id, string Name, IReadOnlyList<Guid> SessionIds);
-
 /// <summary>Where a session is relative to now. About time only: a cancelled session still has one.</summary>
 public static class SessionState
 {
@@ -88,9 +82,8 @@ public static class SessionState
 }
 
 /// <summary>
-/// One day's schedule: every session that starts on the local date, cancelled ones included, plus a room
-/// index and a tutor index that hold session IDs only. Every room and tutor is listed, so a free room or a
-/// tutor's day off shows as an empty list. Pure: no I/O, no database.
+/// One day's schedule: every session that starts on the local date, cancelled ones included. The rooms and
+/// tutors are reference data with endpoints of their own. Pure: no I/O, no database.
 /// </summary>
 public static class ScheduleDay
 {
@@ -99,8 +92,6 @@ public static class ScheduleDay
         DateTimeOffset now,
         IEnumerable<DaySession> sessions,
         IEnumerable<BookingChange> changes,
-        IEnumerable<string> roomIds,
-        IEnumerable<Tutor> tutors,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
     {
@@ -114,18 +105,7 @@ public static class ScheduleDay
             .Select(s => View(s, changesBySession[s.Id], now, policy, moveTargets))
             .ToList();
 
-        return new ScheduleDayView(
-            date,
-            policy.ToLocal(now),
-            views,
-            roomIds
-                .Order(StringComparer.Ordinal)
-                .Select(id => new RoomDay(id, views.Where(v => v.RoomId == id).Select(v => v.Id).ToList()))
-                .ToList(),
-            tutors
-                .OrderBy(t => t.Id, StringComparer.Ordinal)
-                .Select(t => new TutorDay(t.Id, t.Name, views.Where(v => v.TutorId == t.Id).Select(v => v.Id).ToList()))
-                .ToList());
+        return new ScheduleDayView(date, policy.ToLocal(now), views);
     }
 
     /// <summary>

@@ -85,8 +85,8 @@ public sealed class SessionConflictTests(BrightPathApiFactory factory)
         Assert.False(change.AfterCutoff);
 
         var day = await ApiCalls.Schedule(_client, "2026-03-18");
-        Assert.Equal([created.Id], day.Rooms.Single(r => r.Id == "R5").SessionIds);
-        Assert.Equal([created.Id], day.Tutors.Single(t => t.Id == "T3").SessionIds);
+        Assert.Equal([created.Id], day.Sessions.Where(s => s.RoomId == "R5").Select(s => s.Id));
+        Assert.Equal([created.Id], day.Sessions.Where(s => s.TutorId == "T3").Select(s => s.Id));
     }
 
     private static async Task<Conflict> OnlyConflict(HttpResponseMessage response, string rule)

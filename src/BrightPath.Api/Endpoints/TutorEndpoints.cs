@@ -9,6 +9,12 @@ public static class TutorEndpoints
     {
         var tutors = app.MapGroup("/api/tutors").WithTags("Tutors");
 
+        tutors.MapGet("/", GetTutors)
+            .WithName("GetTutors")
+            .WithSummary("Every tutor")
+            .WithDescription("Every tutor with their name and subject, ordered by id. Reference data: the same on every day.")
+            .Produces<IReadOnlyList<TutorView>>();
+
         tutors.MapGet("/{id}/day", GetTutorDay)
             .WithName("GetTutorDay")
             .WithSummary("One tutor's day, with what changed after they were told")
@@ -23,6 +29,9 @@ public static class TutorEndpoints
 
         return app;
     }
+
+    private static async Task<IResult> GetTutors(GetTutorsHandler handler, CancellationToken ct) =>
+        TypedResults.Ok(await handler.HandleAsync(ct));
 
     private static async Task<IResult> GetTutorDay(
         string id, DateOnly? date, GetTutorDayHandler handler, CancellationToken ct) =>

@@ -10,10 +10,9 @@ public sealed class ScheduleDayTests
     private static readonly BookingPolicy Policy = TestPolicy.Create();
     private static readonly DateTimeOffset PinnedNow = DateTimeOffset.Parse("2026-03-06T10:00:00+07:00");
     private static readonly DateOnly Friday = new(2026, 3, 6);
-    private static readonly string[] Rooms = ["R1", "R2", "R3", "R4", "R5", "R6"];
 
     [Fact]
-    public void Pinned_friday_groups_the_export_by_room_and_tutor()
+    public void Pinned_friday_shows_the_export_for_that_day()
     {
         var day = Export(Friday);
 
@@ -21,16 +20,13 @@ public sealed class ScheduleDayTests
         Assert.Equal(TimeSpan.FromHours(7), day.Now.Offset);
         Assert.Equal(10, day.Sessions.Count);
 
-        Assert.Equal(["R1", "R2", "R3", "R4", "R5", "R6"], day.Rooms.Select(r => r.Id));
-        Assert.Equal(["L018", "L021", "L022", "L024", "L025", "L026", "L027"], Lessons(day, day.Rooms[0].SessionIds));
-        Assert.Equal(["L019", "L023"], Lessons(day, day.Rooms[1].SessionIds));
-        Assert.Equal(["L020"], Lessons(day, day.Rooms[2].SessionIds));
-        Assert.All(day.Rooms.Skip(3), r => Assert.Empty(r.SessionIds));
+        Assert.Equal(["L018", "L021", "L022", "L024", "L025", "L026", "L027"], Lessons(day, s => s.RoomId == "R1"));
+        Assert.Equal(["L019", "L023"], Lessons(day, s => s.RoomId == "R2"));
+        Assert.Equal(["L020"], Lessons(day, s => s.RoomId == "R3"));
 
-        Assert.Equal(["T1", "T2", "T3"], day.Tutors.Select(t => t.Id));
-        Assert.Equal(["L018", "L021", "L022", "L024", "L025", "L026", "L027"], Lessons(day, day.Tutors[0].SessionIds));
-        Assert.Equal(["L019", "L023"], Lessons(day, day.Tutors[1].SessionIds));
-        Assert.Equal(["L020"], Lessons(day, day.Tutors[2].SessionIds));
+        Assert.Equal(["L018", "L021", "L022", "L024", "L025", "L026", "L027"], Lessons(day, s => s.TutorId == "T1"));
+        Assert.Equal(["L019", "L023"], Lessons(day, s => s.TutorId == "T2"));
+        Assert.Equal(["L020"], Lessons(day, s => s.TutorId == "T3"));
 
         // L018 and L019 end exactly at 10:00, so they are over.
         Assert.Equal(["L018", "L019"], day.Sessions.Where(s => s.State == SessionState.Past).Select(Lesson));
@@ -133,15 +129,12 @@ public sealed class ScheduleDayTests
     }
 
     [Fact]
-    public void An_empty_day_still_lists_every_room_and_tutor()
+    public void An_empty_day_has_no_sessions()
     {
         var day = Export(new DateOnly(2026, 3, 12));
 
+        Assert.Equal(new DateOnly(2026, 3, 12), day.Date);
         Assert.Empty(day.Sessions);
-        Assert.Equal(6, day.Rooms.Count);
-        Assert.Equal(3, day.Tutors.Count);
-        Assert.All(day.Rooms, r => Assert.Empty(r.SessionIds));
-        Assert.All(day.Tutors, t => Assert.Empty(t.SessionIds));
     }
 
     [Fact]
@@ -157,11 +150,11 @@ public sealed class ScheduleDayTests
     private static ScheduleDayView Export(DateOnly date)
     {
         var export = SeedExport.Load(Policy);
-        return ScheduleDay.Build(date, PinnedNow, export.Sessions, export.Changes, Rooms, export.Tutors, Policy);
+        return ScheduleDay.Build(date, PinnedNow, export.Sessions, export.Changes, Policy);
     }
 
     private static ScheduleDayView Build(DateTimeOffset now, params DaySession[] sessions) =>
-        ScheduleDay.Build(Friday, now, sessions, [], Rooms, [], Policy);
+        ScheduleDay.Build(Friday, now, sessions, [], Policy);
 
     /// <summary>A one-hour session for T1 on Friday 2026-03-06.</summary>
     private static DaySession Session(string room, string start)
@@ -177,6 +170,6 @@ public sealed class ScheduleDayTests
 
     private static string Lesson(ScheduleSessionView s) => s.Attendees[0].LessonId!;
 
-    private static IEnumerable<string> Lessons(ScheduleDayView day, IEnumerable<Guid> sessionIds) =>
-        sessionIds.Select(id => Lesson(day.Sessions.Single(s => s.Id == id)));
+    private static IEnumerable<string> Lessons(ScheduleDayView day, Func<ScheduleSessionView, bool> which) =>
+        day.Sessions.Where(which).Select(Lesson);
 }

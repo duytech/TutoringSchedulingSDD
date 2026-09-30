@@ -1,4 +1,4 @@
-// The shapes of GET /api/schedule and GET /api/tutors/{id}/day, as the API sends them.
+// The shapes of GET /api/schedule, /api/rooms, /api/tutors and /api/tutors/{id}/day, as the API sends them.
 // Times are local ISO strings with the centre's offset, e.g. "2026-03-06T10:30:00+07:00".
 
 export type SessionState = 'past' | 'in-progress' | 'upcoming'
@@ -51,23 +51,22 @@ export interface ScheduleSession {
   changes: ScheduleChange[]
 }
 
-export interface RoomDay {
-  id: string
-  sessionIds: string[]
-}
-
-export interface TutorDay {
-  id: string
-  name: string
-  sessionIds: string[]
-}
-
 export interface ScheduleDay {
   date: string
   now: string
   sessions: ScheduleSession[]
-  rooms: RoomDay[]
-  tutors: TutorDay[]
+}
+
+/** One entry of GET /api/rooms. */
+export interface Room {
+  id: string
+}
+
+/** One entry of GET /api/tutors. */
+export interface Tutor {
+  id: string
+  name: string
+  subject: string
 }
 
 /** A change after the cut-off, with enough of its session to read on its own (TutorChangeView in the API). */
@@ -109,6 +108,16 @@ export class ApiError extends Error {
 /** One day's schedule. Without a date, the API's own today (its pinned clock), not the browser's. */
 export function fetchDay(date?: string): Promise<ScheduleDay> {
   return getJson<ScheduleDay>(date ? `/api/schedule?date=${date}` : '/api/schedule')
+}
+
+/** Every room, ordered by id. */
+export function fetchRooms(): Promise<Room[]> {
+  return getJson<Room[]>('/api/rooms')
+}
+
+/** Every tutor, ordered by id. */
+export function fetchTutors(): Promise<Tutor[]> {
+  return getJson<Tutor[]>('/api/tutors')
 }
 
 /** One tutor's day. An unknown tutor throws an ApiError with status 404. */
