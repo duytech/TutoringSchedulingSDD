@@ -65,6 +65,8 @@ export function layoutDay(
     let groupEnd = -1
     const closeGroup = () => {
       for (const g of group) {
+        // Every id in the group was placed when it joined the group.
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const p = placements.get(g.id)!
         placements.set(g.id, { ...p, lane: g.lane, lanes: laneEnds.length })
       }

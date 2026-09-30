@@ -48,7 +48,7 @@ export function DayGrid({ day, roomIds, tutorColour, onGoToDate }: Props) {
         <SessionCard
           key={s.id}
           session={s}
-          placement={placements.get(s.id)!}
+          placement={placements.get(s.id)}
           tutorColour={tutorColour(s.tutorId)}
           shownDate={day.date}
           onGoToDate={onGoToDate}

@@ -82,6 +82,7 @@ cd web
 npm install
 npm run dev     # http://localhost:5173, forwards /api to the API on :5238
 npm test        # the grid layout
+npm run lint    # oxlint, then type-aware ESLint (typescript-eslint)
 ```
 
 `←` and `→` move a day, `Today` goes back to the API's pinned today, and the date stays in the URL (`?date=2026-03-04`).

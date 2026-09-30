@@ -20,6 +20,7 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
   const flagged = session.legacyViolation || session.attendees.some((a) => a.legacyViolation)
   const lateChanges = session.changes.filter((c) => c.afterCutoff)
   const moved = session.movedTo ? movedLabel(shownDate, session.movedTo) : null
+  const movedToDate = moved?.otherDate
   const classes = [
     'card',
     `card--${session.state}`,
@@ -59,12 +60,12 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
         ))}
       </ul>
       {moved &&
-        (moved.otherDate ? (
+        (movedToDate ? (
           <button
             type="button"
             className="card__moved"
             title={moved.text}
-            onClick={() => onGoToDate(moved.otherDate!)}
+            onClick={() => onGoToDate(movedToDate)}
           >
             {moved.text}
           </button>
