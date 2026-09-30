@@ -9,12 +9,12 @@ public sealed class GetScheduleHandler(IScheduleReader reader, BookingPolicy pol
     /// <summary>The default date is today on the clock.</summary>
     public async Task<ScheduleDayView> HandleAsync(DateOnly? date, CancellationToken ct)
     {
-        var now = clock.GetUtcNow();
-        var day = date ?? policy.LocalDate(now);
-        var sessions = await reader.DaySessionsAsync(day, tutorId: null, ct);
-        var changes = await reader.ChangesOfAsync(sessions, ct);
-        var moveTargets = await reader.MoveTargetsAsync(sessions, ct);
+        var utcNow = clock.GetUtcNow();
+        var localDate = date ?? policy.LocalDate(utcNow);
+        var daySessions = await reader.DaySessionsAsync(localDate, tutorId: null, ct);
+        var bookingChanges = await reader.ChangesOfAsync(daySessions, ct);
+        var moveTargets = await reader.MoveTargetsAsync(daySessions, ct);
 
-        return ScheduleDay.Build(day, now, sessions, changes, policy, moveTargets);
+        return ScheduleDay.Build(localDate, utcNow, daySessions, bookingChanges, policy, moveTargets);
     }
 }

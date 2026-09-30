@@ -17,12 +17,12 @@ public sealed class GetTutorDayHandler(
             return new NotFoundError("Tutor not found", $"No tutor {tutorId}.");
         }
 
-        var now = clock.GetUtcNow();
-        var day = date ?? policy.LocalDate(now);
-        var sessions = await reader.DaySessionsAsync(day, tutorId, ct);
-        var changes = await reader.ChangesOfAsync(sessions, ct);
-        var moveTargets = await reader.MoveTargetsAsync(sessions, ct);
+        var utcNow = clock.GetUtcNow();
+        var localDate = date ?? policy.LocalDate(utcNow);
+        var daySessions = await reader.DaySessionsAsync(localDate, tutorId, ct);
+        var bookingChanges = await reader.ChangesOfAsync(daySessions, ct);
+        var moveTargets = await reader.MoveTargetsAsync(daySessions, ct);
 
-        return TutorDaySheet.Build(tutor, day, now, sessions, changes, policy, moveTargets);
+        return TutorDaySheet.Build(tutor, localDate, utcNow, daySessions, bookingChanges, policy, moveTargets);
     }
 }
