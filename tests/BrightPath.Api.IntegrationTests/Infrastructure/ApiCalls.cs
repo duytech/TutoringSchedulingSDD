@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
-using BrightPath.Api.Domain;
+using BrightPath.Application.Schedule;
+using BrightPath.Application.Tutors;
+using BrightPath.Domain;
 using Npgsql;
 
 namespace BrightPath.Api.IntegrationTests.Infrastructure;

@@ -1,5 +1,6 @@
-using BrightPath.Api.Domain;
 using BrightPath.Api.IntegrationTests.Infrastructure;
+using BrightPath.Application.Schedule;
+using BrightPath.Domain;
 using Microsoft.AspNetCore.Hosting;
 
 namespace BrightPath.Api.IntegrationTests;

@@ -1,5 +1,7 @@
-using BrightPath.Api.Domain;
 using BrightPath.Api.UnitTests.Infrastructure;
+using BrightPath.Application.Schedule;
+using BrightPath.Domain;
+using BrightPath.Infrastructure.Time;
 
 namespace BrightPath.Api.UnitTests;
 

@@ -1,4 +1,4 @@
-using BrightPath.Api.Data;
+using BrightPath.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;

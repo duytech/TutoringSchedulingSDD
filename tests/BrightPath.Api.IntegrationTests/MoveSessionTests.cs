@@ -1,6 +1,7 @@
 using System.Net;
-using BrightPath.Api.Domain;
 using BrightPath.Api.IntegrationTests.Infrastructure;
+using BrightPath.Application.Schedule;
+using BrightPath.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 

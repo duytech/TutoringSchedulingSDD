@@ -1,10 +1,7 @@
-using BrightPath.Api.Data;
-using BrightPath.Api.Domain;
-using Microsoft.EntityFrameworkCore;
+using BrightPath.Api.Http;
+using BrightPath.Application.Reports;
 
 namespace BrightPath.Api.Endpoints;
-
-public sealed record ViolationReport(IReadOnlyList<ScheduleViolation> Violations);
 
 public static class ReportEndpoints
 {
@@ -25,22 +22,6 @@ public static class ReportEndpoints
     }
 
     private static async Task<IResult> GetViolations(
-        DateOnly? from, DateOnly? to, BrightPathDbContext db, BookingPolicy policy, CancellationToken ct)
-    {
-        if (from > to)
-        {
-            return TypedResults.Problem(
-                title: "Invalid date range",
-                detail: $"'from' ({from:yyyy-MM-dd}) is after 'to' ({to:yyyy-MM-dd}).",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-        var ruleSessions = await db.Sessions.AsNoTracking()
-            .Where(s => s.CancelledAt == null)
-            .StartingBetween(from, to, policy)
-            .ToRuleSessions()
-            .ToListAsync(ct);
-
-        return TypedResults.Ok(new ViolationReport(ScheduleRules.Check(ruleSessions, policy)));
-    }
+        DateOnly? from, DateOnly? to, GetViolationsHandler handler, CancellationToken ct) =>
+        (await handler.HandleAsync(from, to, ct)).ToHttp(report => TypedResults.Ok(report));
 }

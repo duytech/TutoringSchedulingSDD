@@ -1,4 +1,4 @@
-using BrightPath.Api.Data;
+using BrightPath.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Api.UnitTests;

@@ -1,6 +1,6 @@
 # Why the write endpoints still open a transaction
 
-The overlap rules are enforced by exclusion constraints, yet `CreateSession`, `Cancel` and `Move` in [`src/BrightPath.Api/Endpoints/SessionEndpoints.cs`](src/BrightPath.Api/Endpoints/SessionEndpoints.cs) each call `BeginTransactionAsync`. This note explains why the two are not in tension.
+The overlap rules are enforced by exclusion constraints, yet the three write use cases, [`CreateSessionHandler`](src/BrightPath.Application/Sessions/CreateSessionHandler.cs), [`CancelAttendeeHandler`](src/BrightPath.Application/Sessions/CancelAttendeeHandler.cs) and [`MoveSessionHandler`](src/BrightPath.Application/Sessions/MoveSessionHandler.cs), each call `BeginTransactionAsync` (through `IUnitOfWork`, implemented on EF Core in `src/BrightPath.Infrastructure/Persistence/EfUnitOfWork.cs`). This note explains why the two are not in tension.
 
 ## What the exclusion constraints were for
 

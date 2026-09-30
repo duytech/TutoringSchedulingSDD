@@ -38,9 +38,26 @@ dotnet run --project src/BrightPath.Api
 ```
 
 - It listens on `http://localhost:5238`. The Scalar UI is at `http://localhost:5238/scalar/v1`, and the OpenAPI document is at `/openapi/v1.json`. Ready-made requests are in `src/BrightPath.Api/BrightPath.Api.http`.
-- On first start, it creates the database, applies the migrations and loads the export from `src/BrightPath.Api/Seed/`. An early `fail` line about connecting to `brightpath` is expected: that is EF Core checking for the database before it creates it. The SQL is logged at `Information`, so the log is long.
+- On first start, it creates the database, applies the migrations and loads the export from `src/BrightPath.Infrastructure/Seed/`. An early `fail` line about connecting to `brightpath` is expected: that is EF Core checking for the database before it creates it. The SQL is logged at `Information`, so the log is long.
 - If the database already has data, it is not loaded again. To start over, run `DROP DATABASE brightpath WITH (FORCE);` in `psql`, then run the app again.
 - To move the clock: `Clock__Now=2026-03-07T10:00:00+07:00 dotnet run --project src/BrightPath.Api`.
+
+## Code layout
+
+The backend is four projects. Each one depends only on the ones below it:
+
+| Project | Holds |
+|---|---|
+| `src/BrightPath.Api` | Program.cs (wiring), the endpoints, and the mapping from a use case result to an HTTP response |
+| `src/BrightPath.Infrastructure` | EF Core on Postgres: the DbContext, the migrations, the locks, the seed loader |
+| `src/BrightPath.Application` | One handler per use case, and the small interfaces it reads and writes through |
+| `src/BrightPath.Domain` | The entities and the centre rules. No package references |
+
+The migrations live in Infrastructure, and the Api is the startup project:
+
+```bash
+dotnet ef migrations add <Name> --project src/BrightPath.Infrastructure --startup-project src/BrightPath.Api
+```
 
 ## Test
 
@@ -51,6 +68,7 @@ dotnet test
 The tests are in two projects. `tests/BrightPath.Api.UnitTests` needs no database, so it runs on its own with `dotnet test tests/BrightPath.Api.UnitTests`. `tests/BrightPath.Api.IntegrationTests` needs the same Postgres as the app. Each integration run creates one throwaway database `brightpath_test_<guid>` on the same server, migrates it, loads the export, and drops it at the end. Your `brightpath` database is never touched. The tests cover:
 
 - every rule, as unit tests on the real export;
+- the create use case with in-memory fakes (no database), and that the Domain and Application projects do not depend on EF Core, Npgsql or ASP.NET;
 - each conflict, a valid exam pair and each cancel case, through HTTP;
 - the races: two bookings for one room, two bookings for a tutor's last slot of the day, and two cancels of a pair. Each race test holds a transaction open, so it fails if its guard is removed;
 - the pinned clock, and moving it.

@@ -1,6 +1,6 @@
 using System.Net;
-using BrightPath.Api.Domain;
 using BrightPath.Api.IntegrationTests.Infrastructure;
+using BrightPath.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace BrightPath.Api.IntegrationTests;

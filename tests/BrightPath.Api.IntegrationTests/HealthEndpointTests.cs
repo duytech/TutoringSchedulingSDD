@@ -1,5 +1,5 @@
-using BrightPath.Api.Data;
 using BrightPath.Api.IntegrationTests.Infrastructure;
+using BrightPath.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

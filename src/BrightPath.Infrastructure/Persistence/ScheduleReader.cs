@@ -1,0 +1,29 @@
+using BrightPath.Application.Abstractions;
+using BrightPath.Application.Schedule;
+using BrightPath.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace BrightPath.Infrastructure.Persistence;
+
+internal sealed class ScheduleReader(BrightPathDbContext db, BookingPolicy policy) : IScheduleReader
+{
+    public Task<List<DaySession>> DaySessionsAsync(DateOnly date, string? tutorId, CancellationToken ct)
+    {
+        var sessions = db.Sessions.AsNoTracking().StartingOn(date, policy);
+        if (tutorId is not null)
+        {
+            sessions = sessions.Where(s => s.TutorId == tutorId);
+        }
+
+        return sessions.ToDaySessions().ToListAsync(ct);
+    }
+
+    public Task<DaySession?> DaySessionAsync(Guid id, CancellationToken ct) =>
+        db.Sessions.AsNoTracking().Where(s => s.Id == id).ToDaySessions().SingleOrDefaultAsync(ct);
+
+    public Task<List<BookingChange>> ChangesOfAsync(IEnumerable<DaySession> sessions, CancellationToken ct) =>
+        db.BookingChanges.AsNoTracking().ChangesOfAsync(sessions, ct);
+
+    public Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> sessions, CancellationToken ct) =>
+        db.Sessions.AsNoTracking().MoveTargetsAsync(sessions, ct);
+}

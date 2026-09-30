@@ -30,8 +30,11 @@ Chosen for speed of delivery by a senior .NET developer, and so the **database i
 /DECISIONS.md               ← deliverable (phases 1–4 of the brief)
 /README.md                  ← prerequisites, run commands + what I saw
 /specs/                     ← this constitution
-/src/BrightPath.Api/        ← Minimal API, EF Core, seed loader
-/src/BrightPath.Api/Seed/   ← lessons_export.csv, tutors.csv (copied from .assignment), seed loader
+/src/BrightPath.Domain/          ← entities and centre rules, no package references
+/src/BrightPath.Application/     ← one handler per use case, and the ports it uses
+/src/BrightPath.Infrastructure/  ← EF Core + Npgsql: DbContext, migrations, ports, locks, seed loader
+/src/BrightPath.Infrastructure/Seed/ ← lessons_export.csv, tutors.csv (copied from .assignment), seed loader
+/src/BrightPath.Api/             ← Minimal API host: Program.cs, thin endpoints, Result → HTTP
 /tests/BrightPath.Api.UnitTests/        ← unit tests, no database
 /tests/BrightPath.Api.IntegrationTests/ ← integration tests, throwaway database
 /web/                       ← React + Vite Today view
@@ -66,12 +69,13 @@ The brief asks us to explain this split, so it is decided up front.
   - Compute business logic in `Asia/Ho_Chi_Minh`.
   - Show local times in the API (ISO-8601 with offset).
 - Names follow the domain: `Session`, `Attendee`, `BookingChange`, `Room`, `Tutor`, `Student`. There are no generic `Manager` or `Helper` classes.
+- **Clean Architecture layers (phase 20):** Api → Infrastructure → Application → Domain, each a project. They were first left out as too heavy for a 2.5h build. They were added once the endpoints had grown to 500 lines mixing HTTP, SQL locks and rules, and a use case could only be tested through HTTP. `LayerTests` keeps the dependencies pointing inward.
 - Nothing is ever deleted. Status transitions happen only through endpoints.
 - Commits are atomic, and each message says **what + why** in Conventional Commits style (`feat:`, `docs:`, `test:`, `chore:`).
 
 ## Not used (and why)
 
-- **MediatR, CQRS, Clean Architecture layers:** too heavy for a single feature built in 2.5h.
+- **MediatR, CQRS:** too heavy for 7 use cases. A use case is a plain handler class, injected into its endpoint.
 - **SQLite:** it has no range exclusion constraints, so we would lose the DB guarantee.
 - **SQL Server:** it would need triggers or serializable transactions for overlap checks.
 - **Docker / Testcontainers:** the machine already runs PostgreSQL locally, so a container would only add setup. Trade-off: a reviewer has to point the connection string at their own Postgres.

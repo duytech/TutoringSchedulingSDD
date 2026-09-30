@@ -1,8 +1,9 @@
-using BrightPath.Api.Data;
-using BrightPath.Api.Domain;
 using BrightPath.Api.Endpoints;
-using BrightPath.Api.Seed;
-using Microsoft.EntityFrameworkCore;
+using BrightPath.Application;
+using BrightPath.Domain;
+using BrightPath.Infrastructure;
+using BrightPath.Infrastructure.Persistence;
+using BrightPath.Infrastructure.Time;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,7 +21,8 @@ var pinnedNow = builder.Configuration.GetValue<DateTimeOffset?>("Clock:Now");
 builder.Services.AddSingleton(pinnedNow is { } now ? new FixedTimeProvider(now) : TimeProvider.System);
 
 builder.Services.AddSingleton(bookingPolicy);
-builder.Services.AddDbContext<BrightPathDbContext>(options => options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddHealthChecks().AddDbContextCheck<BrightPathDbContext>("database");
 builder.Services.AddProblemDetails();
 
@@ -33,16 +35,7 @@ var app = builder.Build();
 
 // Creates the database on first run, applies any pending migrations, then loads the exported week
 // if the database is still empty.
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<BrightPathDbContext>();
-    await db.Database.MigrateAsync();
-
-    if (app.Configuration.GetValue("Seed:Enabled", true))
-    {
-        await SeedLoader.SeedAsync(db, bookingPolicy, app.Logger);
-    }
-}
+await app.Services.InitialiseDatabaseAsync(app.Configuration.GetValue("Seed:Enabled", true), app.Logger);
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

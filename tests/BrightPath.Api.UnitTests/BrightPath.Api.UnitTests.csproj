@@ -17,7 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\BrightPath.Api\BrightPath.Api.csproj" />
+    <ProjectReference Include="..\..\src\BrightPath.Application\BrightPath.Application.csproj" />
+    <ProjectReference Include="..\..\src\BrightPath.Domain\BrightPath.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BrightPath.Infrastructure\BrightPath.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

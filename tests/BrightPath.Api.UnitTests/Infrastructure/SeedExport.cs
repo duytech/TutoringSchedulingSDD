@@ -1,5 +1,6 @@
-using BrightPath.Api.Domain;
-using BrightPath.Api.Seed;
+using BrightPath.Application.Schedule;
+using BrightPath.Domain;
+using BrightPath.Infrastructure.Seed;
 
 namespace BrightPath.Api.UnitTests.Infrastructure;
 

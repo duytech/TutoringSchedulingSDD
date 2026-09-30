@@ -1,6 +1,6 @@
 using System.Net;
-using BrightPath.Api.Domain;
 using BrightPath.Api.IntegrationTests.Infrastructure;
+using BrightPath.Domain;
 
 namespace BrightPath.Api.IntegrationTests;
 

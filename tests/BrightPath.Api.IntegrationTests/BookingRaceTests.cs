@@ -1,6 +1,7 @@
 using System.Net;
-using BrightPath.Api.Domain;
 using BrightPath.Api.IntegrationTests.Infrastructure;
+using BrightPath.Domain;
+using BrightPath.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Api.IntegrationTests;
