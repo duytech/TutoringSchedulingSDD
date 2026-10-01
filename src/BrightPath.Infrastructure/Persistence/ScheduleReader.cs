@@ -22,8 +22,15 @@ internal sealed class ScheduleReader(BrightPathDbContext db, BookingPolicy polic
         db.Sessions.AsNoTracking().Where(s => s.Id == id).ToDaySessions().SingleOrDefaultAsync(ct);
 
     public Task<List<BookingChange>> ChangesOfAsync(IEnumerable<DaySession> sessions, CancellationToken ct) =>
-        db.BookingChanges.AsNoTracking().ChangesOfAsync(sessions, ct);
+        db.BookingChanges.AsNoTracking().ChangesOf(sessions).ToListAsync(ct);
 
-    public Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> sessions, CancellationToken ct) =>
-        db.Sessions.AsNoTracking().MoveTargetsAsync(sessions, ct);
+    public async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> sessions, CancellationToken ct)
+    {
+        if (!sessions.Any(s => s.MovedToSessionId is not null))
+        {
+            return [];
+        }
+
+        return await db.Sessions.MoveTargetsOf(sessions).ToDictionaryAsync(t => t.Id, ct);
+    }
 }

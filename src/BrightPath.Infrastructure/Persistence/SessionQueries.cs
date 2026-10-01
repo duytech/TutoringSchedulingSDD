@@ -1,6 +1,5 @@
 using BrightPath.Application.Schedule;
 using BrightPath.Domain;
-using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Infrastructure.Persistence;
 
@@ -44,30 +43,23 @@ public static class SessionQueries
                 .ToList()));
 
     /// <summary>The changes of <paramref name="sessions"/>. BookingChange has no navigation from Session.</summary>
-    public static Task<List<BookingChange>> ChangesOfAsync(
-        this IQueryable<BookingChange> all, IEnumerable<DaySession> sessions, CancellationToken ct)
+    public static IQueryable<BookingChange> ChangesOf(
+        this IQueryable<BookingChange> all, IEnumerable<DaySession> sessions)
     {
         var sessionIds = sessions.Select(s => s.Id).ToList();
-        return all.Where(c => sessionIds.Contains(c.SessionId)).ToListAsync(ct);
+        return all.Where(c => sessionIds.Contains(c.SessionId));
     }
 
     /// <summary>
     /// Where the moved ones among <paramref name="sessions"/> went, by id. A target can be on another day, so it is
     /// loaded by id rather than taken from the same day's sessions. Start times are UTC.
     /// </summary>
-    public static async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(
-        this IQueryable<Session> all, IEnumerable<DaySession> sessions, CancellationToken ct)
+    public static IQueryable<MovedToView> MoveTargetsOf(this IQueryable<Session> all, IEnumerable<DaySession> sessions)
     {
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
-        if (targetIds.Count == 0)
-        {
-            return [];
-        }
-
-        return await all
+        return all
             .Where(s => targetIds.Contains(s.Id))
-            .Select(s => new MovedToView(s.Id, s.StartsAt, s.RoomId))
-            .ToDictionaryAsync(t => t.Id, ct);
+            .Select(s => new MovedToView(s.Id, s.StartsAt, s.RoomId));
     }
 
     public static IQueryable<DaySession> ToDaySessions(this IQueryable<Session> sessions) =>
