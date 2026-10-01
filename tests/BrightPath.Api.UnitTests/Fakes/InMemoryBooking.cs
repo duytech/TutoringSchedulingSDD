@@ -57,10 +57,10 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISch
     public Task<DaySession?> DaySessionAsync(Guid id, CancellationToken ct) =>
         Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToDaySession).SingleOrDefault());
 
-    public Task<List<BookingChange>> ChangesOfAsync(IEnumerable<DaySession> daySessions, CancellationToken ct) =>
-        Task.FromResult(Changes.Where(c => daySessions.Any(s => s.Id == c.SessionId)).ToList());
+    public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
+        Task.FromResult(Changes.Where(c => sessionIds.Contains(c.SessionId)).ToList());
 
-    public Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> daySessions, CancellationToken ct) =>
+    public Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct) =>
         Task.FromResult(new Dictionary<Guid, MovedToView>());
 
     // IBookingLocks

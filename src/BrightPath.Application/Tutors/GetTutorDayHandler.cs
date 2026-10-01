@@ -20,8 +20,10 @@ public sealed class GetTutorDayHandler(
         var utcNow = clock.GetUtcNow();
         var localDate = date ?? policy.LocalDate(utcNow);
         var daySessions = await reader.DaySessionsAsync(localDate, tutorId, ct);
-        var bookingChanges = await reader.ChangesOfAsync(daySessions, ct);
-        var moveTargets = await reader.MoveTargetsAsync(daySessions, ct);
+        var sessionIds = daySessions.Select(s => s.Id).ToList();
+        var targetIds = daySessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
+        var bookingChanges = await reader.ChangesOfAsync(sessionIds, ct);
+        var moveTargets = await reader.MoveTargetsAsync(targetIds, ct);
 
         return TutorDaySheet.Build(tutor, localDate, utcNow, daySessions, bookingChanges, policy, moveTargets);
     }

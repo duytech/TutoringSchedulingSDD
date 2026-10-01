@@ -21,12 +21,11 @@ internal sealed class ScheduleReader(BrightPathDbContext db, BookingPolicy polic
     public Task<DaySession?> DaySessionAsync(Guid id, CancellationToken ct) =>
         db.Sessions.AsNoTracking().Where(s => s.Id == id).ToDaySessions().SingleOrDefaultAsync(ct);
 
-    public Task<List<BookingChange>> ChangesOfAsync(IEnumerable<DaySession> daySessions, CancellationToken ct) =>
-        db.BookingChanges.AsNoTracking().ChangesOf(daySessions.Select(s => s.Id).ToList()).ToListAsync(ct);
+    public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
+        db.BookingChanges.AsNoTracking().ChangesOf(sessionIds).ToListAsync(ct);
 
-    public async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> daySessions, CancellationToken ct)
+    public async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct)
     {
-        var targetIds = daySessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
         if (targetIds.Count == 0)
         {
             return [];
