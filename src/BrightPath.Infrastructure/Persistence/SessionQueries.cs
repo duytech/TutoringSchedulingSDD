@@ -42,25 +42,19 @@ public static class SessionQueries
                 .Select(a => new RuleAttendee(a.StudentId, a.Student.Name, a.Status, a.SourceLessonId))
                 .ToList()));
 
-    /// <summary>The changes of <paramref name="sessions"/>. BookingChange has no navigation from Session.</summary>
+    /// <summary>The changes of the sessions with these ids. BookingChange has no navigation from Session.</summary>
     public static IQueryable<BookingChange> ChangesOf(
-        this IQueryable<BookingChange> all, IEnumerable<DaySession> sessions)
-    {
-        var sessionIds = sessions.Select(s => s.Id).ToList();
-        return all.Where(c => sessionIds.Contains(c.SessionId));
-    }
+        this IQueryable<BookingChange> all, IReadOnlyCollection<Guid> sessionIds) =>
+        all.Where(c => sessionIds.Contains(c.SessionId));
 
     /// <summary>
-    /// Where the moved ones among <paramref name="sessions"/> went, by id. A target can be on another day, so it is
-    /// loaded by id rather than taken from the same day's sessions. Start times are UTC.
+    /// The sessions that moved sessions went to, as <see cref="MovedToView"/>. A target can be on another day, so it
+    /// is loaded by id rather than taken from the same day's sessions. Start times are UTC.
     /// </summary>
-    public static IQueryable<MovedToView> MoveTargetsOf(this IQueryable<Session> all, IEnumerable<DaySession> sessions)
-    {
-        var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
-        return all
+    public static IQueryable<MovedToView> MoveTargets(this IQueryable<Session> all, IReadOnlyCollection<Guid> targetIds) =>
+        all
             .Where(s => targetIds.Contains(s.Id))
             .Select(s => new MovedToView(s.Id, s.StartsAt, s.RoomId));
-    }
 
     public static IQueryable<DaySession> ToDaySessions(this IQueryable<Session> sessions) =>
         sessions.Select(s => new DaySession(
