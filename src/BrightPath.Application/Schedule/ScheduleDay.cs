@@ -90,14 +90,14 @@ public static class ScheduleDay
     public static ScheduleDayView Build(
         DateOnly date,
         DateTimeOffset now,
-        IEnumerable<DaySession> sessions,
+        IEnumerable<DaySession> daySessions,
         IEnumerable<BookingChange> changes,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
     {
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
-        var views = sessions
+        var views = daySessions
             .Where(s => policy.LocalDate(s.StartsAt) == date)
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)

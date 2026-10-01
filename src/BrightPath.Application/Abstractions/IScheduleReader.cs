@@ -11,8 +11,8 @@ public interface IScheduleReader
 
     Task<DaySession?> DaySessionAsync(Guid id, CancellationToken ct);
 
-    Task<List<BookingChange>> ChangesOfAsync(IEnumerable<DaySession> sessions, CancellationToken ct);
+    Task<List<BookingChange>> ChangesOfAsync(IEnumerable<DaySession> daySessions, CancellationToken ct);
 
-    /// <summary>Where the moved ones among <paramref name="sessions"/> went, by id. A target can be on another day.</summary>
-    Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> sessions, CancellationToken ct);
+    /// <summary>Where the moved ones among <paramref name="daySessions"/> went, by id. A target can be on another day.</summary>
+    Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IEnumerable<DaySession> daySessions, CancellationToken ct);
 }
