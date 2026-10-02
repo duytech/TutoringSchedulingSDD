@@ -97,10 +97,10 @@ public static class ScheduleRules
             [p.A, p.B],
             (p.A.RoomId == p.B.RoomId, SameStart(p.A, p.B)) switch
             {
-                (true, true) => $"{Tutor(p.A)} has two sessions in {p.A.RoomId} at {GetLocalStartTime(p.A, policy)}.",
-                (true, false) => $"{Tutor(p.A)} has two sessions in {p.A.RoomId}, at {GetLocalStartTime(p.A, policy)} and {GetLocalStartTime(p.B, policy)}.",
-                (false, true) => $"{Tutor(p.A)} is in {p.A.RoomId} and {p.B.RoomId} at {GetLocalStartTime(p.A, policy)}.",
-                (false, false) => $"{Tutor(p.A)} is in {p.A.RoomId} at {GetLocalStartTime(p.A, policy)} and in {p.B.RoomId} at {GetLocalStartTime(p.B, policy)}.",
+                (true, true) => $"{p.A.TutorId} {p.A.TutorName} has two sessions in {p.A.RoomId} at {GetLocalStartTime(p.A, policy)}.",
+                (true, false) => $"{p.A.TutorId} {p.A.TutorName} has two sessions in {p.A.RoomId}, at {GetLocalStartTime(p.A, policy)} and {GetLocalStartTime(p.B, policy)}.",
+                (false, true) => $"{p.A.TutorId} {p.A.TutorName} is in {p.A.RoomId} and {p.B.RoomId} at {GetLocalStartTime(p.A, policy)}.",
+                (false, false) => $"{p.A.TutorId} {p.A.TutorName} is in {p.A.RoomId} at {GetLocalStartTime(p.A, policy)} and in {p.B.RoomId} at {GetLocalStartTime(p.B, policy)}.",
             },
             policy));
 
@@ -114,8 +114,8 @@ public static class ScheduleRules
             {
                 var (a, b) = (p.A.Session, p.B.Session);
                 var where = SameStart(a, b)
-                    ? $"in {Place(a)} and in {Place(b)} at {GetLocalStartTime(a, policy)}"
-                    : $"in {Place(a)} at {GetLocalStartTime(a, policy)} and in {Place(b)} at {GetLocalStartTime(b, policy)}";
+                    ? $"in {GetRoomAndTutorId(a.RoomId, a.TutorId)} and in {GetRoomAndTutorId(b.RoomId, b.TutorId)} at {GetLocalStartTime(a, policy)}"
+                    : $"in {GetRoomAndTutorId(a.RoomId, a.TutorId)} at {GetLocalStartTime(a, policy)} and in {GetRoomAndTutorId(b.RoomId, b.TutorId)} at {GetLocalStartTime(b, policy)}";
                 return Violation(
                     RuleCodes.StudentOverlap,
                     [a, b],
@@ -133,7 +133,7 @@ public static class ScheduleRules
             .Select(g => Violation(
                 RuleCodes.TutorLoad,
                 g.ToList(),
-                $"{Tutor(g.First())} has {g.Count()} sessions on {IsoDate(g.Key.Date)}; the limit is {max}.",
+                $"{g.First().TutorId} {g.First().TutorName} has {g.Count()} sessions on {IsoDate(g.Key.Date)}; the limit is {max}.",
                 policy));
     }
 
@@ -146,7 +146,7 @@ public static class ScheduleRules
                 return Violation(
                     RuleCodes.ClosedDay,
                     [s],
-                    $"{Who(s)} in {Place(s)} at {GetLocalStartTime(s, policy)} on {date.DayOfWeek} {IsoDate(date)}; the centre is closed on {date.DayOfWeek}s.",
+                    $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} at {GetLocalStartTime(s, policy)} on {date.DayOfWeek} {IsoDate(date)}; the centre is closed on {date.DayOfWeek}s.",
                     policy);
             });
 
@@ -161,7 +161,7 @@ public static class ScheduleRules
             .Select(s => Violation(
                 RuleCodes.OutsideHours,
                 [s],
-                $"{Who(s)} in {Place(s)} runs {GetLocalStartTime(s, policy)}–{HourMinute(policy.LocalTime(s.EndsAt))}, " +
+                $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} runs {GetLocalStartTime(s, policy)}–{HourMinute(policy.LocalTime(s.EndsAt))}, " +
                 $"outside opening hours {HourMinute(opens)}–{HourMinute(closes)}.",
                 policy));
     }
@@ -174,7 +174,7 @@ public static class ScheduleRules
             .Select(s => Violation(
                 RuleCodes.TooManyAttendees,
                 [s],
-                $"The session in {Place(s)} at {GetLocalStartTime(s, policy)} has {s.Attendees.Count} attendees; the limit is {max}.",
+                $"The session in {GetRoomAndTutorId(s.RoomId, s.TutorId)} at {GetLocalStartTime(s, policy)} has {s.Attendees.Count} attendees; the limit is {max}.",
                 policy));
     }
 
@@ -210,11 +210,11 @@ public static class ScheduleRules
     private static string FirstLesson(RuleSession s) =>
         s.Attendees.Select(a => a.LessonId).Where(id => id is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
 
-    private static string Tutor(RuleSession s) => $"{s.TutorId} {s.TutorName}";
+    /// <summary>For example "R3 with T3".</summary>
+    private static string GetRoomAndTutorId(string roomId, string tutorId) => $"{roomId} with {tutorId}";
 
-    private static string Place(RuleSession s) => $"{s.RoomId} with {s.TutorId}";
-
-    private static string Who(RuleSession s) => string.Join(" and ", s.Attendees.Select(a => a.StudentName));
+    /// <summary>For example "Le Minh Chau and Vu Ha My".</summary>
+    private static string GetStudentNames(IEnumerable<RuleAttendee> attendees) => string.Join(" and ", attendees.Select(a => a.StudentName));
 
     private static string IsoDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
