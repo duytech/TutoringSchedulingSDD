@@ -131,7 +131,7 @@ public static class ScheduleRules
             .Select(g => c.Violation(
                 RuleCodes.TutorLoad,
                 g.ToList(),
-                $"{Tutor(g.First())} has {g.Count()} sessions on {Format(g.Key.Date)}; the limit is {max}."));
+                $"{Tutor(g.First())} has {g.Count()} sessions on {IsoDate(g.Key.Date)}; the limit is {max}."));
     }
 
     private static IEnumerable<ScheduleViolation> ClosedDays(List<RuleSession> sessions, Context c) =>
@@ -143,7 +143,7 @@ public static class ScheduleRules
                 return c.Violation(
                     RuleCodes.ClosedDay,
                     [s],
-                    $"{Who(s)} in {Place(s)} at {c.Time(s)} on {date.DayOfWeek} {Format(date)}; the centre is closed on {date.DayOfWeek}s.");
+                    $"{Who(s)} in {Place(s)} at {c.Time(s)} on {date.DayOfWeek} {IsoDate(date)}; the centre is closed on {date.DayOfWeek}s.");
             });
 
     private static IEnumerable<ScheduleViolation> OutsideHours(List<RuleSession> sessions, Context c)
@@ -157,8 +157,8 @@ public static class ScheduleRules
             .Select(s => c.Violation(
                 RuleCodes.OutsideHours,
                 [s],
-                $"{Who(s)} in {Place(s)} runs {c.Time(s)}–{Format(c.Policy.LocalTime(s.EndsAt))}, " +
-                $"outside opening hours {Format(opens)}–{Format(closes)}."));
+                $"{Who(s)} in {Place(s)} runs {c.Time(s)}–{HourMinute(c.Policy.LocalTime(s.EndsAt))}, " +
+                $"outside opening hours {HourMinute(opens)}–{HourMinute(closes)}."));
     }
 
     private static IEnumerable<ScheduleViolation> TooManyAttendees(List<RuleSession> sessions, Context c)
@@ -192,15 +192,15 @@ public static class ScheduleRules
 
     private static string Who(RuleSession s) => string.Join(" and ", s.Attendees.Select(a => a.StudentName));
 
-    private static string Format(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string IsoDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static string Format(TimeOnly time) => time.ToString("HH:mm", CultureInfo.InvariantCulture);
+    private static string HourMinute(TimeOnly time) => time.ToString("HH:mm", CultureInfo.InvariantCulture);
 
     private sealed class Context(BookingPolicy policy)
     {
         public BookingPolicy Policy => policy;
 
-        public string Time(RuleSession s) => Format(policy.LocalTime(s.StartsAt));
+        public string Time(RuleSession s) => HourMinute(policy.LocalTime(s.StartsAt));
 
         public bool SameStart(RuleSession a, RuleSession b) => a.StartsAt == b.StartsAt;
 
