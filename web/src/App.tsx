@@ -2,12 +2,14 @@ import { Navigate, Route, Routes, useSearchParams } from 'react-router'
 import { DayPage } from './DayPage'
 import { TutorDayPage } from './TutorDayPage'
 import { onDate } from './useDate'
+import { ViolationsPage } from './ViolationsPage'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/rooms" element={<DayPage />} />
       <Route path="/tutors/:tutorId" element={<TutorDayPage />} />
+      <Route path="/violations" element={<ViolationsPage />} />
       <Route path="/" element={<LegacyRedirect />} />
       <Route path="*" element={<Navigate to="/rooms" replace />} />
     </Routes>

@@ -46,3 +46,18 @@ export function changeLine(change: TutorChange): string {
 export function cutoffLine(sheet: Pick<TutorDaySheet, 'cutoff' | 'final'>): string {
   return `${sheet.final ? 'Final since' : 'Not final until'} ${dayAndTime(sheet.cutoff)}`
 }
+
+const ruleLabels: Record<string, string> = {
+  'room-overlap': 'Room overlap',
+  'tutor-overlap': 'Tutor overlap',
+  'student-overlap': 'Student overlap',
+  'tutor-load': 'Tutor load',
+  'closed-day': 'Closed day',
+  'outside-hours': 'Outside hours',
+  'too-many-attendees': 'Too many attendees',
+}
+
+/** "student-overlap" → "Student overlap". A code this page does not know is shown as it is. */
+export function ruleLabel(code: string): string {
+  return ruleLabels[code] ?? code
+}

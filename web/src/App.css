@@ -100,6 +100,99 @@ body {
   background: var(--error-bg);
 }
 
+/* Violations: the range inputs in the header, then one section per date */
+
+.range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+
+.range input,
+.range button {
+  padding: 3px 8px;
+  font: inherit;
+  border: 1px solid var(--line-hour);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--fg);
+}
+
+.range button {
+  cursor: pointer;
+}
+
+.range button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.violations {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+  margin-top: 12px;
+}
+
+.violations h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.violations ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.violation {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--card-bg);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.violation__rule {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.violation__message,
+.violation__lessons {
+  margin: 0;
+}
+
+.violation__lessons {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .top {
+    flex-wrap: wrap;
+  }
+
+  .violation {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
 /* Grid: a time gutter, one column per room, one row per 15 minutes */
 
 .grid {

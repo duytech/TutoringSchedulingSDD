@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TutorChange } from './api'
-import { changeLine, cutoffLine, movedLabel, shortDate } from './labels'
+import { changeLine, cutoffLine, movedLabel, ruleLabel, shortDate } from './labels'
 
 describe('movedLabel', () => {
   it('shows only the time and room when the session moved within the day', () => {
@@ -56,5 +56,15 @@ describe('cutoffLine', () => {
   it('says since when the day is final, or until when it is not', () => {
     expect(cutoffLine({ cutoff: '2026-03-05T16:00:00+07:00', final: true })).toBe('Final since Thu 5 Mar 16:00')
     expect(cutoffLine({ cutoff: '2026-03-06T16:00:00+07:00', final: false })).toBe('Not final until Fri 6 Mar 16:00')
+  })
+})
+
+describe('ruleLabel', () => {
+  it('names a known rule in plain words', () => {
+    expect(ruleLabel('student-overlap')).toBe('Student overlap')
+  })
+
+  it('shows an unknown rule code as it is', () => {
+    expect(ruleLabel('new-rule')).toBe('new-rule')
   })
 })

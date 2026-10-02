@@ -65,7 +65,11 @@ export function DayPage() {
         loading={loading}
         onGoToDate={onGoToDate}
       >
-        {data && <TutorLoads day={data.day} tutors={data.tutors} />}
+        {data && (
+          <>
+            <TutorLoads day={data.day} tutors={data.tutors} /> · <Link to="/violations">Violations</Link>
+          </>
+        )}
       </PageHeader>
 
       {error && <ApiErrorMessage error={error} />}

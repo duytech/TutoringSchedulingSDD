@@ -1,4 +1,5 @@
-// The shapes of GET /api/schedule, /api/rooms, /api/tutors and /api/tutors/{id}/day, as the API sends them.
+// The shapes of GET /api/schedule, /api/rooms, /api/tutors, /api/tutors/{id}/day and /api/reports/violations,
+// as the API sends them.
 // Times are local ISO strings with the centre's offset, e.g. "2026-03-06T10:30:00+07:00".
 
 export type SessionState = 'past' | 'in-progress' | 'upcoming'
@@ -96,6 +97,20 @@ export interface TutorDaySheet {
   changesAfterCutoff: TutorChange[]
 }
 
+/** One rule the schedule breaks (ScheduleViolation in the API). Sessions booked in the app have no lesson id. */
+export interface ScheduleViolation {
+  rule: string
+  date: string
+  sessionIds: string[]
+  lessonIds: string[]
+  message: string
+}
+
+/** The shape of GET /api/reports/violations. */
+export interface ViolationReport {
+  violations: ScheduleViolation[]
+}
+
 export class ApiError extends Error {
   readonly status: number | null
 
@@ -129,6 +144,19 @@ export function fetchTutors(): Promise<Tutor[]> {
 export function fetchTutorDay(tutorId: string, date?: string): Promise<TutorDaySheet> {
   const path = `/api/tutors/${encodeURIComponent(tutorId)}/day`
   return getJson<TutorDaySheet>(date ? `${path}?date=${date}` : path)
+}
+
+/** Every rule break between two dates. A missing date leaves that end open. `from` after `to` throws status 400. */
+export function fetchViolations(from?: string, to?: string): Promise<ViolationReport> {
+  const query = new URLSearchParams()
+  if (from) {
+    query.set('from', from)
+  }
+  if (to) {
+    query.set('to', to)
+  }
+  const search = query.toString()
+  return getJson<ViolationReport>(search ? `/api/reports/violations?${search}` : '/api/reports/violations')
 }
 
 async function getJson<TResult>(url: string): Promise<TResult> {

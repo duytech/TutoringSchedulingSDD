@@ -89,6 +89,8 @@ The room grid is at `/rooms` (`/` goes there too). `←` and `→` move a day, `
 
 Each tutor in the header line (`T1 Ngoc Anh 7 · …`) links to **that tutor's day** (`/tutors/T1?date=2026-03-06`): their lessons as a list by time, whether the day is final yet (16:00 the day before), and a "Changed after you were told" box at the top. It reads `GET /api/tutors/{id}/day`. Back returns to the grid; moving the day does not add to the history. Old links (`/?tutor=T1&date=…`) still land on the right page.
 
+**The rule breaks** are at `/violations`, linked from the end of the room grid's header line: every rule the schedule breaks, grouped by day, each with its rule, the API's message and the lessons involved. It reads `GET /api/reports/violations`. Two optional dates narrow the range, and they stay in the URL (`/violations?from=2026-03-05&to=2026-03-09`); changing them does not add to the history.
+
 ![The Today view on the pinned day](docs/today-view.png)
 
 ## Try it
