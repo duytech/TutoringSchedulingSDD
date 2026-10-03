@@ -44,7 +44,7 @@ public sealed class GetSessionHandler(ISessionReader reader, BookingPolicy polic
             s.RoomId,
             DateTimeUtils.ToLocal(policy.Zone, s.StartsAt),
             DateTimeUtils.ToLocal(policy.Zone, s.EndsAt),
-            Local(s.CancelledAt, policy),
+            DateTimeUtils.ToLocal(policy.Zone, s.CancelledAt),
             s.MovedToSessionId,
             s.MovedToSessionId is { } to && moveTargets?.GetValueOrDefault(to) is { } target
                 ? target with { StartsAt = DateTimeUtils.ToLocal(policy.Zone, target.StartsAt) }
@@ -55,12 +55,10 @@ public sealed class GetSessionHandler(ISessionReader reader, BookingPolicy polic
                 .ThenBy(a => a.LessonId, StringComparer.Ordinal)
                 .ThenBy(a => a.StudentName, StringComparer.Ordinal)
                 .Select(a => new SessionAttendeeView(
-                    a.Id, a.StudentId, a.StudentName, a.LessonId, a.Status, Local(a.CancelledAt, policy),
-                    a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
+                    a.Id, a.StudentId, a.StudentName, a.LessonId, a.Status,
+                    DateTimeUtils.ToLocal(policy.Zone, a.CancelledAt), a.CancelledBy, a.Chargeable,
+                    a.LegacyViolation, a.Note))
                 .ToList(),
             changeViews);
     }
-
-    private static DateTimeOffset? Local(DateTimeOffset? instant, BookingPolicy policy) =>
-        instant is { } i ? DateTimeUtils.ToLocal(policy.Zone, i) : null;
 }

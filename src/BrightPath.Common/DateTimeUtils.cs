@@ -22,6 +22,10 @@ public static class DateTimeUtils
     public static DateTimeOffset ToLocal(TimeZoneInfo zone, DateTimeOffset instant) =>
         TimeZoneInfo.ConvertTime(instant, zone);
 
+    /// <summary>Like <see cref="ToLocal(TimeZoneInfo, DateTimeOffset)"/>, but null stays null.</summary>
+    public static DateTimeOffset? ToLocal(TimeZoneInfo zone, DateTimeOffset? instant) =>
+        instant is { } i ? ToLocal(zone, i) : null;
+
     /// <summary>The instant as a local date and time in the zone: "2026-03-06 09:00".</summary>
     public static string FormatLocalDateTime(TimeZoneInfo zone, DateTimeOffset instant) =>
         ToLocal(zone, instant).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
