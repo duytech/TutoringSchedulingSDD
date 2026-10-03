@@ -9,14 +9,14 @@ namespace BrightPath.Application.Tutors;
 public sealed class GetTutorDayHandler(
     ISessionReader reader,
     IBookingChangeRepository bookingChanges,
-    IReferenceData referenceData,
+    ITutorRepository tutors,
     BookingPolicy policy,
     TimeProvider clock)
 {
     /// <summary>The default date is today on the clock.</summary>
     public async Task<Result<TutorDaySheetView>> HandleAsync(string tutorId, DateOnly? date, CancellationToken ct)
     {
-        var tutor = await referenceData.FindTutorAsync(tutorId, ct);
+        var tutor = await tutors.FindAsync(tutorId, ct);
         if (tutor is null)
         {
             return new NotFoundError("Tutor not found", $"No tutor {tutorId}.");

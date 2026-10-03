@@ -9,7 +9,7 @@ namespace BrightPath.Api.UnitTests.Fakes;
 /// The Application ports in memory, so a use case runs with no database. The day holds no other session, so every
 /// slot is free unless a test makes the next save fail.
 /// </summary>
-internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, IBookingChangeRepository, ISessionReader, IBookingLocks, IUnitOfWork
+internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStudentRepository, ISessionRepository, IBookingChangeRepository, ISessionReader, IBookingLocks, IUnitOfWork
 {
     public List<Tutor> Tutors { get; } = [new() { Id = "T2", Name = "Minh Quan", Subject = "English" }];
     public List<string> RoomIds { get; } = ["R1", "R2", "R3", "R4", "R5", "R6"];
@@ -21,19 +21,23 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, IBoo
     /// <summary>When set, the next save throws it, as a race refused by the database would.</summary>
     public SlotTakenException? FailNextSave { get; set; }
 
-    // IReferenceData
+    // ITutorRepository
 
-    public Task<Tutor?> FindTutorAsync(string id, CancellationToken ct) =>
+    public Task<Tutor?> FindAsync(string id, CancellationToken ct) =>
         Task.FromResult(Tutors.SingleOrDefault(t => t.Id == id));
 
-    public Task<bool> RoomExistsAsync(string id, CancellationToken ct) => Task.FromResult(RoomIds.Contains(id));
+    public Task<List<Tutor>> ListAsync(CancellationToken ct) => Task.FromResult(Tutors.ToList());
 
-    public Task<List<Student>> FindStudentsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
+    // IRoomRepository
+
+    public Task<bool> ExistsAsync(string id, CancellationToken ct) => Task.FromResult(RoomIds.Contains(id));
+
+    public Task<List<string>> ListIdsAsync(CancellationToken ct) => Task.FromResult(RoomIds.ToList());
+
+    // IStudentRepository
+
+    public Task<List<Student>> FindManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
         Task.FromResult(Students.Where(s => ids.Contains(s.Id)).ToList());
-
-    public Task<List<string>> RoomIdsAsync(CancellationToken ct) => Task.FromResult(RoomIds.ToList());
-
-    public Task<List<Tutor>> TutorsAsync(CancellationToken ct) => Task.FromResult(Tutors.ToList());
 
     // ISessionRepository
 
