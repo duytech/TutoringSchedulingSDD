@@ -4,7 +4,7 @@ using BrightPath.Domain;
 
 namespace BrightPath.Application.Tutors;
 
-/// <summary>One tutor's day, read from the day's sessions, with what changed after they were told at the top.</summary>
+/// <summary>One tutor's day, read from the day's sessions. Each change says whether it came after the cut-off.</summary>
 public sealed record TutorDaySheetView(
     string TutorId,
     string TutorName,
@@ -12,20 +12,7 @@ public sealed record TutorDaySheetView(
     DateTimeOffset Now,
     DateTimeOffset Cutoff,
     bool Final,
-    IReadOnlyList<SessionView> Sessions,
-    IReadOnlyList<TutorChangeView> ChangesAfterCutoff);
-
-/// <summary>A change after the cut-off, with enough of its session to read on its own.</summary>
-public sealed record TutorChangeView(
-    Guid SessionId,
-    DateTimeOffset SessionStartsAt,
-    string RoomId,
-    string Kind,
-    Guid? AttendeeId,
-    string? StudentName,
-    DateTimeOffset ChangedAt,
-    string? ChangedBy,
-    string? Note);
+    IReadOnlyList<SessionView> Sessions);
 
 /// <summary>
 /// The tutor day sheet (DECISIONS §2, feature 3). Each session has the shape of <see cref="SessionView"/>; a test checks the sheet and
@@ -52,22 +39,6 @@ public static class TutorDaySheet
             .Select(s => ToView(s, changesBySession[s.Id], policy, moveTargets))
             .ToList();
 
-        // View has already put each session's changes in order, so a stable sort by time keeps the attendee's
-        // change before the session's when they share a time.
-        var late = sessionViews
-            .SelectMany(s => s.Changes.Where(c => c.AfterCutoff).Select(c => new TutorChangeView(
-                s.Id,
-                s.StartsAt,
-                s.RoomId,
-                c.Kind,
-                c.AttendeeId,
-                s.Attendees.FirstOrDefault(a => a.Id == c.AttendeeId)?.StudentName,
-                c.ChangedAt,
-                c.ChangedBy,
-                c.Note)))
-            .OrderBy(c => c.ChangedAt)
-            .ToList();
-
         var cutoff = policy.Cutoff(date);
         return new TutorDaySheetView(
             tutor.Id,
@@ -76,8 +47,7 @@ public static class TutorDaySheet
             DateTimeUtils.ToLocal(policy.Zone, now),
             DateTimeUtils.ToLocal(policy.Zone, cutoff),
             now >= cutoff,
-            sessionViews,
-            late);
+            sessionViews);
     }
 
     /// <summary><paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.</summary>

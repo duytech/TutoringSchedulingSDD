@@ -1,6 +1,7 @@
 import type { TutorDaySheet } from './api'
 import { changeLine } from './labels'
 import { SessionCard } from './SessionCard'
+import { changesAfterCutoff } from './tutorChanges'
 
 interface Props {
   sheet: TutorDaySheet
@@ -10,13 +11,15 @@ interface Props {
 
 /** One tutor's day as a list by time, with what changed after they were told at the top. */
 export function TutorSheet({ sheet, tutorColour, onGoToDate }: Props) {
+  const lateChanges = changesAfterCutoff(sheet.sessions)
+
   return (
     <>
-      {sheet.changesAfterCutoff.length > 0 && (
+      {lateChanges.length > 0 && (
         <section className="changes" aria-label="Changed after you were told">
           <h2>Changed after you were told</h2>
           <ul>
-            {sheet.changesAfterCutoff.map((change, index) => (
+            {lateChanges.map((change, index) => (
               <li key={`${change.sessionId}-${change.attendeeId ?? 'session'}-${change.kind}-${index}`}>{changeLine(change)}</li>
             ))}
           </ul>

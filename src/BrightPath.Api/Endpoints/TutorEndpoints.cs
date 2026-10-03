@@ -17,12 +17,12 @@ public static class TutorEndpoints
 
         tutors.MapGet("/{id}/day", GetTutorDay)
             .WithName("GetTutorDay")
-            .WithSummary("One tutor's day, with what changed after they were told")
+            .WithSummary("One tutor's day, with its cut-off")
             .WithDescription(
                 "Every session of the tutor whose local start date is the given date (default: today on the pinned " +
                 "clock), cancelled and moved ones included, in the same shape as GET /api/sessions. cutoff is 16:00 the " +
-                "day before, final is true once it has passed, and changesAfterCutoff lists every change made after " +
-                "it, oldest first. A tutor with nothing that day gets empty lists.")
+                "day before, final is true once it has passed, and each change has afterCutoff set when it was made " +
+                "after it. A tutor with nothing that day gets an empty list.")
             .Produces<TutorDaySheetView>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);

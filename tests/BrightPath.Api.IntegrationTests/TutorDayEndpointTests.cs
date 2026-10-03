@@ -35,7 +35,7 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
         Assert.True(sheet.Final);
         Assert.Equal(7, sheet.Sessions.Count);
         Assert.All(sheet.Sessions, s => Assert.Equal("T1", s.TutorId));
-        Assert.Empty(sheet.ChangesAfterCutoff);
+        Assert.DoesNotContain(sheet.Sessions.SelectMany(s => s.Changes), c => c.AfterCutoff);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
     }
 
     [Fact]
-    public async Task A_cancel_after_the_cutoff_is_listed_student_first()
+    public async Task A_cancel_after_the_cutoff_is_flagged_student_first()
     {
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
             _morning.CreateClient(), "T2", "R6", "2026-04-02 14:00", 60, await factory.StudentId("Vu Ha My")));
@@ -59,10 +59,10 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
 
         var session = Assert.Single(sheet.Sessions);
         Assert.NotNull(session.CancelledAt);
-        Assert.Equal([booked.Attendees[0].Id, (Guid?)null], sheet.ChangesAfterCutoff.Select(c => c.AttendeeId));
-        Assert.All(sheet.ChangesAfterCutoff, c => Assert.Equal(ChangeKind.Cancelled, c.Kind));
-        Assert.Equal(["Vu Ha My", null], sheet.ChangesAfterCutoff.Select(c => c.StudentName));
-        Assert.Equal("sick", sheet.ChangesAfterCutoff[0].Note);
+        var late = session.Changes.Where(c => c.AfterCutoff).ToList();
+        Assert.Equal([booked.Attendees[0].Id, (Guid?)null], late.Select(c => c.AttendeeId));
+        Assert.All(late, c => Assert.Equal(ChangeKind.Cancelled, c.Kind));
+        Assert.Equal("sick", late[0].Note);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
 
         var old = Assert.Single(before.Sessions);
         Assert.Equal(moved.Id, old.MovedTo?.Id);
-        Assert.Empty(before.ChangesAfterCutoff);
+        Assert.DoesNotContain(old.Changes, c => c.AfterCutoff);
         var arrived = Assert.Single(after.Sessions);
         Assert.Equal(moved.Id, arrived.Id);
         Assert.Contains(arrived.Changes, c => c is { Kind: ChangeKind.Moved, Note: "from 2026-04-02 09:00 in R6" });

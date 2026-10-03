@@ -1,4 +1,5 @@
-import type { MovedTo, TutorChange, TutorDaySheet } from './api'
+import type { MovedTo, TutorDaySheet } from './api'
+import type { TutorChange } from './tutorChanges'
 import { localDate, localTime } from './dates'
 
 /** "2026-03-11" → "Wed 11 Mar". */

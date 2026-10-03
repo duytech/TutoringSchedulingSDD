@@ -130,7 +130,7 @@ curl -s -X POST "$API/api/sessions/$L020/cancel" -H 'Content-Type: application/j
   -d '{"cancelledBy":"family"}' | jq '{startsAt, cancelledAt, attendees: [.attendees[] | {lessonId, status, cancelledBy, chargeable}], changes}'
 
 # 7. T3's day: what changed after they were told
-curl -s "$API/api/tutors/T3/day" | jq '{tutorName, date, cutoff, final, changesAfterCutoff: [.changesAfterCutoff[] | {kind, studentName, changedBy, changedAt}]}'
+curl -s "$API/api/tutors/T3/day" | jq '{tutorName, date, cutoff, final, changesAfterCutoff: [.sessions[] as $s | $s.changes[] | select(.afterCutoff) | {startsAt: $s.startsAt, roomId: $s.roomId, kind, attendeeId, changedBy, changedAt}]}'
 ```
 
 ## What I saw

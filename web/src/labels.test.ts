@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { TutorChange } from './api'
+import type { TutorChange } from './tutorChanges'
 import { changeLine, cutoffLine, movedLabel, ruleLabel, shortDate } from './labels'
 
 describe('movedLabel', () => {

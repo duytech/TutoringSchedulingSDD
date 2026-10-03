@@ -65,20 +65,6 @@ export interface Tutor {
   subject: string
 }
 
-/** A change after the cut-off, with enough of its session to read on its own (TutorChangeView in the API). */
-export interface TutorChange {
-  sessionId: string
-  sessionStartsAt: string
-  roomId: string
-  kind: BookingChange['kind']
-  attendeeId: string | null
-  /** Null for a change to the whole session. */
-  studentName: string | null
-  changedAt: string
-  changedBy: string | null
-  note: string | null
-}
-
 /** The shape of GET /api/tutors/{id}/day (TutorDaySheetView in the API). */
 export interface TutorDaySheet {
   tutorId: string
@@ -89,7 +75,6 @@ export interface TutorDaySheet {
   cutoff: string
   final: boolean
   sessions: Session[]
-  changesAfterCutoff: TutorChange[]
 }
 
 /** One rule the schedule breaks (ScheduleViolation in the API). Sessions booked in the app have no lesson id. */
