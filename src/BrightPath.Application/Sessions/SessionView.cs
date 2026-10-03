@@ -46,9 +46,8 @@ public static class BookingChangeViews
 {
     public static List<BookingChangeView> From(IEnumerable<BookingChange> changes, BookingPolicy policy) =>
         changes
-            .OrderBy(c => c.ChangedAt)
             // The last attendee's cancel and the session's share a time: the student goes first, then the session.
-            .ThenBy(c => c.AttendeeId is null)
+            .OrderBy(c => c.ChangedAt).ThenBy(c => c.AttendeeId is null)
             .Select(c => new BookingChangeView(
                 c.Kind, c.AttendeeId, DateTimeUtils.ToLocal(policy.Zone, c.ChangedAt), c.ChangedBy, c.AfterCutoff,
                 c.Note))

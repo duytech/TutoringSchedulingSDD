@@ -46,9 +46,7 @@ public static class DaySessions
                 : null,
             s.LegacyViolation,
             s.Attendees
-                .OrderBy(a => a.LessonId is null)
-                .ThenBy(a => a.LessonId, StringComparer.Ordinal)
-                .ThenBy(a => a.StudentName, StringComparer.Ordinal)
+                .OrderBy(a => a.LessonId is null).ThenBy(a => a.LessonId, StringComparer.Ordinal).ThenBy(a => a.StudentName, StringComparer.Ordinal)
                 .Select(a => new SessionAttendeeView(
                     a.Id, a.StudentId, a.StudentName, a.LessonId, a.Status,
                     DateTimeUtils.ToLocal(policy.Zone, a.CancelledAt), a.CancelledBy, a.Chargeable,

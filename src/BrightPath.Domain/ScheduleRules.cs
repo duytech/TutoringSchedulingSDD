@@ -61,8 +61,7 @@ public static class ScheduleRules
         var active = sessions
             .Where(s => !s.Cancelled)
             .Select(s => s with { Attendees = s.Attendees.Where(a => a.Status != AttendeeStatus.Cancelled).ToList() })
-            .OrderBy(s => s.StartsAt)
-            .ThenBy(s => FirstLesson(s), StringComparer.Ordinal)
+            .OrderBy(s => s.StartsAt).ThenBy(s => FirstLesson(s), StringComparer.Ordinal)
             .ToList();
 
         List<ScheduleViolation> violations =
@@ -77,11 +76,8 @@ public static class ScheduleRules
         ];
 
         return violations
-            .OrderBy(v => v.Date)
-        .ThenBy(v => Array.IndexOf(RuleCodes.All, v.Rule))
-        .ThenBy(v => v.LessonIds.FirstOrDefault() ?? "", StringComparer.Ordinal)
-        .ThenBy(v => v.SessionIds[0])
-        .ToList();
+            .OrderBy(v => v.Date).ThenBy(v => Array.IndexOf(RuleCodes.All, v.Rule)).ThenBy(v => v.LessonIds.FirstOrDefault() ?? "", StringComparer.Ordinal).ThenBy(v => v.SessionIds[0])
+            .ToList();
     }
 
     private static IEnumerable<ScheduleViolation> RoomOverlaps(List<RuleSession> sessions, BookingPolicy policy) =>

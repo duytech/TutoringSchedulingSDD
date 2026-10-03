@@ -44,8 +44,7 @@ public static class SeedPlanner
                 var rows = g.OrderBy(r => r.LessonId, StringComparer.Ordinal).ToList();
                 return new Slot(rows, startsAt, startsAt.AddMinutes(g.Key.DurationMin));
             })
-            .OrderBy(s => s.StartsAt)
-            .ThenBy(s => s.Rows[0].LessonId, StringComparer.Ordinal)
+            .OrderBy(s => s.StartsAt).ThenBy(s => s.Rows[0].LessonId, StringComparer.Ordinal)
             .ToList();
 
         var legacySlots = FindLegacySlots(slots);
