@@ -14,8 +14,7 @@ public sealed class GetViolationsHandler(ISessionRepository sessions, BookingPol
     {
         if (from > to)
         {
-            return new BadRequestError(
-                "Invalid date range", $"'from' ({from:yyyy-MM-dd}) is after 'to' ({to:yyyy-MM-dd}).");
+            return new BadRequestError("Invalid date range", $"'from' ({from:yyyy-MM-dd}) is after 'to' ({to:yyyy-MM-dd}).");
         }
 
         var ruleSessions = await sessions.ActiveBetweenAsync(from, to, ct);
