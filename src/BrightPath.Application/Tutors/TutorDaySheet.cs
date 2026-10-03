@@ -29,7 +29,8 @@ public sealed record TutorChangeView(
 
 /// <summary>
 /// The tutor day sheet (DECISIONS §2, feature 3). Each session has the shape of <see cref="SessionView"/>; a test checks the sheet and
-/// <see cref="DaySessions"/> show every seeded session the same. Pure: no I/O, no database.
+/// <see cref="DaySessions"/> show every seeded session the same. The reader has already picked the tutor and the day.
+/// Pure: no I/O, no database.
 /// </summary>
 public static class TutorDaySheet
 {
@@ -45,7 +46,6 @@ public static class TutorDaySheet
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
         var views = sessions
-            .Where(s => s.TutorId == tutor.Id && DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date)
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)

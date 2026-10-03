@@ -110,18 +110,6 @@ public sealed class TutorDaySheetTests
         Assert.Equal(final, Build(DateTimeOffset.Parse(now), [], []).Final);
 
     [Fact]
-    public void Other_tutors_and_the_next_midnight_are_left_out()
-    {
-        var mine = Session("T1", "R1", Friday, "14:00");
-        var theirs = Session("T2", "R2", Friday, "14:00");
-        var nextMidnight = Session("T1", "R1", Friday.AddDays(1), "00:00");
-
-        var sheet = Build(PinnedNow, [nextMidnight, theirs, mine], []);
-
-        Assert.Equal([mine.Id], sheet.Sessions.Select(s => s.Id));
-    }
-
-    [Fact]
     public void Changes_are_oldest_first_with_the_student_before_the_session()
     {
         var early = Session("T1", "R1", Friday, "14:00");
@@ -154,11 +142,11 @@ public sealed class TutorDaySheetTests
 
         foreach (var date in dates)
         {
-            var day = DaySessions.Build(date, Seed.ForDaySessions, Seed.Changes, Policy, moveTargets);
+            var day = DaySessions.Build(Seed.DaySessionsOn(date, Policy), Seed.Changes, Policy, moveTargets);
             foreach (var tutor in Seed.Tutors)
             {
                 var sheet = TutorDaySheet.Build(
-                    tutor, date, PinnedNow, Seed.ForTutorDay, Seed.Changes, Policy, moveTargets);
+                    tutor, date, PinnedNow, Seed.TutorDayOn(tutor.Id, date, Policy), Seed.Changes, Policy, moveTargets);
                 var inDay = day.Where(s => s.TutorId == tutor.Id);
 
                 Assert.Equal(JsonSerializer.Serialize(inDay), JsonSerializer.Serialize(sheet.Sessions));
@@ -167,7 +155,13 @@ public sealed class TutorDaySheetTests
     }
 
     private static TutorDaySheetView Export(string tutorId, DateOnly date) =>
-        TutorDaySheet.Build(Seed.Tutors.Single(t => t.Id == tutorId), date, PinnedNow, Seed.ForTutorDay, Seed.Changes, Policy);
+        TutorDaySheet.Build(
+            Seed.Tutors.Single(t => t.Id == tutorId),
+            date,
+            PinnedNow,
+            Seed.TutorDayOn(tutorId, date, Policy),
+            Seed.Changes,
+            Policy);
 
     private static TutorDaySheetView Build(DateTimeOffset now, GetTutorDayResponse[] sessions, BookingChange[] changes) =>
         TutorDaySheet.Build(T1, Friday, now, sessions, changes, Policy);

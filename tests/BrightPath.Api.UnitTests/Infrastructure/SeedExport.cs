@@ -1,5 +1,6 @@
 using BrightPath.Application.Sessions;
 using BrightPath.Application.Tutors;
+using BrightPath.Common;
 using BrightPath.Domain;
 using BrightPath.Infrastructure.Seed;
 
@@ -35,4 +36,14 @@ internal sealed record SeedExport(
 
         return new SeedExport(plan.Tutors, forDaySessions, forTutorDay, plan.Changes);
     }
+
+    /// <summary>The sessions starting on the local date, as the reader's GetDaySessionsAsync loads them.</summary>
+    public List<GetDaySessionsResponse> DaySessionsOn(DateOnly date, BookingPolicy policy) =>
+        ForDaySessions.Where(s => DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date).ToList();
+
+    /// <summary>One tutor's sessions starting on the local date, as the reader's GetTutorDayAsync loads them.</summary>
+    public List<GetTutorDayResponse> TutorDayOn(string tutorId, DateOnly date, BookingPolicy policy) =>
+        ForTutorDay
+            .Where(s => s.TutorId == tutorId && DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date)
+            .ToList();
 }

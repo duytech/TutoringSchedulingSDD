@@ -128,11 +128,11 @@ public sealed class DaySessionsTests
     private static List<SessionView> Export(DateOnly date)
     {
         var export = SeedExport.Load(Policy);
-        return DaySessions.Build(date, export.ForDaySessions, export.Changes, Policy);
+        return DaySessions.Build(export.DaySessionsOn(date, Policy), export.Changes, Policy);
     }
 
     private static List<SessionView> Build(params GetDaySessionsResponse[] sessions) =>
-        DaySessions.Build(Friday, sessions, [], Policy);
+        DaySessions.Build(sessions, [], Policy);
 
     /// <summary>A one-hour session for T1 on Friday 2026-03-06.</summary>
     private static GetDaySessionsResponse Session(string room, string start)

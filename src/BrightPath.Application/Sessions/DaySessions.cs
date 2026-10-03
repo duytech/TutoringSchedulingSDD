@@ -4,13 +4,12 @@ using BrightPath.Domain;
 namespace BrightPath.Application.Sessions;
 
 /// <summary>
-/// One day's sessions: every session that starts on the local date, cancelled ones included. The rooms and
+/// One day's sessions in order, cancelled ones included. The reader has already picked the day. The rooms and
 /// tutors are reference data with endpoints of their own. Pure: no I/O, no database.
 /// </summary>
 public static class DaySessions
 {
     public static List<SessionView> Build(
-        DateOnly date,
         IEnumerable<GetDaySessionsResponse> sessions,
         IEnumerable<BookingChange> changes,
         BookingPolicy policy,
@@ -19,10 +18,7 @@ public static class DaySessions
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
         return sessions
-            .Where(s => DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date)
-            .OrderBy(s => s.StartsAt)
-            .ThenBy(s => s.RoomId, StringComparer.Ordinal)
-            .ThenBy(s => s.Id)
+            .OrderBy(s => s.StartsAt).ThenBy(s => s.RoomId, StringComparer.Ordinal).ThenBy(s => s.Id)
             .Select(s => ToView(s, changesBySession[s.Id], policy, moveTargets))
             .ToList();
     }
