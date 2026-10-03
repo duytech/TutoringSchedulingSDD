@@ -18,6 +18,4 @@ public interface ISessionRepository
     Task<List<RuleSession>> ActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct);
 
     void Add(Session session);
-
-    void AddChanges(params BookingChange[] changes);
 }

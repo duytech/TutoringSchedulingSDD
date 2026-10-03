@@ -9,7 +9,7 @@ namespace BrightPath.Api.UnitTests.Fakes;
 /// The Application ports in memory, so a use case runs with no database. The day holds no other session, so every
 /// slot is free unless a test makes the next save fail.
 /// </summary>
-internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISessionReader, IBookingLocks, IUnitOfWork
+internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, IBookingChangeRepository, ISessionReader, IBookingLocks, IUnitOfWork
 {
     public List<Tutor> Tutors { get; } = [new() { Id = "T2", Name = "Minh Quan", Subject = "English" }];
     public List<string> RoomIds { get; } = ["R1", "R2", "R3", "R4", "R5", "R6"];
@@ -48,6 +48,11 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISes
 
     public void Add(Session session) => Sessions.Add(session);
 
+    // IBookingChangeRepository
+
+    public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
+        Task.FromResult(Changes.Where(c => sessionIds.Contains(c.SessionId)).ToList());
+
     public void AddChanges(params BookingChange[] changes) => Changes.AddRange(changes);
 
     // ISessionReader
@@ -60,9 +65,6 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISes
 
     public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
         Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToGetSessionResponse).SingleOrDefault());
-
-    public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
-        Task.FromResult(Changes.Where(c => sessionIds.Contains(c.SessionId)).ToList());
 
     public Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct) =>
         Task.FromResult(new Dictionary<Guid, MovedToView>());

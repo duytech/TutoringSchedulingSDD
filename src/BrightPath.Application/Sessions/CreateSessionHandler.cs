@@ -13,6 +13,7 @@ public sealed record CreateSessionRequest(
 public sealed class CreateSessionHandler(
     IReferenceData referenceData,
     ISessionRepository sessions,
+    IBookingChangeRepository bookingChanges,
     IBookingLocks locks,
     IUnitOfWork unitOfWork,
     GetSessionHandler views,
@@ -109,7 +110,7 @@ public sealed class CreateSessionHandler(
                 })
                 .ToList(),
         });
-        sessions.AddChanges(new BookingChange
+        bookingChanges.AddChanges(new BookingChange
         {
             Id = Guid.CreateVersion7(),
             SessionId = sessionId,

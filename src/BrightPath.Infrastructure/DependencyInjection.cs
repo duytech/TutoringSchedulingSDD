@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<IBookingLocks, PostgresBookingLocks>();
         services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<IBookingChangeRepository, BookingChangeRepository>();
         services.AddScoped<IReferenceData, ReferenceData>();
         services.AddScoped<ISessionReader, SessionReader>();
         return services;

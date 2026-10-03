@@ -69,9 +69,6 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
                     .ToList()))
             .SingleOrDefaultAsync(ct);
 
-    public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
-        db.BookingChanges.AsNoTracking().Where(c => sessionIds.Contains(c.SessionId)).ToListAsync(ct);
-
     public async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct)
     {
         if (targetIds.Count == 0)

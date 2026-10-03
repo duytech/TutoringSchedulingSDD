@@ -9,6 +9,7 @@ public sealed record CancelAttendeeRequest(string? CancelledBy, string? Note);
 /// <summary>Cancel one student's place, freeing the slot. The last one out cancels the session too.</summary>
 public sealed class CancelAttendeeHandler(
     ISessionRepository sessions,
+    IBookingChangeRepository bookingChanges,
     IUnitOfWork unitOfWork,
     GetSessionHandler views,
     BookingPolicy policy,
@@ -66,7 +67,7 @@ public sealed class CancelAttendeeHandler(
         attendee.CancelledAt = now;
         attendee.CancelledBy = request.CancelledBy;
         attendee.Chargeable = decision.Chargeable;
-        sessions.AddChanges(new BookingChange
+        bookingChanges.AddChanges(new BookingChange
         {
             Id = Guid.CreateVersion7(),
             SessionId = id,
@@ -82,7 +83,7 @@ public sealed class CancelAttendeeHandler(
         {
             // The last one out cancels the session, with a change of its own so the tutor sees the slot is gone.
             session.CancelledAt = now;
-            sessions.AddChanges(new BookingChange
+            bookingChanges.AddChanges(new BookingChange
             {
                 Id = Guid.CreateVersion7(),
                 SessionId = id,

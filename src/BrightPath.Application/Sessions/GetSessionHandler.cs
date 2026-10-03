@@ -6,7 +6,7 @@ using BrightPath.Domain;
 namespace BrightPath.Application.Sessions;
 
 /// <summary>One session, in the same shape as an item of the day's sessions. The write use cases answer with it too.</summary>
-public sealed class GetSessionHandler(ISessionReader reader, BookingPolicy policy)
+public sealed class GetSessionHandler(ISessionReader reader, IBookingChangeRepository bookingChanges, BookingPolicy policy)
 {
     public async Task<Result<SessionView>> HandleAsync(Guid id, CancellationToken ct)
     {
@@ -23,7 +23,7 @@ public sealed class GetSessionHandler(ISessionReader reader, BookingPolicy polic
             return null;
         }
 
-        var changes = await reader.ChangesOfAsync([session.Id], ct);
+        var changes = await bookingChanges.ChangesOfAsync([session.Id], ct);
         var moveTargets = await reader.MoveTargetsAsync(session.MovedToSessionId is { } targetId ? [targetId] : [], ct);
         return ToView(session, changes, policy, moveTargets);
     }

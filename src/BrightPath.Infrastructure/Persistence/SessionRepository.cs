@@ -42,6 +42,4 @@ internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy po
             .ToListAsync(ct);
 
     public void Add(Session session) => db.Sessions.Add(session);
-
-    public void AddChanges(params BookingChange[] changes) => db.BookingChanges.AddRange(changes);
 }

@@ -10,7 +10,8 @@ public sealed record DaySessionsView(
     IReadOnlyList<SessionView> Sessions);
 
 /// <summary>One day's sessions.</summary>
-public sealed class GetDaySessionsHandler(ISessionReader reader, BookingPolicy policy, TimeProvider clock)
+public sealed class GetDaySessionsHandler(
+    ISessionReader reader, IBookingChangeRepository bookingChanges, BookingPolicy policy, TimeProvider clock)
 {
     /// <summary>The default date is today on the clock.</summary>
     public async Task<DaySessionsView> HandleAsync(DateOnly? date, CancellationToken ct)
@@ -20,10 +21,10 @@ public sealed class GetDaySessionsHandler(ISessionReader reader, BookingPolicy p
         var sessions = await reader.GetDaySessionsAsync(localDate, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
-        var bookingChanges = await reader.ChangesOfAsync(sessionIds, ct);
+        var changes = await bookingChanges.ChangesOfAsync(sessionIds, ct);
         var moveTargets = await reader.MoveTargetsAsync(targetIds, ct);
 
-        var views = DaySessions.Build(sessions, bookingChanges, policy, moveTargets);
+        var views = DaySessions.Build(sessions, changes, policy, moveTargets);
         return new DaySessionsView(localDate, DateTimeUtils.ToLocal(policy.Zone, utcNow), views);
     }
 }

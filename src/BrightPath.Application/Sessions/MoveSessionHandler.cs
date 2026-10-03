@@ -16,6 +16,7 @@ public sealed record MoveSessionRequest(
 public sealed class MoveSessionHandler(
     IReferenceData referenceData,
     ISessionRepository sessions,
+    IBookingChangeRepository bookingChanges,
     IBookingLocks locks,
     IUnitOfWork unitOfWork,
     GetSessionHandler views,
@@ -131,7 +132,7 @@ public sealed class MoveSessionHandler(
                 .ToList(),
         });
         old.MovedToSessionId = newId;
-        sessions.AddChanges(
+        bookingChanges.AddChanges(
             new BookingChange
             {
                 Id = Guid.CreateVersion7(),
