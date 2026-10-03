@@ -103,7 +103,7 @@ public sealed class DaySessionsTests
     [InlineData("10:00:00", SessionState.Past)] // now == end
     public void State_is_half_open(string nowLocal, string expected)
     {
-        var now = Policy.LocalToUtc(Friday, TimeOnly.Parse(nowLocal));
+        var now = DateTimeUtils.LocalToUtc(Policy.Zone, Friday, TimeOnly.Parse(nowLocal));
         var day = Build(now, Session("R1", "09:00"));
 
         Assert.Equal(expected, Assert.Single(day.Sessions).State);
@@ -159,7 +159,7 @@ public sealed class DaySessionsTests
     /// <summary>A one-hour session for T1 on Friday 2026-03-06.</summary>
     private static GetDaySessionsResponse Session(string room, string start)
     {
-        var startsAt = Policy.LocalToUtc(Friday, TimeOnly.Parse(start));
+        var startsAt = DateTimeUtils.LocalToUtc(Policy.Zone, Friday, TimeOnly.Parse(start));
         return new GetDaySessionsResponse(
             Guid.NewGuid(), "T1", "T1", room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);

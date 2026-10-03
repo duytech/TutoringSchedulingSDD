@@ -29,13 +29,15 @@ public static class CancelCheck
         {
             conflicts.Add(Conflict(
                 RuleCodes.AlreadyStarted,
-                $"The session started at {Format(policy.ToLocal(session.StartsAt))}, " +
-                $"before now ({Format(policy.ToLocal(now))})."));
+                $"The session started at {Format(DateTimeUtils.ToLocal(policy.Zone, session.StartsAt))}, " +
+                $"before now ({Format(DateTimeUtils.ToLocal(policy.Zone, now))})."));
         }
 
         if (attendee.Status == AttendeeStatus.Cancelled)
         {
-            var at = attendee.CancelledAt is { } cancelledAt ? $" at {Format(policy.ToLocal(cancelledAt))}" : "";
+            var at = attendee.CancelledAt is { } cancelledAt
+                ? $" at {Format(DateTimeUtils.ToLocal(policy.Zone, cancelledAt))}"
+                : "";
             var by = attendee.CancelledBy is { } who ? $" by {who}" : "";
             conflicts.Add(Conflict(RuleCodes.AlreadyCancelled, $"{attendee.StudentName} was already cancelled{at}{by}."));
         }
@@ -52,7 +54,9 @@ public static class CancelCheck
             CancelsSession: session.Attendees.All(a => a.Id == attendeeId || a.Status != AttendeeStatus.Booked));
 
         ScheduleViolation Conflict(string rule, string message) =>
-            new(rule, policy.LocalDate(session.StartsAt), [session.Id], attendee.LessonId is { } l ? [l] : [], message);
+            new(
+                rule, DateTimeUtils.LocalDate(policy.Zone, session.StartsAt), [session.Id],
+                attendee.LessonId is { } l ? [l] : [], message);
     }
 
     private static string Format(DateTimeOffset local) => local.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);

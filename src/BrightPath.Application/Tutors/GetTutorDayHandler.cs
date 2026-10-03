@@ -18,7 +18,7 @@ public sealed class GetTutorDayHandler(
         }
 
         var utcNow = clock.GetUtcNow();
-        var localDate = date ?? policy.LocalDate(utcNow);
+        var localDate = date ?? DateTimeUtils.LocalDate(policy.Zone, utcNow);
         var sessions = await reader.GetTutorDayAsync(localDate, tutorId, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();

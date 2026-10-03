@@ -67,6 +67,7 @@ public static class SessionChanges
             // The last attendee's cancel and the session's share a time: the student goes first, then the session.
             .ThenBy(c => c.AttendeeId is null)
             .Select(c => new SessionChangeView(
-                c.Kind, c.AttendeeId, policy.ToLocal(c.ChangedAt), c.ChangedBy, c.AfterCutoff, c.Note))
+                c.Kind, c.AttendeeId, DateTimeUtils.ToLocal(policy.Zone, c.ChangedAt), c.ChangedBy, c.AfterCutoff,
+                c.Note))
             .ToList();
 }

@@ -147,7 +147,10 @@ public sealed class TutorDaySheetTests
     public void Every_seeded_session_shows_the_same_on_the_sheet_as_in_the_day_sessions()
     {
         var moveTargets = Seed.ForDaySessions.ToDictionary(s => s.Id, s => new MovedToView(s.Id, s.StartsAt, s.RoomId));
-        var dates = Seed.ForDaySessions.Select(s => Policy.LocalDate(s.StartsAt)).Distinct().ToList();
+        var dates = Seed.ForDaySessions
+            .Select(s => DateTimeUtils.LocalDate(Policy.Zone, s.StartsAt))
+            .Distinct()
+            .ToList();
 
         foreach (var date in dates)
         {
@@ -171,7 +174,7 @@ public sealed class TutorDaySheetTests
 
     private static GetTutorDayResponse Session(string tutorId, string room, DateOnly date, string start)
     {
-        var startsAt = Policy.LocalToUtc(date, TimeOnly.Parse(start));
+        var startsAt = DateTimeUtils.LocalToUtc(Policy.Zone, date, TimeOnly.Parse(start));
         return new GetTutorDayResponse(
             Guid.NewGuid(), tutorId, tutorId, room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);

@@ -79,7 +79,7 @@ public sealed class MoveSessionHandler(
         }
 
         var now = clock.GetUtcNow();
-        var date = policy.LocalDate(startsUtc);
+        var date = DateTimeUtils.LocalDate(policy.Zone, startsUtc);
         var tutor = await referenceData.FindTutorAsync(old.TutorId, ct);
         var booked = old.Attendees.Where(a => a.Status == AttendeeStatus.Booked).ToList();
         var newId = Guid.CreateVersion7();

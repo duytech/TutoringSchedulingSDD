@@ -90,7 +90,8 @@ public sealed class MoveCheckTests
             session.Attendees.Select(a => a.SourceLessonId).OfType<string>().ToList());
 
         var local = DateTime.Parse(start, System.Globalization.CultureInfo.InvariantCulture);
-        var startsAt = Policy.LocalToUtc(DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
+        var startsAt = DateTimeUtils.LocalToUtc(
+            Policy.Zone, DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
         var candidate = new RuleSession(
             Guid.NewGuid(), session.TutorId, Plan.Tutors.Single(t => t.Id == session.TutorId).Name,
             room ?? session.RoomId, startsAt, startsAt + (session.EndsAt - session.StartsAt), Cancelled: false,
@@ -104,11 +105,11 @@ public sealed class MoveCheckTests
     /// <summary>The export's active sessions on the candidate's local date, as the endpoint loads them.</summary>
     private static List<RuleSession> SameDay(RuleSession candidate)
     {
-        var date = Policy.LocalDate(candidate.StartsAt);
+        var date = DateTimeUtils.LocalDate(Policy.Zone, candidate.StartsAt);
         var tutors = Plan.Tutors.ToDictionary(t => t.Id, t => t.Name);
         var students = Plan.Students.ToDictionary(s => s.Id, s => s.Name);
         return Plan.Sessions
-            .Where(s => s.CancelledAt is null && Policy.LocalDate(s.StartsAt) == date)
+            .Where(s => s.CancelledAt is null && DateTimeUtils.LocalDate(Policy.Zone, s.StartsAt) == date)
             .Select(s => new RuleSession(
                 s.Id, s.TutorId, tutors[s.TutorId], s.RoomId, s.StartsAt, s.EndsAt, Cancelled: false,
                 s.Attendees

@@ -10,7 +10,7 @@ public sealed class GetDaySessionsHandler(ISessionReader reader, BookingPolicy p
     public async Task<DaySessionsView> HandleAsync(DateOnly? date, CancellationToken ct)
     {
         var utcNow = clock.GetUtcNow();
-        var localDate = date ?? policy.LocalDate(utcNow);
+        var localDate = date ?? DateTimeUtils.LocalDate(policy.Zone, utcNow);
         var sessions = await reader.GetDaySessionsAsync(localDate, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();

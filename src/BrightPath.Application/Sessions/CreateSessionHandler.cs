@@ -70,7 +70,7 @@ public sealed class CreateSessionHandler(
         var now = clock.GetUtcNow();
         var startsUtc = startsAt.ToUniversalTime();
         var endsUtc = startsUtc.AddMinutes(request.DurationMin!.Value);
-        var date = policy.LocalDate(startsUtc);
+        var date = DateTimeUtils.LocalDate(policy.Zone, startsUtc);
         var sessionId = Guid.CreateVersion7();
         var byId = students.ToDictionary(s => s.Id);
 

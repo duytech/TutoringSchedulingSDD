@@ -128,7 +128,7 @@ public static class ScheduleRules
     {
         var max = policy.Options.MaxSessionsPerTutorPerDay;
         return sessions
-            .GroupBy(s => (s.TutorId, Date: policy.LocalDate(s.StartsAt)))
+            .GroupBy(s => (s.TutorId, Date: DateTimeUtils.LocalDate(policy.Zone, s.StartsAt)))
             .Where(g => g.Count() > max)
             .Select(g => Violation(
                 RuleCodes.TutorLoad,
@@ -139,10 +139,10 @@ public static class ScheduleRules
 
     private static IEnumerable<ScheduleViolation> ClosedDays(List<RuleSession> sessions, BookingPolicy policy) =>
         sessions
-            .Where(s => policy.Options.ClosedDays.Contains(policy.LocalDate(s.StartsAt).DayOfWeek))
+            .Where(s => policy.Options.ClosedDays.Contains(DateTimeUtils.LocalDate(policy.Zone, s.StartsAt).DayOfWeek))
             .Select(s =>
             {
-                var date = policy.LocalDate(s.StartsAt);
+                var date = DateTimeUtils.LocalDate(policy.Zone, s.StartsAt);
                 return Violation(
                     RuleCodes.ClosedDay,
                     [s],
@@ -155,13 +155,13 @@ public static class ScheduleRules
         var (opens, closes) = (policy.Options.OpensAt, policy.Options.ClosesAt);
         return sessions
             .Where(s =>
-                policy.LocalTime(s.StartsAt) < opens
-                || policy.LocalTime(s.EndsAt) > closes
-                || policy.LocalDate(s.EndsAt) != policy.LocalDate(s.StartsAt))
+                DateTimeUtils.LocalTime(policy.Zone, s.StartsAt) < opens
+                || DateTimeUtils.LocalTime(policy.Zone, s.EndsAt) > closes
+                || DateTimeUtils.LocalDate(policy.Zone, s.EndsAt) != DateTimeUtils.LocalDate(policy.Zone, s.StartsAt))
             .Select(s => Violation(
                 RuleCodes.OutsideHours,
                 [s],
-                $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} runs {GetLocalStartTime(s, policy)}–{HourMinute(policy.LocalTime(s.EndsAt))}, " +
+                $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} runs {GetLocalStartTime(s, policy)}–{HourMinute(DateTimeUtils.LocalTime(policy.Zone, s.EndsAt))}, " +
                 $"outside opening hours {HourMinute(opens)}–{HourMinute(closes)}.",
                 policy));
     }
@@ -187,7 +187,7 @@ public static class ScheduleRules
         IEnumerable<string?>? lessonIds = null) =>
         new(
             rule,
-            policy.LocalDate(sessions[0].StartsAt),
+            DateTimeUtils.LocalDate(policy.Zone, sessions[0].StartsAt),
             sessions.Select(s => s.Id).ToList(),
             (lessonIds ?? sessions.SelectMany(s => s.Attendees.Select(a => a.LessonId).Order(StringComparer.Ordinal)))
                 .OfType<string>()
@@ -220,5 +220,5 @@ public static class ScheduleRules
 
     private static string HourMinute(TimeOnly time) => time.ToString("HH:mm", CultureInfo.InvariantCulture);
 
-    private static string GetLocalStartTime(RuleSession s, BookingPolicy policy) => HourMinute(policy.LocalTime(s.StartsAt));
+    private static string GetLocalStartTime(RuleSession s, BookingPolicy policy) => HourMinute(DateTimeUtils.LocalTime(policy.Zone, s.StartsAt));
 }

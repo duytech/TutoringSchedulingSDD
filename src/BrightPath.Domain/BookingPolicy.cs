@@ -26,38 +26,26 @@ public sealed class BookingPolicyOptions
     public required TimeOnly ClosesAt { get; init; }
 }
 
-/// <summary>Time rules shared by the seed loader, create and cancel. Every instant in and out is UTC, except <see cref="ToLocal"/>.</summary>
+/// <summary>
+/// The centre's booking rules: its time zone, the cut-off and the late-cancellation charge. Instants are UTC.
+/// </summary>
 public sealed class BookingPolicy(BookingPolicyOptions options)
 {
-    private readonly TimeZoneInfo _zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone);
-
     public BookingPolicyOptions Options => options;
 
-    /// <summary>A local date and time at the centre, as a UTC instant.</summary>
-    public DateTimeOffset LocalToUtc(DateOnly date, TimeOnly time)
-    {
-        var local = date.ToDateTime(time);
-        return new DateTimeOffset(local, _zone.GetUtcOffset(local)).ToUniversalTime();
-    }
-
-    public DateOnly LocalDate(DateTimeOffset instant) =>
-        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, _zone).DateTime);
-
-    public TimeOnly LocalTime(DateTimeOffset instant) =>
-        TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, _zone).DateTime);
-
-    /// <summary>The instant with the centre's offset, for showing in the API (+07:00, not UTC).</summary>
-    public DateTimeOffset ToLocal(DateTimeOffset instant) => TimeZoneInfo.ConvertTime(instant, _zone);
+    /// <summary>The centre's time zone. <see cref="DateTimeUtils"/> converts to and from it.</summary>
+    public TimeZoneInfo Zone { get; } = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone);
 
     /// <summary>
     /// When the tutor counts as told about a lesson date: the cut-off time on the calendar day before,
     /// even when that day is a Monday (DECISIONS §1).
     /// </summary>
-    public DateTimeOffset Cutoff(DateOnly lessonDate) => LocalToUtc(lessonDate.AddDays(-1), options.CutoffLocalTime);
+    public DateTimeOffset Cutoff(DateOnly lessonDate) =>
+        DateTimeUtils.LocalToUtc(Zone, lessonDate.AddDays(-1), options.CutoffLocalTime);
 
     /// <summary>True when the change is at or after the cut-off for the lesson's date.</summary>
     public bool IsAfterCutoff(DateTimeOffset changedAt, DateTimeOffset sessionStartsAt) =>
-        changedAt >= Cutoff(LocalDate(sessionStartsAt));
+        changedAt >= Cutoff(DateTimeUtils.LocalDate(Zone, sessionStartsAt));
 
     /// <summary>Only a family cancellation inside the late window is charged (Q2).</summary>
     public bool IsChargeable(string? cancelledBy, DateTimeOffset cancelledAt, DateTimeOffset sessionStartsAt) =>

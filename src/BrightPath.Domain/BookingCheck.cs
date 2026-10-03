@@ -20,11 +20,11 @@ public static class BookingCheck
         {
             conflicts.Add(new ScheduleViolation(
                 RuleCodes.InThePast,
-                policy.LocalDate(candidate.StartsAt),
+                DateTimeUtils.LocalDate(policy.Zone, candidate.StartsAt),
                 [candidate.Id],
                 [],
-                $"The session starts at {Format(policy.ToLocal(candidate.StartsAt))}, " +
-                $"before now ({Format(policy.ToLocal(now))})."));
+                $"The session starts at {Format(DateTimeUtils.ToLocal(policy.Zone, candidate.StartsAt))}, " +
+                $"before now ({Format(DateTimeUtils.ToLocal(policy.Zone, now))})."));
         }
 
         conflicts.AddRange(ScheduleRules

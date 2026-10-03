@@ -26,7 +26,7 @@ public static class MoveCheck
             conflicts.Add(OldConflict(
                 old,
                 RuleCodes.AlreadyStarted,
-                $"The session started at {Format(policy.ToLocal(old.StartsAt))}, before now ({Format(policy.ToLocal(now))}).",
+                $"The session started at {Format(DateTimeUtils.ToLocal(policy.Zone, old.StartsAt))}, before now ({Format(DateTimeUtils.ToLocal(policy.Zone, now))}).",
                 policy));
         }
 
@@ -35,7 +35,7 @@ public static class MoveCheck
             conflicts.Add(OldConflict(
                 old,
                 RuleCodes.AlreadyCancelled,
-                $"The session was already cancelled at {Format(policy.ToLocal(cancelledAt))}.",
+                $"The session was already cancelled at {Format(DateTimeUtils.ToLocal(policy.Zone, cancelledAt))}.",
                 policy));
         }
 
@@ -55,12 +55,12 @@ public static class MoveCheck
     {
         var suffix = string.IsNullOrWhiteSpace(note) ? "" : $"; {note}";
         return (
-            $"to {Format(policy.ToLocal(newStartsAt))} in {newRoomId}{suffix}",
-            $"from {Format(policy.ToLocal(old.StartsAt))} in {old.RoomId}{suffix}");
+            $"to {Format(DateTimeUtils.ToLocal(policy.Zone, newStartsAt))} in {newRoomId}{suffix}",
+            $"from {Format(DateTimeUtils.ToLocal(policy.Zone, old.StartsAt))} in {old.RoomId}{suffix}");
     }
 
     private static ScheduleViolation OldConflict(MoveSource old, string rule, string message, BookingPolicy policy) =>
-        new(rule, policy.LocalDate(old.StartsAt), [old.Id], old.LessonIds, message);
+        new(rule, DateTimeUtils.LocalDate(policy.Zone, old.StartsAt), [old.Id], old.LessonIds, message);
 
     private static string Format(DateTimeOffset local) => local.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 }
