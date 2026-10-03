@@ -28,7 +28,17 @@ internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy po
         db.Sessions.AsNoTracking()
             .Where(s => s.CancelledAt == null)
             .StartingBetween(from, to, policy)
-            .ToRuleSessions()
+            .Select(s => new RuleSession(
+                s.Id,
+                s.TutorId,
+                s.Tutor.Name,
+                s.RoomId,
+                s.StartsAt,
+                s.EndsAt,
+                s.CancelledAt != null,
+                s.Attendees
+                    .Select(a => new RuleAttendee(a.StudentId, a.Student.Name, a.Status, a.SourceLessonId))
+                    .ToList()))
             .ToListAsync(ct);
 
     public void Add(Session session) => db.Sessions.Add(session);
