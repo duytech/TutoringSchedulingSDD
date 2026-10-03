@@ -2,7 +2,7 @@
 // as the API sends them.
 // Times are local ISO strings with the centre's offset, e.g. "2026-03-06T10:30:00+07:00".
 
-export interface SessionChange {
+export interface BookingChange {
   kind: 'created' | 'cancelled' | 'moved'
   attendeeId: string | null
   changedAt: string
@@ -44,7 +44,7 @@ export interface Session {
   movedTo: MovedTo | null
   legacyViolation: boolean
   attendees: SessionAttendee[]
-  changes: SessionChange[]
+  changes: BookingChange[]
 }
 
 export interface DaySessions {
@@ -70,7 +70,7 @@ export interface TutorChange {
   sessionId: string
   sessionStartsAt: string
   roomId: string
-  kind: SessionChange['kind']
+  kind: BookingChange['kind']
   attendeeId: string | null
   /** Null for a change to the whole session. */
   studentName: string | null

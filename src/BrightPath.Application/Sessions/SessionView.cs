@@ -42,9 +42,9 @@ public sealed record BookingChangeView(
 public sealed record MovedToView(Guid Id, DateTimeOffset StartsAt, string RoomId);
 
 /// <summary>A session's booking changes as every session view shows them, in local time.</summary>
-public static class SessionChanges
+public static class BookingChangeViews
 {
-    public static List<BookingChangeView> Views(IEnumerable<BookingChange> changes, BookingPolicy policy) =>
+    public static List<BookingChangeView> From(IEnumerable<BookingChange> changes, BookingPolicy policy) =>
         changes
             .OrderBy(c => c.ChangedAt)
             // The last attendee's cancel and the session's share a time: the student goes first, then the session.

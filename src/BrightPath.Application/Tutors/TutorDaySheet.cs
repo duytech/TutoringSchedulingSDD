@@ -87,7 +87,7 @@ public static class TutorDaySheet
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets)
     {
-        var changeViews = SessionChanges.Views(changes, policy);
+        var changeViews = BookingChangeViews.From(changes, policy);
 
         return new SessionView(
             s.Id,

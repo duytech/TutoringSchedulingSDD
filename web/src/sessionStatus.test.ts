@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { SessionChange } from './api'
+import type { BookingChange } from './api'
 import { changedAfterCutoff, isCancelled, sessionState } from './sessionStatus'
 
 const nineToTen = { startsAt: '2026-03-06T09:00:00+07:00', endsAt: '2026-03-06T10:00:00+07:00' }
 
-function change(afterCutoff: boolean): SessionChange {
+function change(afterCutoff: boolean): BookingChange {
   return { kind: 'cancelled', attendeeId: null, changedAt: '2026-03-05T17:00:00+07:00', changedBy: 'family', afterCutoff, note: null }
 }
 
