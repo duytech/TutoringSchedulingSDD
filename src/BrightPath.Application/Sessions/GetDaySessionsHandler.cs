@@ -1,4 +1,5 @@
 using BrightPath.Application.Abstractions;
+using BrightPath.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Sessions;

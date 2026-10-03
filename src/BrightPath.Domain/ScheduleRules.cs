@@ -1,4 +1,4 @@
-using System.Globalization;
+using BrightPath.Common;
 
 namespace BrightPath.Domain;
 
@@ -133,7 +133,7 @@ public static class ScheduleRules
             .Select(g => Violation(
                 RuleCodes.TutorLoad,
                 g.ToList(),
-                $"{g.First().TutorId} {g.First().TutorName} has {g.Count()} sessions on {IsoDate(g.Key.Date)}; the limit is {max}.",
+                $"{g.First().TutorId} {g.First().TutorName} has {g.Count()} sessions on {DateTimeUtils.FormatDate(g.Key.Date)}; the limit is {max}.",
                 policy));
     }
 
@@ -146,7 +146,7 @@ public static class ScheduleRules
                 return Violation(
                     RuleCodes.ClosedDay,
                     [s],
-                    $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} at {GetLocalStartTime(s, policy)} on {date.DayOfWeek} {IsoDate(date)}; the centre is closed on {date.DayOfWeek}s.",
+                    $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} at {GetLocalStartTime(s, policy)} on {date.DayOfWeek} {DateTimeUtils.FormatDate(date)}; the centre is closed on {date.DayOfWeek}s.",
                     policy);
             });
 
@@ -161,8 +161,8 @@ public static class ScheduleRules
             .Select(s => Violation(
                 RuleCodes.OutsideHours,
                 [s],
-                $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} runs {GetLocalStartTime(s, policy)}–{HourMinute(DateTimeUtils.LocalTime(policy.Zone, s.EndsAt))}, " +
-                $"outside opening hours {HourMinute(opens)}–{HourMinute(closes)}.",
+                $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} runs {GetLocalStartTime(s, policy)}–{DateTimeUtils.FormatTime(DateTimeUtils.LocalTime(policy.Zone, s.EndsAt))}, " +
+                $"outside opening hours {DateTimeUtils.FormatTime(opens)}–{DateTimeUtils.FormatTime(closes)}.",
                 policy));
     }
 
@@ -216,9 +216,8 @@ public static class ScheduleRules
     /// <summary>For example "Le Minh Chau and Vu Ha My".</summary>
     private static string GetStudentNames(IEnumerable<RuleAttendee> attendees) => string.Join(" and ", attendees.Select(a => a.StudentName));
 
-    private static string IsoDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static string HourMinute(TimeOnly time) => time.ToString("HH:mm", CultureInfo.InvariantCulture);
 
-    private static string GetLocalStartTime(RuleSession s, BookingPolicy policy) => HourMinute(DateTimeUtils.LocalTime(policy.Zone, s.StartsAt));
+    private static string GetLocalStartTime(RuleSession s, BookingPolicy policy) =>
+        DateTimeUtils.FormatTime(DateTimeUtils.LocalTime(policy.Zone, s.StartsAt));
 }

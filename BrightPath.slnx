@@ -8,6 +8,7 @@
   <Folder Name="/src/">
     <Project Path="src/BrightPath.Api/BrightPath.Api.csproj" />
     <Project Path="src/BrightPath.Application/BrightPath.Application.csproj" />
+    <Project Path="src/BrightPath.Common/BrightPath.Common.csproj" />
     <Project Path="src/BrightPath.Domain/BrightPath.Domain.csproj" />
     <Project Path="src/BrightPath.Infrastructure/BrightPath.Infrastructure.csproj" />
   </Folder>

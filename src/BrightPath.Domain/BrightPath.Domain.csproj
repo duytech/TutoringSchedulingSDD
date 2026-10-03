@@ -6,4 +6,8 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BrightPath.Common\BrightPath.Common.csproj" />
+  </ItemGroup>
+
 </Project>

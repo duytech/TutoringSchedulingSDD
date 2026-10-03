@@ -1,4 +1,5 @@
 using BrightPath.Application.Sessions;
+using BrightPath.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Tutors;

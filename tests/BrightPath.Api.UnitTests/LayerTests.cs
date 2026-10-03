@@ -1,18 +1,27 @@
 using System.Reflection;
 using BrightPath.Application.Sessions;
+using BrightPath.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Api.UnitTests;
 
-/// <summary>Dependencies point inward: Api → Infrastructure → Application → Domain.</summary>
+/// <summary>Dependencies point inward: Api → Infrastructure → Application → Domain → Common.</summary>
 public sealed class LayerTests
 {
     [Fact]
+    public void Common_knows_no_framework_and_no_layer()
+    {
+        Assert.Empty(ReferencesStartingWith(typeof(DateTimeUtils).Assembly, "Microsoft", "Npgsql", "BrightPath."));
+    }
+
+    [Fact]
     public void Domain_knows_no_framework_and_no_other_layer()
     {
-        Assert.Empty(ReferencesStartingWith(
+        var references = ReferencesStartingWith(
             typeof(Session).Assembly,
-            "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore", "BrightPath."));
+            "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore", "BrightPath.");
+
+        Assert.Equal(["BrightPath.Common"], references);
     }
 
     [Fact]

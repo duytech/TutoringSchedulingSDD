@@ -52,6 +52,7 @@ The backend is four projects. Each one depends only on the ones below it:
 | `src/BrightPath.Infrastructure` | EF Core on Postgres: the DbContext, the migrations, the locks, the seed loader |
 | `src/BrightPath.Application` | One handler per use case, and the small interfaces it reads and writes through |
 | `src/BrightPath.Domain` | The entities and the centre rules. No package references |
+| `src/BrightPath.Common` | Helpers with no business meaning (`DateTimeUtils`). No package or project references |
 
 The migrations live in Infrastructure, and the Api is the startup project:
 

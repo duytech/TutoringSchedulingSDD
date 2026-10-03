@@ -1,4 +1,4 @@
-using System.Globalization;
+using BrightPath.Common;
 
 namespace BrightPath.Domain;
 
@@ -23,8 +23,8 @@ public static class BookingCheck
                 DateTimeUtils.LocalDate(policy.Zone, candidate.StartsAt),
                 [candidate.Id],
                 [],
-                $"The session starts at {Format(DateTimeUtils.ToLocal(policy.Zone, candidate.StartsAt))}, " +
-                $"before now ({Format(DateTimeUtils.ToLocal(policy.Zone, now))})."));
+                $"The session starts at {DateTimeUtils.FormatLocalDateTime(policy.Zone, candidate.StartsAt)}, " +
+                $"before now ({DateTimeUtils.FormatLocalDateTime(policy.Zone, now)})."));
         }
 
         conflicts.AddRange(ScheduleRules
@@ -33,6 +33,4 @@ public static class BookingCheck
 
         return conflicts;
     }
-
-    private static string Format(DateTimeOffset local) => local.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 }

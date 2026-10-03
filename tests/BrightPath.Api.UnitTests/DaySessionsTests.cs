@@ -1,5 +1,6 @@
 using BrightPath.Api.UnitTests.Infrastructure;
 using BrightPath.Application.Sessions;
+using BrightPath.Common;
 using BrightPath.Domain;
 using BrightPath.Infrastructure.Time;
 

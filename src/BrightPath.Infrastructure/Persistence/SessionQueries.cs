@@ -1,5 +1,6 @@
 using BrightPath.Application.Sessions;
 using BrightPath.Application.Tutors;
+using BrightPath.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Infrastructure.Persistence;

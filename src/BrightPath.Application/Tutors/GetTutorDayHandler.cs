@@ -1,5 +1,6 @@
 using BrightPath.Application.Abstractions;
 using BrightPath.Application.Common;
+using BrightPath.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Tutors;

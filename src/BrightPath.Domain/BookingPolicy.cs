@@ -1,3 +1,4 @@
+using BrightPath.Common;
 namespace BrightPath.Domain;
 
 /// <summary>

@@ -2,6 +2,7 @@ using System.Text.Json;
 using BrightPath.Api.UnitTests.Infrastructure;
 using BrightPath.Application.Sessions;
 using BrightPath.Application.Tutors;
+using BrightPath.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Api.UnitTests;
