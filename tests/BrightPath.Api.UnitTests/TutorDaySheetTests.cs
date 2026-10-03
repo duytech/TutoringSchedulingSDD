@@ -25,7 +25,6 @@ public sealed class TutorDaySheetTests
         Assert.Equal(TimeSpan.FromHours(7), sheet.Cutoff.Offset);
         Assert.True(sheet.Final);
         Assert.Equal(["L018", "L021", "L022", "L024", "L025", "L026", "L027"], sheet.Sessions.Select(Lesson));
-        Assert.Equal(["L018"], sheet.Sessions.Where(s => s.State == SessionState.Past).Select(Lesson));
         Assert.Empty(sheet.ChangesAfterCutoff);
     }
 
@@ -35,7 +34,7 @@ public sealed class TutorDaySheetTests
         var sheet = Export("T3", new DateOnly(2026, 3, 5));
 
         Assert.Equal(["L014", "L017"], sheet.Sessions.Select(Lesson));
-        Assert.True(sheet.Sessions[1].Cancelled);
+        Assert.NotNull(sheet.Sessions[1].CancelledAt);
         var change = Assert.Single(sheet.ChangesAfterCutoff);
         Assert.Equal(sheet.Sessions[1].Id, change.SessionId);
         Assert.Equal(DateTimeOffset.Parse("2026-03-05T16:00:00+07:00"), change.SessionStartsAt);
@@ -155,12 +154,12 @@ public sealed class TutorDaySheetTests
 
         foreach (var date in dates)
         {
-            var day = DaySessions.Build(date, PinnedNow, Seed.ForDaySessions, Seed.Changes, Policy, moveTargets);
+            var day = DaySessions.Build(date, Seed.ForDaySessions, Seed.Changes, Policy, moveTargets);
             foreach (var tutor in Seed.Tutors)
             {
                 var sheet = TutorDaySheet.Build(
                     tutor, date, PinnedNow, Seed.ForTutorDay, Seed.Changes, Policy, moveTargets);
-                var inDay = day.Sessions.Where(s => s.TutorId == tutor.Id);
+                var inDay = day.Where(s => s.TutorId == tutor.Id);
 
                 Assert.Equal(JsonSerializer.Serialize(inDay), JsonSerializer.Serialize(sheet.Sessions));
             }

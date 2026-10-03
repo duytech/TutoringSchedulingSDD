@@ -96,6 +96,6 @@ public sealed class CancelAttendeeHandler(
         await unitOfWork.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        return (await views.LoadAsync(id, now, ct))!;
+        return (await views.LoadAsync(id, ct))!;
     }
 }

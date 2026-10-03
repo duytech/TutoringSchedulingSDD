@@ -33,6 +33,7 @@ export function TutorSheet({ sheet, tutorColour, onGoToDate }: Props) {
               session={session}
               tutorColour={tutorColour}
               shownDate={sheet.date}
+              now={sheet.now}
               onGoToDate={onGoToDate}
             />
           ))}

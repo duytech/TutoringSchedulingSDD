@@ -4,6 +4,11 @@ using BrightPath.Domain;
 
 namespace BrightPath.Application.Sessions;
 
+public sealed record DaySessionsView(
+    DateOnly Date,
+    DateTimeOffset Now,
+    IReadOnlyList<SessionView> Sessions);
+
 /// <summary>One day's sessions.</summary>
 public sealed class GetDaySessionsHandler(ISessionReader reader, BookingPolicy policy, TimeProvider clock)
 {
@@ -18,6 +23,7 @@ public sealed class GetDaySessionsHandler(ISessionReader reader, BookingPolicy p
         var bookingChanges = await reader.ChangesOfAsync(sessionIds, ct);
         var moveTargets = await reader.MoveTargetsAsync(targetIds, ct);
 
-        return DaySessions.Build(localDate, utcNow, sessions, bookingChanges, policy, moveTargets);
+        var views = DaySessions.Build(localDate, sessions, bookingChanges, policy, moveTargets);
+        return new DaySessionsView(localDate, DateTimeUtils.ToLocal(policy.Zone, utcNow), views);
     }
 }

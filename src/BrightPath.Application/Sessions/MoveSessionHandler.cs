@@ -164,6 +164,6 @@ public sealed class MoveSessionHandler(
             return new ConflictError([RaceConflict.For(ex.Slot, candidate, date)]);
         }
 
-        return (await views.LoadAsync(newId, now, ct))!;
+        return (await views.LoadAsync(newId, ct))!;
     }
 }

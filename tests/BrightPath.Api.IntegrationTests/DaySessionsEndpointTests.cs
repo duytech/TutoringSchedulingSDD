@@ -20,10 +20,6 @@ public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
         Assert.Equal(10, day.Sessions.Count);
         Assert.Equal(7, day.Sessions.Count(s => s.RoomId == "R1"));
         Assert.DoesNotContain(day.Sessions, s => s.RoomId is "R4" or "R5" or "R6");
-
-        var past = day.Sessions.Where(s => s.State == SessionState.Past).SelectMany(s => s.Attendees).Select(a => a.LessonId);
-        Assert.Equal(["L018", "L019"], past.Order());
-        Assert.Equal(8, day.Sessions.Count(s => s.State == SessionState.Upcoming));
     }
 
     [Fact]
@@ -34,11 +30,7 @@ public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
         var day = await ApiCalls.DaySessions(moved.CreateClient());
 
         Assert.Equal(new DateOnly(2026, 3, 7), day.Date);
-        Assert.Equal(SessionState.InProgress, StateOf(day, "L028"));
-        Assert.Equal(SessionState.Upcoming, StateOf(day, "L029"));
-        Assert.Equal(SessionState.Upcoming, StateOf(day, "L030"));
+        Assert.Equal(DateTimeOffset.Parse("2026-03-07T10:00:00+07:00"), day.Now);
+        Assert.Contains(day.Sessions, s => s.Attendees.Any(a => a.LessonId == "L028"));
     }
-
-    private static string StateOf(DaySessionsView day, string lessonId) =>
-        day.Sessions.Single(s => s.Attendees.Any(a => a.LessonId == lessonId)).State;
 }

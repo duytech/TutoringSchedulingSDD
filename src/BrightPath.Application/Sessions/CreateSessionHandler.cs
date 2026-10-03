@@ -130,6 +130,6 @@ public sealed class CreateSessionHandler(
             return new ConflictError([RaceConflict.For(ex.Slot, candidate, date)]);
         }
 
-        return (await views.LoadAsync(sessionId, now, ct))!;
+        return (await views.LoadAsync(sessionId, ct))!;
     }
 }

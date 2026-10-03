@@ -17,9 +17,7 @@ public sealed class DaySessionsTests
     {
         var day = Export(Friday);
 
-        Assert.Equal(Friday, day.Date);
-        Assert.Equal(TimeSpan.FromHours(7), day.Now.Offset);
-        Assert.Equal(10, day.Sessions.Count);
+        Assert.Equal(10, day.Count);
 
         Assert.Equal(["L018", "L021", "L022", "L024", "L025", "L026", "L027"], Lessons(day, s => s.RoomId == "R1"));
         Assert.Equal(["L019", "L023"], Lessons(day, s => s.RoomId == "R2"));
@@ -29,11 +27,7 @@ public sealed class DaySessionsTests
         Assert.Equal(["L019", "L023"], Lessons(day, s => s.TutorId == "T2"));
         Assert.Equal(["L020"], Lessons(day, s => s.TutorId == "T3"));
 
-        // L018 and L019 end exactly at 10:00, so they are over.
-        Assert.Equal(["L018", "L019"], day.Sessions.Where(s => s.State == SessionState.Past).Select(Lesson));
-        Assert.Equal(8, day.Sessions.Count(s => s.State == SessionState.Upcoming));
-
-        Assert.DoesNotContain(day.Sessions, s => s.Cancelled || s.Changes.Count > 0 || s.LegacyViolation);
+        Assert.DoesNotContain(day, s => s.CancelledAt is not null || s.Changes.Count > 0 || s.LegacyViolation);
     }
 
     [Fact]
@@ -41,7 +35,7 @@ public sealed class DaySessionsTests
     {
         var l005 = SessionOf(Export(new DateOnly(2026, 3, 3)), "L005");
 
-        Assert.True(l005.Cancelled);
+        Assert.NotNull(l005.CancelledAt);
         var attendee = Assert.Single(l005.Attendees);
         Assert.Equal(AttendeeStatus.Cancelled, attendee.Status);
         Assert.Equal(CancelledBy.Family, attendee.CancelledBy);
@@ -51,8 +45,6 @@ public sealed class DaySessionsTests
         Assert.Equal(ChangeKind.Cancelled, change.Kind);
         Assert.Equal(attendee.Id, change.AttendeeId);
         Assert.True(change.AfterCutoff);
-        Assert.True(l005.ChangedAfterCutoff);
-        Assert.Equal(SessionState.Past, l005.State);
     }
 
     [Fact]
@@ -80,7 +72,6 @@ public sealed class DaySessionsTests
         Assert.True(l034.LegacyViolation);
         Assert.False(Assert.Single(l034.Attendees).LegacyViolation);
         Assert.False(SessionOf(day, "L033").LegacyViolation);
-        Assert.All(day.Sessions, s => Assert.Equal(SessionState.Upcoming, s.State));
     }
 
     [Fact]
@@ -89,7 +80,7 @@ public sealed class DaySessionsTests
         var day = Export(new DateOnly(2026, 3, 5));
 
         var l015 = SessionOf(day, "L015");
-        Assert.False(l015.Cancelled);
+        Assert.Null(l015.CancelledAt);
         Assert.Equal(AttendeeStatus.NoShow, Assert.Single(l015.Attendees).Status);
 
         var l017 = Assert.Single(SessionOf(day, "L017").Attendees);
@@ -97,36 +88,23 @@ public sealed class DaySessionsTests
         Assert.False(l017.Chargeable);
     }
 
-    [Theory]
-    [InlineData("09:00:00", SessionState.InProgress)] // now == start
-    [InlineData("08:59:59.9999999", SessionState.Upcoming)] // one tick before start
-    [InlineData("09:59:59", SessionState.InProgress)]
-    [InlineData("10:00:00", SessionState.Past)] // now == end
-    public void State_is_half_open(string nowLocal, string expected)
-    {
-        var now = DateTimeUtils.LocalToUtc(Policy.Zone, Friday, TimeOnly.Parse(nowLocal));
-        var day = Build(now, Session("R1", "09:00"));
-
-        Assert.Equal(expected, Assert.Single(day.Sessions).State);
-    }
-
     [Fact]
     public void Times_are_local_not_utc()
     {
-        var view = Assert.Single(Build(PinnedNow, Session("R1", "09:00")).Sessions);
+        var view = Assert.Single(Build(Session("R1", "09:00")));
 
         Assert.Equal(DateTimeOffset.Parse("2026-03-06T09:00:00+07:00"), view.StartsAt);
         Assert.Equal(TimeSpan.FromHours(7), view.StartsAt.Offset);
+        Assert.Equal(DateTimeOffset.Parse("2026-03-06T10:00:00+07:00"), view.EndsAt);
         Assert.Equal(TimeSpan.FromHours(7), view.EndsAt.Offset);
-        Assert.Equal(60, view.DurationMin);
     }
 
     [Fact]
     public void Sessions_at_the_same_time_sort_by_room()
     {
-        var day = Build(PinnedNow, Session("R3", "09:00"), Session("R1", "09:00"), Session("R2", "08:00"));
+        var day = Build(Session("R3", "09:00"), Session("R1", "09:00"), Session("R2", "08:00"));
 
-        Assert.Equal(["R2", "R1", "R3"], day.Sessions.Select(s => s.RoomId));
+        Assert.Equal(["R2", "R1", "R3"], day.Select(s => s.RoomId));
     }
 
     [Fact]
@@ -134,8 +112,7 @@ public sealed class DaySessionsTests
     {
         var day = Export(new DateOnly(2026, 3, 12));
 
-        Assert.Equal(new DateOnly(2026, 3, 12), day.Date);
-        Assert.Empty(day.Sessions);
+        Assert.Empty(day);
     }
 
     [Fact]
@@ -148,14 +125,14 @@ public sealed class DaySessionsTests
     }
 
     /// <summary>The real export, viewed on one date at the pinned now.</summary>
-    private static DaySessionsView Export(DateOnly date)
+    private static List<SessionView> Export(DateOnly date)
     {
         var export = SeedExport.Load(Policy);
-        return DaySessions.Build(date, PinnedNow, export.ForDaySessions, export.Changes, Policy);
+        return DaySessions.Build(date, export.ForDaySessions, export.Changes, Policy);
     }
 
-    private static DaySessionsView Build(DateTimeOffset now, params GetDaySessionsResponse[] sessions) =>
-        DaySessions.Build(Friday, now, sessions, [], Policy);
+    private static List<SessionView> Build(params GetDaySessionsResponse[] sessions) =>
+        DaySessions.Build(Friday, sessions, [], Policy);
 
     /// <summary>A one-hour session for T1 on Friday 2026-03-06.</summary>
     private static GetDaySessionsResponse Session(string room, string start)
@@ -166,11 +143,11 @@ public sealed class DaySessionsTests
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);
     }
 
-    private static SessionView SessionOf(DaySessionsView day, string lessonId) =>
-        day.Sessions.Single(s => s.Attendees.Any(a => a.LessonId == lessonId));
+    private static SessionView SessionOf(List<SessionView> day, string lessonId) =>
+        day.Single(s => s.Attendees.Any(a => a.LessonId == lessonId));
 
     private static string Lesson(SessionView s) => s.Attendees[0].LessonId!;
 
-    private static IEnumerable<string> Lessons(DaySessionsView day, Func<SessionView, bool> which) =>
-        day.Sessions.Where(which).Select(Lesson);
+    private static IEnumerable<string> Lessons(List<SessionView> day, Func<SessionView, bool> which) =>
+        day.Where(which).Select(Lesson);
 }

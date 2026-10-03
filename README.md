@@ -121,12 +121,12 @@ curl -s -X POST "$API/api/sessions" -H 'Content-Type: application/json' \
 
 # 5. Booked
 curl -s -X POST "$API/api/sessions" -H 'Content-Type: application/json' \
-  -d '{"tutorId":"T2","roomId":"R4","startsAt":"2026-03-07T13:00:00+07:00","durationMin":60,"studentIds":["'"$MY"'"]}' | jq '{id, tutorId, roomId, startsAt, endsAt, state, attendees: [.attendees[].studentName], changes}'
+  -d '{"tutorId":"T2","roomId":"R4","startsAt":"2026-03-07T13:00:00+07:00","durationMin":60,"studentIds":["'"$MY"'"]}' | jq '{id, tutorId, roomId, startsAt, endsAt, attendees: [.attendees[].studentName], changes}'
 
 # 6. The family cancels L020 (today 10:30), 30 minutes before it starts
 L020=$(curl -s "$API/api/sessions" | jq -r '.sessions[] | select(any(.attendees[]; .lessonId == "L020")) | "\(.id)/attendees/\(.attendees[0].id)"')
 curl -s -X POST "$API/api/sessions/$L020/cancel" -H 'Content-Type: application/json' \
-  -d '{"cancelledBy":"family"}' | jq '{startsAt, cancelled, attendees: [.attendees[] | {lessonId, status, cancelledBy, chargeable}], changes}'
+  -d '{"cancelledBy":"family"}' | jq '{startsAt, cancelledAt, attendees: [.attendees[] | {lessonId, status, cancelledBy, chargeable}], changes}'
 
 # 7. T3's day: what changed after they were told
 curl -s "$API/api/tutors/T3/day" | jq '{tutorName, date, cutoff, final, changesAfterCutoff: [.changesAfterCutoff[] | {kind, studentName, changedBy, changedAt}]}'
@@ -178,7 +178,7 @@ Seeded 3 tutors, 6 students, 33 sessions, 34 attendees, 2 booking changes; legac
 
 ```json
 { "id": "…", "tutorId": "T2", "roomId": "R4",
-  "startsAt": "2026-03-07T13:00:00+07:00", "endsAt": "2026-03-07T14:00:00+07:00", "state": "upcoming",
+  "startsAt": "2026-03-07T13:00:00+07:00", "endsAt": "2026-03-07T14:00:00+07:00",
   "attendees": ["Vu Ha My"],
   "changes": [ { "kind": "created", "attendeeId": null, "changedAt": "2026-03-06T10:00:00+07:00", "changedBy": "centre", "afterCutoff": false, "note": null } ] }
 ```
@@ -186,7 +186,7 @@ Seeded 3 tutors, 6 students, 33 sessions, 34 attendees, 2 booking changes; legac
 **6. A late family cancel.** It is chargeable (less than 4 hours before the start) and flagged as after the cut-off. L020 was its session's only student, so the session is cancelled too, with a change of its own, and its room and tutor are free again.
 
 ```json
-{ "startsAt": "2026-03-06T10:30:00+07:00", "cancelled": true,
+{ "startsAt": "2026-03-06T10:30:00+07:00", "cancelledAt": "2026-03-06T10:00:00+07:00",
   "attendees": [ { "lessonId": "L020", "status": "cancelled", "cancelledBy": "family", "chargeable": true } ],
   "changes": [
     { "kind": "cancelled", "attendeeId": "…",  "changedAt": "2026-03-06T10:00:00+07:00", "changedBy": "family", "afterCutoff": true, "note": null },

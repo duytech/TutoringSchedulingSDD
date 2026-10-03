@@ -3,6 +3,7 @@ import type { Session } from './api'
 import { localDate, localTime } from './dates'
 import { movedLabel } from './labels'
 import type { Placement } from './layout'
+import { changedAfterCutoff, isCancelled, sessionState } from './sessionStatus'
 
 const FLAG_TITLE = 'Loaded from the export; breaks a centre rule. See /api/reports/violations.'
 
@@ -13,18 +14,20 @@ interface Props {
   tutorColour: string
   /** The date the grid shows, to tell a move within the day from a move to another day. */
   shownDate: string
+  /** The API's now, to tell past, in-progress and upcoming apart. */
+  now: string
   onGoToDate: (date: string) => void
 }
 
-export function SessionCard({ session, placement, tutorColour, shownDate, onGoToDate }: Props) {
+export function SessionCard({ session, placement, tutorColour, shownDate, now, onGoToDate }: Props) {
   const flagged = session.legacyViolation || session.attendees.some((attendee) => attendee.legacyViolation)
   const lateChanges = session.changes.filter((change) => change.afterCutoff)
   const moved = session.movedTo ? movedLabel(shownDate, session.movedTo) : null
   const movedToDate = moved?.otherDate
   const classes = [
     'card',
-    `card--${session.state}`,
-    session.cancelled ? 'card--cancelled' : '',
+    `card--${sessionState(session, now)}`,
+    isCancelled(session) ? 'card--cancelled' : '',
     placement ? '' : 'card--row',
   ].filter(Boolean)
 
@@ -74,7 +77,7 @@ export function SessionCard({ session, placement, tutorColour, shownDate, onGoTo
             {moved.text}
           </div>
         ))}
-      {session.changedAfterCutoff && (
+      {changedAfterCutoff(session) && (
         <div
           className="card__badge"
           title={lateChanges

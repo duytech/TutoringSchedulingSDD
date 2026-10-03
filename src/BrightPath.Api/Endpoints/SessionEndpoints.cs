@@ -14,7 +14,7 @@ public static class SessionEndpoints
             .WithSummary("One day's sessions")
             .WithDescription(
                 "Every session whose local start date is the given date (default: today on the pinned clock), " +
-                "cancelled ones included, with attendees, changes and a state relative to now. " +
+                "cancelled ones included, with attendees and changes, plus the clock's now. " +
                 "The rooms and tutors come from /api/rooms and /api/tutors.")
             .Produces<DaySessionsView>()
             .ProducesProblem(StatusCodes.Status400BadRequest);

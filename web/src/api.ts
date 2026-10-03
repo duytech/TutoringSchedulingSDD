@@ -2,8 +2,6 @@
 // as the API sends them.
 // Times are local ISO strings with the centre's offset, e.g. "2026-03-06T10:30:00+07:00".
 
-export type SessionState = 'past' | 'in-progress' | 'upcoming'
-
 export interface SessionChange {
   kind: 'created' | 'cancelled' | 'moved'
   attendeeId: string | null
@@ -39,15 +37,12 @@ export interface Session {
   roomId: string
   startsAt: string
   endsAt: string
-  durationMin: number
-  state: SessionState
-  cancelled: boolean
+  /** Null while the session is active. */
   cancelledAt: string | null
   movedToSessionId: string | null
   /** Where a moved session went. It may be on another day. */
   movedTo: MovedTo | null
   legacyViolation: boolean
-  changedAfterCutoff: boolean
   attendees: SessionAttendee[]
   changes: SessionChange[]
 }

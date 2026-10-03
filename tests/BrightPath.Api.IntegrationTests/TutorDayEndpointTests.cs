@@ -58,7 +58,7 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
         var sheet = await ApiCalls.TutorDay(evening, "T2", "2026-04-02");
 
         var session = Assert.Single(sheet.Sessions);
-        Assert.True(session.Cancelled);
+        Assert.NotNull(session.CancelledAt);
         Assert.Equal([booked.Attendees[0].Id, (Guid?)null], sheet.ChangesAfterCutoff.Select(c => c.AttendeeId));
         Assert.All(sheet.ChangesAfterCutoff, c => Assert.Equal(ChangeKind.Cancelled, c.Kind));
         Assert.Equal(["Vu Ha My", null], sheet.ChangesAfterCutoff.Select(c => c.StudentName));

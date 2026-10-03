@@ -40,7 +40,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
         Assert.Equal("from 2026-03-26 10:00 in R1", arrived.Note);
 
         var old = await ApiCalls.ReadSession(await client.GetAsync($"/api/sessions/{pair.Id}"));
-        Assert.True(old.Cancelled);
+        Assert.NotNull(old.CancelledAt);
         Assert.Equal(moved.Id, old.MovedToSessionId);
         Assert.Equal(new MovedToView(moved.Id, DateTimeOffset.Parse("2026-03-26T12:00:00+07:00"), "R2"), old.MovedTo);
         Assert.All(old.Attendees, a => Assert.Equal(AttendeeStatus.Cancelled, a.Status));
@@ -73,7 +73,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Equal(RuleCodes.RoomOverlap, Assert.Single(await ApiCalls.ReadConflicts(response)).Rule);
         var still = await ApiCalls.ReadSession(await client.GetAsync($"/api/sessions/{mine.Id}"));
-        Assert.False(still.Cancelled);
+        Assert.Null(still.CancelledAt);
         Assert.Null(still.MovedTo);
     }
 

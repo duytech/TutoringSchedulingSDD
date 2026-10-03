@@ -49,7 +49,7 @@ public static class TutorDaySheet
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
-            .Select(s => ToView(s, changesBySession[s.Id], now, policy, moveTargets))
+            .Select(s => ToView(s, changesBySession[s.Id], policy, moveTargets))
             .ToList();
 
         // View has already put each session's changes in order, so a stable sort by time keeps the attendee's
@@ -84,7 +84,6 @@ public static class TutorDaySheet
     private static SessionView ToView(
         GetTutorDayResponse s,
         IEnumerable<BookingChange> changes,
-        DateTimeOffset now,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets)
     {
@@ -97,16 +96,12 @@ public static class TutorDaySheet
             s.RoomId,
             DateTimeUtils.ToLocal(policy.Zone, s.StartsAt),
             DateTimeUtils.ToLocal(policy.Zone, s.EndsAt),
-            (int)(s.EndsAt - s.StartsAt).TotalMinutes,
-            SessionState.Of(s.StartsAt, s.EndsAt, now),
-            s.CancelledAt is not null,
             Local(s.CancelledAt, policy),
             s.MovedToSessionId,
             s.MovedToSessionId is { } to && moveTargets?.GetValueOrDefault(to) is { } target
                 ? target with { StartsAt = DateTimeUtils.ToLocal(policy.Zone, target.StartsAt) }
                 : null,
             s.LegacyViolation,
-            changeViews.Any(c => c.AfterCutoff),
             s.Attendees
                 .OrderBy(a => a.LessonId is null)
                 .ThenBy(a => a.LessonId, StringComparer.Ordinal)

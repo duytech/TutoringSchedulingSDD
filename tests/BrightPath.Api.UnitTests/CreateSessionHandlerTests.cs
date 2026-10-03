@@ -61,6 +61,6 @@ public sealed class CreateSessionHandlerTests
     {
         var clock = new FixedTimeProvider(PinnedNow);
         return new CreateSessionHandler(
-            _store, _store, _store, _store, new GetSessionHandler(_store, Policy, clock), Policy, clock);
+            _store, _store, _store, _store, new GetSessionHandler(_store, Policy), Policy, clock);
     }
 }

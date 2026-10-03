@@ -14,6 +14,7 @@ import { tutorColour } from './colours'
 import { longDate } from './dates'
 import { DayGrid } from './DayGrid'
 import { ApiErrorMessage, PageHeader } from './PageHeader'
+import { isCancelled } from './sessionStatus'
 import { onDate, useDate } from './useDate'
 
 interface DayData {
@@ -88,7 +89,7 @@ export function DayPage() {
 
 /** "T1 Ngoc Anh 7 · T2 Pham Duc 2 · T3 Le Thu 1": active sessions per tutor that day, each a link to their sheet. */
 function TutorLoads({ day, tutors }: { day: DaySessions; tutors: Tutor[] }) {
-  const active = day.sessions.filter((session) => !session.cancelled)
+  const active = day.sessions.filter((session) => !isCancelled(session))
   return tutors.map((tutor, index) => (
     <span key={tutor.id}>
       {index > 0 && ' · '}

@@ -33,8 +33,8 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
         Assert.Equal(AttendeeStatus.Cancelled, attendee.Status);
         Assert.Equal(CancelledBy.Family, attendee.CancelledBy);
         Assert.True(attendee.Chargeable);
-        Assert.True(session.Cancelled);
-        Assert.True(session.ChangedAfterCutoff);
+        Assert.NotNull(session.CancelledAt);
+        Assert.Contains(session.Changes, c => c.AfterCutoff);
 
         var cancels = session.Changes.Where(c => c.Kind == ChangeKind.Cancelled).ToList();
         Assert.Equal(2, cancels.Count);
@@ -56,12 +56,12 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
 
         var first = await ApiCalls.ReadSession(
             await ApiCalls.Cancel(client, pair.Id, pair.Attendees[0].Id, "centre"));
-        Assert.False(first.Cancelled);
+        Assert.Null(first.CancelledAt);
         Assert.Single(first.Changes, c => c.Kind == ChangeKind.Cancelled);
 
         var last = await ApiCalls.ReadSession(
             await ApiCalls.Cancel(client, pair.Id, pair.Attendees[1].Id, "family"));
-        Assert.True(last.Cancelled);
+        Assert.NotNull(last.CancelledAt);
         Assert.Equal(3, last.Changes.Count(c => c.Kind == ChangeKind.Cancelled));
         Assert.Single(last.Changes, c => c.Kind == ChangeKind.Cancelled && c.AttendeeId is null);
         Assert.Null(last.Changes[^1].AttendeeId); // the student goes first, then the session
@@ -145,7 +145,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
 
         var response = await ours;
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.True((await ApiCalls.ReadSession(response)).Cancelled);
+        Assert.NotNull((await ApiCalls.ReadSession(response)).CancelledAt);
     }
 
     private static async Task<(Guid Session, Guid Attendee)> Lesson(HttpClient client, string lessonId)

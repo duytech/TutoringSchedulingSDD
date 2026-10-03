@@ -3,20 +3,14 @@ using BrightPath.Domain;
 
 namespace BrightPath.Application.Sessions;
 
-public sealed record DaySessionsView(
-    DateOnly Date,
-    DateTimeOffset Now,
-    IReadOnlyList<SessionView> Sessions);
-
 /// <summary>
 /// One day's sessions: every session that starts on the local date, cancelled ones included. The rooms and
 /// tutors are reference data with endpoints of their own. Pure: no I/O, no database.
 /// </summary>
 public static class DaySessions
 {
-    public static DaySessionsView Build(
+    public static List<SessionView> Build(
         DateOnly date,
-        DateTimeOffset now,
         IEnumerable<GetDaySessionsResponse> sessions,
         IEnumerable<BookingChange> changes,
         BookingPolicy policy,
@@ -24,22 +18,19 @@ public static class DaySessions
     {
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
-        var views = sessions
+        return sessions
             .Where(s => DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date)
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
-            .Select(s => ToView(s, changesBySession[s.Id], now, policy, moveTargets))
+            .Select(s => ToView(s, changesBySession[s.Id], policy, moveTargets))
             .ToList();
-
-        return new DaySessionsView(date, DateTimeUtils.ToLocal(policy.Zone, now), views);
     }
 
     /// <summary><paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.</summary>
     private static SessionView ToView(
         GetDaySessionsResponse s,
         IEnumerable<BookingChange> changes,
-        DateTimeOffset now,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets)
     {
@@ -52,16 +43,12 @@ public static class DaySessions
             s.RoomId,
             DateTimeUtils.ToLocal(policy.Zone, s.StartsAt),
             DateTimeUtils.ToLocal(policy.Zone, s.EndsAt),
-            (int)(s.EndsAt - s.StartsAt).TotalMinutes,
-            SessionState.Of(s.StartsAt, s.EndsAt, now),
-            s.CancelledAt is not null,
             Local(s.CancelledAt, policy),
             s.MovedToSessionId,
             s.MovedToSessionId is { } to && moveTargets?.GetValueOrDefault(to) is { } target
                 ? target with { StartsAt = DateTimeUtils.ToLocal(policy.Zone, target.StartsAt) }
                 : null,
             s.LegacyViolation,
-            changeViews.Any(c => c.AfterCutoff),
             s.Attendees
                 .OrderBy(a => a.LessonId is null)
                 .ThenBy(a => a.LessonId, StringComparer.Ordinal)
