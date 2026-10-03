@@ -45,7 +45,7 @@ public static class TutorDaySheet
     {
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
-        var views = sessions
+        var sessionViews = sessions
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
@@ -54,7 +54,7 @@ public static class TutorDaySheet
 
         // View has already put each session's changes in order, so a stable sort by time keeps the attendee's
         // change before the session's when they share a time.
-        var late = views
+        var late = sessionViews
             .SelectMany(s => s.Changes.Where(c => c.AfterCutoff).Select(c => new TutorChangeView(
                 s.Id,
                 s.StartsAt,
@@ -76,7 +76,7 @@ public static class TutorDaySheet
             DateTimeUtils.ToLocal(policy.Zone, now),
             DateTimeUtils.ToLocal(policy.Zone, cutoff),
             now >= cutoff,
-            views,
+            sessionViews,
             late);
     }
 

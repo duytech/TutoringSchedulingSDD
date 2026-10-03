@@ -16,7 +16,7 @@ public sealed record SessionView(
     MovedToView? MovedTo,
     bool LegacyViolation,
     IReadOnlyList<SessionAttendeeView> Attendees,
-    IReadOnlyList<SessionChangeView> Changes);
+    IReadOnlyList<BookingChangeView> Changes);
 
 public sealed record SessionAttendeeView(
     Guid Id,
@@ -30,7 +30,7 @@ public sealed record SessionAttendeeView(
     bool LegacyViolation,
     string? Note);
 
-public sealed record SessionChangeView(
+public sealed record BookingChangeView(
     string Kind,
     Guid? AttendeeId,
     DateTimeOffset ChangedAt,
@@ -44,12 +44,12 @@ public sealed record MovedToView(Guid Id, DateTimeOffset StartsAt, string RoomId
 /// <summary>A session's booking changes as every session view shows them, in local time.</summary>
 public static class SessionChanges
 {
-    public static List<SessionChangeView> Views(IEnumerable<BookingChange> changes, BookingPolicy policy) =>
+    public static List<BookingChangeView> Views(IEnumerable<BookingChange> changes, BookingPolicy policy) =>
         changes
             .OrderBy(c => c.ChangedAt)
             // The last attendee's cancel and the session's share a time: the student goes first, then the session.
             .ThenBy(c => c.AttendeeId is null)
-            .Select(c => new SessionChangeView(
+            .Select(c => new BookingChangeView(
                 c.Kind, c.AttendeeId, DateTimeUtils.ToLocal(policy.Zone, c.ChangedAt), c.ChangedBy, c.AfterCutoff,
                 c.Note))
             .ToList();
