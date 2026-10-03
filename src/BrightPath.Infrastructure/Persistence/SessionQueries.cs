@@ -16,12 +16,12 @@ public static class SessionQueries
     {
         if (from is { } f)
         {
-            var start = policy.ToInstant(f, TimeOnly.MinValue);
+            var start = policy.LocalToUtc(f, TimeOnly.MinValue);
             sessions = sessions.Where(s => s.StartsAt >= start);
         }
         if (to is { } t)
         {
-            var end = policy.ToInstant(t.AddDays(1), TimeOnly.MinValue);
+            var end = policy.LocalToUtc(t.AddDays(1), TimeOnly.MinValue);
             sessions = sessions.Where(s => s.StartsAt < end);
         }
         return sessions;

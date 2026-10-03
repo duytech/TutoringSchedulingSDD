@@ -151,7 +151,7 @@ public sealed class ScheduleRulesTests
     private static RuleSession Session(
         string tutor, string room, string start, int minutes, params RuleAttendee[] attendees)
     {
-        var startsAt = Policy.ToInstant(new DateOnly(2026, 3, 6), TimeOnly.Parse(start));
+        var startsAt = Policy.LocalToUtc(new DateOnly(2026, 3, 6), TimeOnly.Parse(start));
         return new RuleSession(
             Guid.NewGuid(), tutor, tutor, room, startsAt, startsAt.AddMinutes(minutes), Cancelled: false,
             attendees.Length > 0 ? attendees : [Booked(Guid.NewGuid().ToString())]);

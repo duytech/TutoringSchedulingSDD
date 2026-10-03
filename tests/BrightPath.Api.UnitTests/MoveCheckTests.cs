@@ -90,7 +90,7 @@ public sealed class MoveCheckTests
             session.Attendees.Select(a => a.SourceLessonId).OfType<string>().ToList());
 
         var local = DateTime.Parse(start, System.Globalization.CultureInfo.InvariantCulture);
-        var startsAt = Policy.ToInstant(DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
+        var startsAt = Policy.LocalToUtc(DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
         var candidate = new RuleSession(
             Guid.NewGuid(), session.TutorId, Plan.Tutors.Single(t => t.Id == session.TutorId).Name,
             room ?? session.RoomId, startsAt, startsAt + (session.EndsAt - session.StartsAt), Cancelled: false,

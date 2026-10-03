@@ -171,7 +171,7 @@ public sealed class TutorDaySheetTests
 
     private static GetTutorDayResponse Session(string tutorId, string room, DateOnly date, string start)
     {
-        var startsAt = Policy.ToInstant(date, TimeOnly.Parse(start));
+        var startsAt = Policy.LocalToUtc(date, TimeOnly.Parse(start));
         return new GetTutorDayResponse(
             Guid.NewGuid(), tutorId, tutorId, room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);

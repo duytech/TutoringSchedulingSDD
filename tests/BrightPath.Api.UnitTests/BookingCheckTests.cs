@@ -104,7 +104,7 @@ public sealed class BookingCheckTests
     private static RuleSession Candidate(string tutor, string room, string start, int minutes, params string[] students)
     {
         var local = DateTime.Parse(start, System.Globalization.CultureInfo.InvariantCulture);
-        var startsAt = Policy.ToInstant(DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
+        var startsAt = Policy.LocalToUtc(DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
         var names = Plan.Students.ToDictionary(s => s.Name, s => s.Id);
         return new RuleSession(
             Guid.NewGuid(), tutor, Plan.Tutors.Single(t => t.Id == tutor).Name, room, startsAt,

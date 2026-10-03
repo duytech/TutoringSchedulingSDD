@@ -34,7 +34,7 @@ public sealed class BookingPolicy(BookingPolicyOptions options)
     public BookingPolicyOptions Options => options;
 
     /// <summary>A local date and time at the centre, as a UTC instant.</summary>
-    public DateTimeOffset ToInstant(DateOnly date, TimeOnly time)
+    public DateTimeOffset LocalToUtc(DateOnly date, TimeOnly time)
     {
         var local = date.ToDateTime(time);
         return new DateTimeOffset(local, _zone.GetUtcOffset(local)).ToUniversalTime();
@@ -53,7 +53,7 @@ public sealed class BookingPolicy(BookingPolicyOptions options)
     /// When the tutor counts as told about a lesson date: the cut-off time on the calendar day before,
     /// even when that day is a Monday (DECISIONS §1).
     /// </summary>
-    public DateTimeOffset Cutoff(DateOnly lessonDate) => ToInstant(lessonDate.AddDays(-1), options.CutoffLocalTime);
+    public DateTimeOffset Cutoff(DateOnly lessonDate) => LocalToUtc(lessonDate.AddDays(-1), options.CutoffLocalTime);
 
     /// <summary>True when the change is at or after the cut-off for the lesson's date.</summary>
     public bool IsAfterCutoff(DateTimeOffset changedAt, DateTimeOffset sessionStartsAt) =>

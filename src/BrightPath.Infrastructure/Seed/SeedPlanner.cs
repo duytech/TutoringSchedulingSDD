@@ -39,7 +39,7 @@ public static class SeedPlanner
             .GroupBy(r => (r.Date, r.StartTime, r.DurationMin, r.TutorId, r.Room))
             .Select(g =>
             {
-                var startsAt = policy.ToInstant(g.Key.Date, g.Key.StartTime);
+                var startsAt = policy.LocalToUtc(g.Key.Date, g.Key.StartTime);
                 var rows = g.OrderBy(r => r.LessonId, StringComparer.Ordinal).ToList();
                 return new Slot(rows, startsAt, startsAt.AddMinutes(g.Key.DurationMin));
             })
