@@ -55,8 +55,8 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISes
     public Task<List<GetDaySessionsResponse>> GetDaySessionsAsync(DateOnly date, CancellationToken ct) =>
         Task.FromResult(new List<GetDaySessionsResponse>());
 
-    public Task<List<GetTutorDayResponse>> GetTutorDayAsync(DateOnly date, string tutorId, CancellationToken ct) =>
-        Task.FromResult(new List<GetTutorDayResponse>());
+    public Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct) =>
+        Task.FromResult(new List<GetDaySessionsByTutorResponse>());
 
     public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
         Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToGetSessionResponse).SingleOrDefault());

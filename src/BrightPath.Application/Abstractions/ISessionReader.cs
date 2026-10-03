@@ -11,7 +11,7 @@ public interface ISessionReader
     Task<List<GetDaySessionsResponse>> GetDaySessionsAsync(DateOnly date, CancellationToken ct);
 
     /// <summary>The tutor's sessions whose local start date is <paramref name="date"/>, cancelled ones included.</summary>
-    Task<List<GetTutorDayResponse>> GetTutorDayAsync(DateOnly date, string tutorId, CancellationToken ct);
+    Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct);
 
     Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct);
 

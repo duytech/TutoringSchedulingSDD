@@ -10,7 +10,7 @@ namespace BrightPath.Api.UnitTests.Infrastructure;
 internal sealed record SeedExport(
     IReadOnlyList<Tutor> Tutors,
     IReadOnlyList<GetDaySessionsResponse> ForDaySessions,
-    IReadOnlyList<GetTutorDayResponse> ForTutorDay,
+    IReadOnlyList<GetDaySessionsByTutorResponse> ForTutorDay,
     IReadOnlyList<BookingChange> Changes)
 {
     public static SeedExport Load(BookingPolicy policy)
@@ -27,10 +27,10 @@ internal sealed record SeedExport(
             s.Attendees.Select(a => new GetDaySessionsResponse.Attendee(
                 a.Id, a.StudentId, students[a.StudentId], a.SourceLessonId, a.Status, a.CancelledAt, a.CancelledBy,
                 a.Chargeable, a.LegacyViolation, a.Note)).ToList())).ToList();
-        var forTutorDay = plan.Sessions.Select(s => new GetTutorDayResponse(
+        var forTutorDay = plan.Sessions.Select(s => new GetDaySessionsByTutorResponse(
             s.Id, s.TutorId, tutors[s.TutorId], s.RoomId, s.StartsAt, s.EndsAt, s.CancelledAt, s.MovedToSessionId,
             s.LegacyViolation,
-            s.Attendees.Select(a => new GetTutorDayResponse.Attendee(
+            s.Attendees.Select(a => new GetDaySessionsByTutorResponse.Attendee(
                 a.Id, a.StudentId, students[a.StudentId], a.SourceLessonId, a.Status, a.CancelledAt, a.CancelledBy,
                 a.Chargeable, a.LegacyViolation, a.Note)).ToList())).ToList();
 
@@ -41,8 +41,8 @@ internal sealed record SeedExport(
     public List<GetDaySessionsResponse> DaySessionsOn(DateOnly date, BookingPolicy policy) =>
         ForDaySessions.Where(s => DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date).ToList();
 
-    /// <summary>One tutor's sessions starting on the local date, as the reader's GetTutorDayAsync loads them.</summary>
-    public List<GetTutorDayResponse> TutorDayOn(string tutorId, DateOnly date, BookingPolicy policy) =>
+    /// <summary>One tutor's sessions starting on the local date, as the reader's GetDaySessionsByTutorAsync loads them.</summary>
+    public List<GetDaySessionsByTutorResponse> TutorDayOn(string tutorId, DateOnly date, BookingPolicy policy) =>
         ForTutorDay
             .Where(s => s.TutorId == tutorId && DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date)
             .ToList();

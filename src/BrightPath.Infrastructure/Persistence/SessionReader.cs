@@ -28,11 +28,11 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
                     .ToList()))
             .ToListAsync(ct);
 
-    public Task<List<GetTutorDayResponse>> GetTutorDayAsync(DateOnly date, string tutorId, CancellationToken ct) =>
+    public Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct) =>
         db.Sessions.AsNoTracking()
             .StartingOn(date, policy)
             .Where(s => s.TutorId == tutorId)
-            .Select(s => new GetTutorDayResponse(
+            .Select(s => new GetDaySessionsByTutorResponse(
                 s.Id,
                 s.TutorId,
                 s.Tutor.Name,
@@ -43,7 +43,7 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
                 s.MovedToSessionId,
                 s.LegacyViolation,
                 s.Attendees
-                    .Select(a => new GetTutorDayResponse.Attendee(
+                    .Select(a => new GetDaySessionsByTutorResponse.Attendee(
                         a.Id, a.StudentId, a.Student.Name, a.SourceLessonId, a.Status, a.CancelledAt,
                         a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
                     .ToList()))

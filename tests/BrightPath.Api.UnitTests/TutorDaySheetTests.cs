@@ -163,19 +163,19 @@ public sealed class TutorDaySheetTests
             Seed.Changes,
             Policy);
 
-    private static TutorDaySheetView Build(DateTimeOffset now, GetTutorDayResponse[] sessions, BookingChange[] changes) =>
+    private static TutorDaySheetView Build(DateTimeOffset now, GetDaySessionsByTutorResponse[] sessions, BookingChange[] changes) =>
         TutorDaySheet.Build(T1, Friday, now, sessions, changes, Policy);
 
-    private static GetTutorDayResponse Session(string tutorId, string room, DateOnly date, string start)
+    private static GetDaySessionsByTutorResponse Session(string tutorId, string room, DateOnly date, string start)
     {
         var startsAt = DateTimeUtils.LocalToUtc(Policy.Zone, date, TimeOnly.Parse(start));
-        return new GetTutorDayResponse(
+        return new GetDaySessionsByTutorResponse(
             Guid.NewGuid(), tutorId, tutorId, room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);
     }
 
     /// <summary>A cancel, flagged the way every write flags it.</summary>
-    private static BookingChange Change(GetTutorDayResponse session, DateTimeOffset changedAt, Guid? attendeeId = null) => new()
+    private static BookingChange Change(GetDaySessionsByTutorResponse session, DateTimeOffset changedAt, Guid? attendeeId = null) => new()
     {
         Id = Guid.NewGuid(),
         SessionId = session.Id,

@@ -38,7 +38,7 @@ public static class TutorDaySheet
         Tutor tutor,
         DateOnly date,
         DateTimeOffset now,
-        IEnumerable<GetTutorDayResponse> sessions,
+        IEnumerable<GetDaySessionsByTutorResponse> sessions,
         IEnumerable<BookingChange> changes,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
@@ -82,7 +82,7 @@ public static class TutorDaySheet
 
     /// <summary><paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.</summary>
     private static SessionView ToView(
-        GetTutorDayResponse s,
+        GetDaySessionsByTutorResponse s,
         IEnumerable<BookingChange> changes,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets)

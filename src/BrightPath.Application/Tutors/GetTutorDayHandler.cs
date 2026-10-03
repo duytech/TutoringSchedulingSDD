@@ -20,7 +20,7 @@ public sealed class GetTutorDayHandler(
 
         var utcNow = clock.GetUtcNow();
         var localDate = date ?? DateTimeUtils.LocalDate(policy.Zone, utcNow);
-        var sessions = await reader.GetTutorDayAsync(localDate, tutorId, ct);
+        var sessions = await reader.GetDaySessionsByTutorAsync(localDate, tutorId, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
         var bookingChanges = await reader.ChangesOfAsync(sessionIds, ct);

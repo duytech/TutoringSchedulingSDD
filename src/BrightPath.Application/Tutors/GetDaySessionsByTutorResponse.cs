@@ -1,7 +1,7 @@
 namespace BrightPath.Application.Tutors;
 
 /// <summary>One session of a tutor's day as GetTutorDay reads it. Built from the database or the seed plan.</summary>
-public sealed record GetTutorDayResponse(
+public sealed record GetDaySessionsByTutorResponse(
     Guid Id,
     string TutorId,
     string TutorName,
@@ -11,7 +11,7 @@ public sealed record GetTutorDayResponse(
     DateTimeOffset? CancelledAt,
     Guid? MovedToSessionId,
     bool LegacyViolation,
-    IReadOnlyList<GetTutorDayResponse.Attendee> Attendees)
+    IReadOnlyList<GetDaySessionsByTutorResponse.Attendee> Attendees)
 {
     public sealed record Attendee(
         Guid Id,
