@@ -4,6 +4,7 @@ One feature from the Bright Path brief: **book and cancel lessons without ever p
 
 - Why this feature, the data model and the rule split: [`DECISIONS.md`](DECISIONS.md).
 - Why the write endpoints still open a transaction next to the exclusion constraints: [`TRANSACTIONS.md`](TRANSACTIONS.md).
+- The weak spots of how the locks and transactions are split today (in Vietnamese): [`LOCKING.md`](LOCKING.md).
 - The plan, phase by phase: [`specs/roadmap.md`](specs/roadmap.md).
 - **Today is pinned to Friday 2026-03-06 10:00 (+07:00)**, inside the exported week. Nothing reads the real clock.
 

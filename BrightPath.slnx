@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/docs/">
     <File Path="DECISIONS.md" />
+    <File Path="LOCKING.md" />
     <File Path="README.md" />
     <File Path="TRANSACTIONS.md" />
     <Project Path="specs/BrightPath.Specs.csproj" />
