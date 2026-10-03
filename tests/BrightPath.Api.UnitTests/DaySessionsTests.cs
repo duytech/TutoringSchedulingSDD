@@ -1,11 +1,11 @@
 using BrightPath.Api.UnitTests.Infrastructure;
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
 using BrightPath.Domain;
 using BrightPath.Infrastructure.Time;
 
 namespace BrightPath.Api.UnitTests;
 
-public sealed class ScheduleDayTests
+public sealed class DaySessionsTests
 {
     private static readonly BookingPolicy Policy = TestPolicy.Create();
     private static readonly DateTimeOffset PinnedNow = DateTimeOffset.Parse("2026-03-06T10:00:00+07:00");
@@ -147,29 +147,29 @@ public sealed class ScheduleDayTests
     }
 
     /// <summary>The real export, viewed on one date at the pinned now.</summary>
-    private static ScheduleDayView Export(DateOnly date)
+    private static DaySessionsView Export(DateOnly date)
     {
         var export = SeedExport.Load(Policy);
-        return ScheduleDay.Build(date, PinnedNow, export.Sessions, export.Changes, Policy);
+        return DaySessions.Build(date, PinnedNow, export.ForDaySessions, export.Changes, Policy);
     }
 
-    private static ScheduleDayView Build(DateTimeOffset now, params DaySession[] sessions) =>
-        ScheduleDay.Build(Friday, now, sessions, [], Policy);
+    private static DaySessionsView Build(DateTimeOffset now, params GetDaySessionsResponse[] sessions) =>
+        DaySessions.Build(Friday, now, sessions, [], Policy);
 
     /// <summary>A one-hour session for T1 on Friday 2026-03-06.</summary>
-    private static DaySession Session(string room, string start)
+    private static GetDaySessionsResponse Session(string room, string start)
     {
         var startsAt = Policy.ToInstant(Friday, TimeOnly.Parse(start));
-        return new DaySession(
+        return new GetDaySessionsResponse(
             Guid.NewGuid(), "T1", "T1", room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);
     }
 
-    private static ScheduleSessionView SessionOf(ScheduleDayView day, string lessonId) =>
+    private static SessionView SessionOf(DaySessionsView day, string lessonId) =>
         day.Sessions.Single(s => s.Attendees.Any(a => a.LessonId == lessonId));
 
-    private static string Lesson(ScheduleSessionView s) => s.Attendees[0].LessonId!;
+    private static string Lesson(SessionView s) => s.Attendees[0].LessonId!;
 
-    private static IEnumerable<string> Lessons(ScheduleDayView day, Func<ScheduleSessionView, bool> which) =>
+    private static IEnumerable<string> Lessons(DaySessionsView day, Func<SessionView, bool> which) =>
         day.Sessions.Where(which).Select(Lesson);
 }

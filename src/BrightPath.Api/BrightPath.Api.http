@@ -3,14 +3,14 @@
 ### Is the API up, and can it reach the database?
 GET {{host}}/health
 
-### Today's schedule on the pinned clock (Friday 2026-03-06, 10:00)
-GET {{host}}/api/schedule
+### Today's sessions on the pinned clock (Friday 2026-03-06, 10:00)
+GET {{host}}/api/sessions
 
 ### A day with a family cancellation after the cut-off (L005)
-GET {{host}}/api/schedule?date=2026-03-03
+GET {{host}}/api/sessions?date=2026-03-03
 
 ### The exam pair as one session, and a flagged overlap (L008)
-GET {{host}}/api/schedule?date=2026-03-04
+GET {{host}}/api/sessions?date=2026-03-04
 
 ### Every room (R1 to R6)
 GET {{host}}/api/rooms
@@ -27,7 +27,7 @@ GET {{host}}/api/tutors/T3/day?date=2026-03-05
 ### No such tutor (404)
 GET {{host}}/api/tutors/T9/day
 
-### Student ids are made at seed time: paste them from GET /api/schedule (attendees[].studentId)
+### Student ids are made at seed time: paste them from GET /api/sessions (attendees[].studentId)
 @vuHaMy = 00000000-0000-0000-0000-000000000000
 @tranBaoLong = 00000000-0000-0000-0000-000000000000
 
@@ -88,7 +88,7 @@ GET {{host}}/api/reports/violations
 ### Only Friday 2026-03-06 (T1's 7 sessions)
 GET {{host}}/api/reports/violations?from=2026-03-06&to=2026-03-06
 
-### Cancel one student (ids from GET /api/schedule: sessions[].id and attendees[].id)
+### Cancel one student (ids from GET /api/sessions: sessions[].id and attendees[].id)
 @sessionId = 00000000-0000-0000-0000-000000000000
 @attendeeId = 00000000-0000-0000-0000-000000000000
 

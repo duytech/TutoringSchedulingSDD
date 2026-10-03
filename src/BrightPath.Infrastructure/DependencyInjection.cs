@@ -20,7 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IBookingLocks, PostgresBookingLocks>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IReferenceData, ReferenceData>();
-        services.AddScoped<IScheduleReader, ScheduleReader>();
+        services.AddScoped<ISessionReader, SessionReader>();
         return services;
     }
 

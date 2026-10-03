@@ -7,7 +7,7 @@ import {
   fetchTutors,
   type ApiError,
   type Room,
-  type ScheduleDay,
+  type DaySessions,
   type Tutor,
 } from './api'
 import { tutorColour } from './colours'
@@ -17,7 +17,7 @@ import { ApiErrorMessage, PageHeader } from './PageHeader'
 import { onDate, useDate } from './useDate'
 
 interface DayData {
-  day: ScheduleDay
+  day: DaySessions
   rooms: Room[]
   tutors: Tutor[]
 }
@@ -87,7 +87,7 @@ export function DayPage() {
 }
 
 /** "T1 Ngoc Anh 7 · T2 Pham Duc 2 · T3 Le Thu 1": active sessions per tutor that day, each a link to their sheet. */
-function TutorLoads({ day, tutors }: { day: ScheduleDay; tutors: Tutor[] }) {
+function TutorLoads({ day, tutors }: { day: DaySessions; tutors: Tutor[] }) {
   const active = day.sessions.filter((session) => !session.cancelled)
   return tutors.map((tutor, index) => (
     <span key={tutor.id}>

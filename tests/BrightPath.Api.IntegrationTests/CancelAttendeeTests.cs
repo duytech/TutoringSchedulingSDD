@@ -150,7 +150,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
 
     private static async Task<(Guid Session, Guid Attendee)> Lesson(HttpClient client, string lessonId)
     {
-        var day = await ApiCalls.Schedule(client, "2026-03-06");
+        var day = await ApiCalls.DaySessions(client, "2026-03-06");
         var session = day.Sessions.Single(s => s.Attendees.Any(a => a.LessonId == lessonId));
         return (session.Id, session.Attendees.Single(a => a.LessonId == lessonId).Id);
     }

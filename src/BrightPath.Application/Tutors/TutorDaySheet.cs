@@ -1,9 +1,9 @@
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Tutors;
 
-/// <summary>One tutor's day, read from the schedule, with what changed after they were told at the top.</summary>
+/// <summary>One tutor's day, read from the day's sessions, with what changed after they were told at the top.</summary>
 public sealed record TutorDaySheetView(
     string TutorId,
     string TutorName,
@@ -11,7 +11,7 @@ public sealed record TutorDaySheetView(
     DateTimeOffset Now,
     DateTimeOffset Cutoff,
     bool Final,
-    IReadOnlyList<ScheduleSessionView> Sessions,
+    IReadOnlyList<SessionView> Sessions,
     IReadOnlyList<TutorChangeView> ChangesAfterCutoff);
 
 /// <summary>A change after the cut-off, with enough of its session to read on its own.</summary>
@@ -27,8 +27,8 @@ public sealed record TutorChangeView(
     string? Note);
 
 /// <summary>
-/// The tutor day sheet (DECISIONS §2, feature 3). Each session is <see cref="ScheduleDay.BuildSessionView"/>, so the sheet
-/// and the schedule cannot show a session differently. Pure: no I/O, no database.
+/// The tutor day sheet (DECISIONS §2, feature 3). Each session has the shape of <see cref="SessionView"/>; a test checks the sheet and
+/// <see cref="DaySessions"/> show every seeded session the same. Pure: no I/O, no database.
 /// </summary>
 public static class TutorDaySheet
 {
@@ -36,19 +36,19 @@ public static class TutorDaySheet
         Tutor tutor,
         DateOnly date,
         DateTimeOffset now,
-        IEnumerable<DaySession> daySessions,
+        IEnumerable<GetTutorDayResponse> sessions,
         IEnumerable<BookingChange> changes,
         BookingPolicy policy,
         IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
     {
         var changesBySession = changes.ToLookup(c => c.SessionId);
 
-        var views = daySessions
+        var views = sessions
             .Where(s => s.TutorId == tutor.Id && policy.LocalDate(s.StartsAt) == date)
             .OrderBy(s => s.StartsAt)
             .ThenBy(s => s.RoomId, StringComparer.Ordinal)
             .ThenBy(s => s.Id)
-            .Select(s => ScheduleDay.BuildSessionView(s, changesBySession[s.Id], now, policy, moveTargets))
+            .Select(s => ToView(s, changesBySession[s.Id], now, policy, moveTargets))
             .ToList();
 
         // View has already put each session's changes in order, so a stable sort by time keeps the attendee's
@@ -71,4 +71,45 @@ public static class TutorDaySheet
         return new TutorDaySheetView(
             tutor.Id, tutor.Name, date, policy.ToLocal(now), policy.ToLocal(cutoff), now >= cutoff, views, late);
     }
+
+    /// <summary><paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.</summary>
+    private static SessionView ToView(
+        GetTutorDayResponse s,
+        IEnumerable<BookingChange> changes,
+        DateTimeOffset now,
+        BookingPolicy policy,
+        IReadOnlyDictionary<Guid, MovedToView>? moveTargets)
+    {
+        var changeViews = SessionChanges.Views(changes, policy);
+
+        return new SessionView(
+            s.Id,
+            s.TutorId,
+            s.TutorName,
+            s.RoomId,
+            policy.ToLocal(s.StartsAt),
+            policy.ToLocal(s.EndsAt),
+            (int)(s.EndsAt - s.StartsAt).TotalMinutes,
+            SessionState.Of(s.StartsAt, s.EndsAt, now),
+            s.CancelledAt is not null,
+            Local(s.CancelledAt, policy),
+            s.MovedToSessionId,
+            s.MovedToSessionId is { } to && moveTargets?.GetValueOrDefault(to) is { } target
+                ? target with { StartsAt = policy.ToLocal(target.StartsAt) }
+                : null,
+            s.LegacyViolation,
+            changeViews.Any(c => c.AfterCutoff),
+            s.Attendees
+                .OrderBy(a => a.LessonId is null)
+                .ThenBy(a => a.LessonId, StringComparer.Ordinal)
+                .ThenBy(a => a.StudentName, StringComparer.Ordinal)
+                .Select(a => new SessionAttendeeView(
+                    a.Id, a.StudentId, a.StudentName, a.LessonId, a.Status, Local(a.CancelledAt, policy),
+                    a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
+                .ToList(),
+            changeViews);
+    }
+
+    private static DateTimeOffset? Local(DateTimeOffset? instant, BookingPolicy policy) =>
+        instant is { } i ? policy.ToLocal(i) : null;
 }

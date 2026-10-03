@@ -1,5 +1,6 @@
 using BrightPath.Application.Abstractions;
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
+using BrightPath.Application.Tutors;
 using BrightPath.Domain;
 
 namespace BrightPath.Api.UnitTests.Fakes;
@@ -8,7 +9,7 @@ namespace BrightPath.Api.UnitTests.Fakes;
 /// The Application ports in memory, so a use case runs with no database. The day holds no other session, so every
 /// slot is free unless a test makes the next save fail.
 /// </summary>
-internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, IScheduleReader, IBookingLocks, IUnitOfWork
+internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISessionReader, IBookingLocks, IUnitOfWork
 {
     public List<Tutor> Tutors { get; } = [new() { Id = "T2", Name = "Minh Quan", Subject = "English" }];
     public List<string> RoomIds { get; } = ["R1", "R2", "R3", "R4", "R5", "R6"];
@@ -49,13 +50,16 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISch
 
     public void AddChanges(params BookingChange[] changes) => Changes.AddRange(changes);
 
-    // IScheduleReader
+    // ISessionReader
 
-    public Task<List<DaySession>> DaySessionsAsync(DateOnly date, string? tutorId, CancellationToken ct) =>
-        Task.FromResult(new List<DaySession>());
+    public Task<List<GetDaySessionsResponse>> GetDaySessionsAsync(DateOnly date, CancellationToken ct) =>
+        Task.FromResult(new List<GetDaySessionsResponse>());
 
-    public Task<DaySession?> DaySessionAsync(Guid id, CancellationToken ct) =>
-        Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToDaySession).SingleOrDefault());
+    public Task<List<GetTutorDayResponse>> GetTutorDayAsync(DateOnly date, string tutorId, CancellationToken ct) =>
+        Task.FromResult(new List<GetTutorDayResponse>());
+
+    public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
+        Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToGetSessionResponse).SingleOrDefault());
 
     public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
         Task.FromResult(Changes.Where(c => sessionIds.Contains(c.SessionId)).ToList());
@@ -83,7 +87,7 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISch
         return Task.CompletedTask;
     }
 
-    private DaySession ToDaySession(Session s) => new(
+    private GetSessionResponse ToGetSessionResponse(Session s) => new(
         s.Id,
         s.TutorId,
         Tutors.Single(t => t.Id == s.TutorId).Name,
@@ -94,7 +98,7 @@ internal sealed class InMemoryBooking : IReferenceData, ISessionRepository, ISch
         s.MovedToSessionId,
         s.LegacyViolation,
         s.Attendees
-            .Select(a => new DayAttendee(
+            .Select(a => new GetSessionResponse.Attendee(
                 a.Id, a.StudentId, Students.Single(st => st.Id == a.StudentId).Name, a.SourceLessonId, a.Status,
                 a.CancelledAt, a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
             .ToList());

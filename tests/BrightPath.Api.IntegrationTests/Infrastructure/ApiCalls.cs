@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using BrightPath.Application.Rooms;
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
 using BrightPath.Application.Tutors;
 using BrightPath.Domain;
 using Npgsql;
@@ -40,12 +40,12 @@ public static class ApiCalls
             $"/api/sessions/{sessionId}/move",
             new { startsAt = $"{localStart.Replace(' ', 'T')}:00+07:00", roomId, movedBy });
 
-    public static async Task<ScheduleSessionView> ReadSession(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ScheduleSessionView>(Json))!;
+    public static async Task<SessionView> ReadSession(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<SessionView>(Json))!;
 
-    public static async Task<ScheduleDayView> Schedule(HttpClient client, string? date = null) =>
-        (await client.GetFromJsonAsync<ScheduleDayView>(
-            date is null ? "/api/schedule" : $"/api/schedule?date={date}", Json))!;
+    public static async Task<DaySessionsView> DaySessions(HttpClient client, string? date = null) =>
+        (await client.GetFromJsonAsync<DaySessionsView>(
+            date is null ? "/api/sessions" : $"/api/sessions?date={date}", Json))!;
 
     public static async Task<IReadOnlyList<RoomView>> Rooms(HttpClient client) =>
         (await client.GetFromJsonAsync<List<RoomView>>("/api/rooms", Json))!;

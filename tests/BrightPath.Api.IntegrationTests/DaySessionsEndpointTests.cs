@@ -1,18 +1,18 @@
 using BrightPath.Api.IntegrationTests.Infrastructure;
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
 using BrightPath.Domain;
 using Microsoft.AspNetCore.Hosting;
 
 namespace BrightPath.Api.IntegrationTests;
 
-/// <summary>The schedule over HTTP, with the clock read from config. No other test books on 03-06 or 03-07.</summary>
+/// <summary>The day's sessions over HTTP, with the clock read from config. No other test books on 03-06 or 03-07.</summary>
 [Collection(ApiCollection.Name)]
-public sealed class ScheduleEndpointTests(BrightPathApiFactory factory)
+public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
 {
     [Fact]
     public async Task Today_is_the_pinned_day()
     {
-        var day = await ApiCalls.Schedule(factory.CreateClient());
+        var day = await ApiCalls.DaySessions(factory.CreateClient());
 
         Assert.Equal(new DateOnly(2026, 3, 6), day.Date);
         Assert.Equal(DateTimeOffset.Parse("2026-03-06T10:00:00+07:00"), day.Now);
@@ -31,7 +31,7 @@ public sealed class ScheduleEndpointTests(BrightPathApiFactory factory)
     {
         using var moved = factory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-07T10:00:00+07:00"));
 
-        var day = await ApiCalls.Schedule(moved.CreateClient());
+        var day = await ApiCalls.DaySessions(moved.CreateClient());
 
         Assert.Equal(new DateOnly(2026, 3, 7), day.Date);
         Assert.Equal(SessionState.InProgress, StateOf(day, "L028"));
@@ -39,6 +39,6 @@ public sealed class ScheduleEndpointTests(BrightPathApiFactory factory)
         Assert.Equal(SessionState.Upcoming, StateOf(day, "L030"));
     }
 
-    private static string StateOf(ScheduleDayView day, string lessonId) =>
+    private static string StateOf(DaySessionsView day, string lessonId) =>
         day.Sessions.Single(s => s.Attendees.Any(a => a.LessonId == lessonId)).State;
 }

@@ -1,10 +1,10 @@
-// The shapes of GET /api/schedule, /api/rooms, /api/tutors, /api/tutors/{id}/day and /api/reports/violations,
+// The shapes of GET /api/sessions, /api/rooms, /api/tutors, /api/tutors/{id}/day and /api/reports/violations,
 // as the API sends them.
 // Times are local ISO strings with the centre's offset, e.g. "2026-03-06T10:30:00+07:00".
 
 export type SessionState = 'past' | 'in-progress' | 'upcoming'
 
-export interface ScheduleChange {
+export interface SessionChange {
   kind: 'created' | 'cancelled' | 'moved'
   attendeeId: string | null
   changedAt: string
@@ -13,7 +13,7 @@ export interface ScheduleChange {
   note: string | null
 }
 
-export interface ScheduleAttendee {
+export interface SessionAttendee {
   id: string
   studentId: string
   studentName: string
@@ -32,7 +32,7 @@ export interface MovedTo {
   roomId: string
 }
 
-export interface ScheduleSession {
+export interface Session {
   id: string
   tutorId: string
   tutorName: string
@@ -48,14 +48,14 @@ export interface ScheduleSession {
   movedTo: MovedTo | null
   legacyViolation: boolean
   changedAfterCutoff: boolean
-  attendees: ScheduleAttendee[]
-  changes: ScheduleChange[]
+  attendees: SessionAttendee[]
+  changes: SessionChange[]
 }
 
-export interface ScheduleDay {
+export interface DaySessions {
   date: string
   now: string
-  sessions: ScheduleSession[]
+  sessions: Session[]
 }
 
 /** One entry of GET /api/rooms. */
@@ -75,7 +75,7 @@ export interface TutorChange {
   sessionId: string
   sessionStartsAt: string
   roomId: string
-  kind: ScheduleChange['kind']
+  kind: SessionChange['kind']
   attendeeId: string | null
   /** Null for a change to the whole session. */
   studentName: string | null
@@ -93,7 +93,7 @@ export interface TutorDaySheet {
   /** 16:00 the day before: from then on, the tutor counts as told. */
   cutoff: string
   final: boolean
-  sessions: ScheduleSession[]
+  sessions: Session[]
   changesAfterCutoff: TutorChange[]
 }
 
@@ -125,9 +125,9 @@ export function asApiError(cause: unknown): ApiError {
   return cause instanceof ApiError ? cause : new ApiError(String(cause), null)
 }
 
-/** One day's schedule. Without a date, the API's own today (its pinned clock), not the browser's. */
-export function fetchDay(date?: string): Promise<ScheduleDay> {
-  return getJson<ScheduleDay>(date ? `/api/schedule?date=${date}` : '/api/schedule')
+/** One day's sessions. Without a date, the API's own today (its pinned clock), not the browser's. */
+export function fetchDay(date?: string): Promise<DaySessions> {
+  return getJson<DaySessions>(date ? `/api/sessions?date=${date}` : '/api/sessions')
 }
 
 /** Every room, ordered by id. */

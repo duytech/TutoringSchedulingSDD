@@ -1,35 +1,42 @@
-using BrightPath.Application.Abstractions;
-using BrightPath.Application.Common;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Sessions;
 
-/// <summary>One session, in the same shape as an item of the day's sessions. The write use cases answer with it too.</summary>
-public sealed class GetSessionHandler(ISessionReader reader, BookingPolicy policy, TimeProvider clock)
+public sealed record DaySessionsView(
+    DateOnly Date,
+    DateTimeOffset Now,
+    IReadOnlyList<SessionView> Sessions);
+
+/// <summary>
+/// One day's sessions: every session that starts on the local date, cancelled ones included. The rooms and
+/// tutors are reference data with endpoints of their own. Pure: no I/O, no database.
+/// </summary>
+public static class DaySessions
 {
-    public async Task<Result<SessionView>> HandleAsync(Guid id, CancellationToken ct)
+    public static DaySessionsView Build(
+        DateOnly date,
+        DateTimeOffset now,
+        IEnumerable<GetDaySessionsResponse> sessions,
+        IEnumerable<BookingChange> changes,
+        BookingPolicy policy,
+        IReadOnlyDictionary<Guid, MovedToView>? moveTargets = null)
     {
-        var view = await LoadAsync(id, clock.GetUtcNow(), ct);
-        return view is null ? new NotFoundError("Session not found", $"No session {id}.") : view;
-    }
+        var changesBySession = changes.ToLookup(c => c.SessionId);
 
-    /// <summary>Null when there is no such session.</summary>
-    public async Task<SessionView?> LoadAsync(Guid id, DateTimeOffset now, CancellationToken ct)
-    {
-        var session = await reader.GetSessionAsync(id, ct);
-        if (session is null)
-        {
-            return null;
-        }
+        var views = sessions
+            .Where(s => policy.LocalDate(s.StartsAt) == date)
+            .OrderBy(s => s.StartsAt)
+            .ThenBy(s => s.RoomId, StringComparer.Ordinal)
+            .ThenBy(s => s.Id)
+            .Select(s => ToView(s, changesBySession[s.Id], now, policy, moveTargets))
+            .ToList();
 
-        var changes = await reader.ChangesOfAsync([session.Id], ct);
-        var moveTargets = await reader.MoveTargetsAsync(session.MovedToSessionId is { } targetId ? [targetId] : [], ct);
-        return ToView(session, changes, now, policy, moveTargets);
+        return new DaySessionsView(date, policy.ToLocal(now), views);
     }
 
     /// <summary><paramref name="moveTargets"/> holds the sessions moved-to sessions point at, with UTC start times.</summary>
     private static SessionView ToView(
-        GetSessionResponse s,
+        GetDaySessionsResponse s,
         IEnumerable<BookingChange> changes,
         DateTimeOffset now,
         BookingPolicy policy,

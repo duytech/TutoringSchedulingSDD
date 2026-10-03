@@ -101,7 +101,7 @@ Run these on a freshly loaded database. They use `curl` and [`jq`](https://jqlan
 API=http://localhost:5238
 
 # 1. Today: the busiest day of the export
-curl -s "$API/api/schedule" | jq '{date, now, sessions: (.sessions | length), rooms: [.sessions | group_by(.roomId)[] | "\(.[0].roomId): \(length)"]}'
+curl -s "$API/api/sessions" | jq '{date, now, sessions: (.sessions | length), rooms: [.sessions | group_by(.roomId)[] | "\(.[0].roomId): \(length)"]}'
 
 # The rooms and tutors are reference data, with endpoints of their own
 curl -s "$API/api/rooms" | jq -c 'map(.id)'
@@ -111,7 +111,7 @@ curl -s "$API/api/tutors" | jq -c 'map("\(.id) \(.name)")'
 curl -s "$API/api/reports/violations" | jq '.violations[] | {rule, date, lessonIds, message}'
 
 # 3. Student ids are made when the export is loaded, so read them from today's schedule
-student() { curl -s "$API/api/schedule" | jq -r --arg n "$1" '[.sessions[].attendees[] | select(.studentName == $n)][0].studentId'; }
+student() { curl -s "$API/api/sessions" | jq -r --arg n "$1" '[.sessions[].attendees[] | select(.studentName == $n)][0].studentId'; }
 LONG=$(student "Tran Bao Long"); MY=$(student "Vu Ha My")
 
 # 4. Refused: T3, R3 and Tran Bao Long are all busy with L028 at 10:00 tomorrow
@@ -123,7 +123,7 @@ curl -s -X POST "$API/api/sessions" -H 'Content-Type: application/json' \
   -d '{"tutorId":"T2","roomId":"R4","startsAt":"2026-03-07T13:00:00+07:00","durationMin":60,"studentIds":["'"$MY"'"]}' | jq '{id, tutorId, roomId, startsAt, endsAt, state, attendees: [.attendees[].studentName], changes}'
 
 # 6. The family cancels L020 (today 10:30), 30 minutes before it starts
-L020=$(curl -s "$API/api/schedule" | jq -r '.sessions[] | select(any(.attendees[]; .lessonId == "L020")) | "\(.id)/attendees/\(.attendees[0].id)"')
+L020=$(curl -s "$API/api/sessions" | jq -r '.sessions[] | select(any(.attendees[]; .lessonId == "L020")) | "\(.id)/attendees/\(.attendees[0].id)"')
 curl -s -X POST "$API/api/sessions/$L020/cancel" -H 'Content-Type: application/json' \
   -d '{"cancelledBy":"family"}' | jq '{startsAt, cancelled, attendees: [.attendees[] | {lessonId, status, cancelledBy, chargeable}], changes}'
 

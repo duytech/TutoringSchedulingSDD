@@ -1,6 +1,5 @@
 using BrightPath.Application.Abstractions;
 using BrightPath.Application.Common;
-using BrightPath.Application.Schedule;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Sessions;
@@ -22,7 +21,7 @@ public sealed class MoveSessionHandler(
     BookingPolicy policy,
     TimeProvider clock)
 {
-    public async Task<Result<ScheduleSessionView>> HandleAsync(Guid id, MoveSessionRequest request, CancellationToken ct)
+    public async Task<Result<SessionView>> HandleAsync(Guid id, MoveSessionRequest request, CancellationToken ct)
     {
         var errors = new Dictionary<string, string[]>();
         if (!SessionInput.TryParseWithOffset(request.StartsAt, out var startsAt))

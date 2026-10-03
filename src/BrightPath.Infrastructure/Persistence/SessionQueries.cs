@@ -1,10 +1,11 @@
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
+using BrightPath.Application.Tutors;
 using BrightPath.Domain;
 
 namespace BrightPath.Infrastructure.Persistence;
 
 /// <summary>
-/// The ways sessions are read, written once, so the report, the schedule and the create check cannot
+/// The ways sessions are read, written once, so the report, the day's sessions and the create check cannot
 /// load a session differently.
 /// </summary>
 public static class SessionQueries
@@ -56,8 +57,9 @@ public static class SessionQueries
             .Where(s => targetIds.Contains(s.Id))
             .Select(s => new MovedToView(s.Id, s.StartsAt, s.RoomId));
 
-    public static IQueryable<DaySession> ToDaySessions(this IQueryable<Session> sessions) =>
-        sessions.Select(s => new DaySession(
+    /// <summary>The sessions as GetDaySessions reads them.</summary>
+    public static IQueryable<GetDaySessionsResponse> ToGetDaySessionsResponses(this IQueryable<Session> sessions) =>
+        sessions.Select(s => new GetDaySessionsResponse(
             s.Id,
             s.TutorId,
             s.Tutor.Name,
@@ -68,7 +70,43 @@ public static class SessionQueries
             s.MovedToSessionId,
             s.LegacyViolation,
             s.Attendees
-                .Select(a => new DayAttendee(
+                .Select(a => new GetDaySessionsResponse.Attendee(
+                    a.Id, a.StudentId, a.Student.Name, a.SourceLessonId, a.Status, a.CancelledAt,
+                    a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
+                .ToList()));
+
+    /// <summary>The sessions as GetTutorDay reads them.</summary>
+    public static IQueryable<GetTutorDayResponse> ToGetTutorDayResponses(this IQueryable<Session> sessions) =>
+        sessions.Select(s => new GetTutorDayResponse(
+            s.Id,
+            s.TutorId,
+            s.Tutor.Name,
+            s.RoomId,
+            s.StartsAt,
+            s.EndsAt,
+            s.CancelledAt,
+            s.MovedToSessionId,
+            s.LegacyViolation,
+            s.Attendees
+                .Select(a => new GetTutorDayResponse.Attendee(
+                    a.Id, a.StudentId, a.Student.Name, a.SourceLessonId, a.Status, a.CancelledAt,
+                    a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
+                .ToList()));
+
+    /// <summary>The sessions as GetSession reads them.</summary>
+    public static IQueryable<GetSessionResponse> ToGetSessionResponses(this IQueryable<Session> sessions) =>
+        sessions.Select(s => new GetSessionResponse(
+            s.Id,
+            s.TutorId,
+            s.Tutor.Name,
+            s.RoomId,
+            s.StartsAt,
+            s.EndsAt,
+            s.CancelledAt,
+            s.MovedToSessionId,
+            s.LegacyViolation,
+            s.Attendees
+                .Select(a => new GetSessionResponse.Attendee(
                     a.Id, a.StudentId, a.Student.Name, a.SourceLessonId, a.Status, a.CancelledAt,
                     a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))
                 .ToList()));

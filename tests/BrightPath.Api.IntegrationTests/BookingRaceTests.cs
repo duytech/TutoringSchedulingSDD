@@ -43,7 +43,7 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
         Assert.NotEqual(theirs.Id, conflict.SessionIds[0]);
         Assert.Empty(conflict.LessonIds);
 
-        var day = await ApiCalls.Schedule(_client, "2026-03-19");
+        var day = await ApiCalls.DaySessions(_client, "2026-03-19");
         Assert.Equal([theirs.Id], day.Sessions.Where(s => s.RoomId == "R6").Select(s => s.Id));
     }
 

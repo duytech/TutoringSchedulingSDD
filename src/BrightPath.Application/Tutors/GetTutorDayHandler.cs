@@ -6,7 +6,7 @@ namespace BrightPath.Application.Tutors;
 
 /// <summary>One tutor's day, with what changed after they were told.</summary>
 public sealed class GetTutorDayHandler(
-    IScheduleReader reader, IReferenceData referenceData, BookingPolicy policy, TimeProvider clock)
+    ISessionReader reader, IReferenceData referenceData, BookingPolicy policy, TimeProvider clock)
 {
     /// <summary>The default date is today on the clock.</summary>
     public async Task<Result<TutorDaySheetView>> HandleAsync(string tutorId, DateOnly? date, CancellationToken ct)
@@ -19,12 +19,12 @@ public sealed class GetTutorDayHandler(
 
         var utcNow = clock.GetUtcNow();
         var localDate = date ?? policy.LocalDate(utcNow);
-        var daySessions = await reader.DaySessionsAsync(localDate, tutorId, ct);
-        var sessionIds = daySessions.Select(s => s.Id).ToList();
-        var targetIds = daySessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
+        var sessions = await reader.GetTutorDayAsync(localDate, tutorId, ct);
+        var sessionIds = sessions.Select(s => s.Id).ToList();
+        var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
         var bookingChanges = await reader.ChangesOfAsync(sessionIds, ct);
         var moveTargets = await reader.MoveTargetsAsync(targetIds, ct);
 
-        return TutorDaySheet.Build(tutor, localDate, utcNow, daySessions, bookingChanges, policy, moveTargets);
+        return TutorDaySheet.Build(tutor, localDate, utcNow, sessions, bookingChanges, policy, moveTargets);
     }
 }

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { ScheduleSession } from './api'
+import type { Session } from './api'
 import { localDate, localTime } from './dates'
 import { movedLabel } from './labels'
 import type { Placement } from './layout'
@@ -7,7 +7,7 @@ import type { Placement } from './layout'
 const FLAG_TITLE = 'Loaded from the export; breaks a centre rule. See /api/reports/violations.'
 
 interface Props {
-  session: ScheduleSession
+  session: Session
   /** Where the card sits in the room grid. Without it, the card is a row of the tutor's list and names the room. */
   placement?: Placement
   tutorColour: string

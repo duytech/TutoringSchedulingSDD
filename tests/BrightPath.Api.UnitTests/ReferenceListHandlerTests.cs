@@ -18,7 +18,7 @@ public sealed class ReferenceListHandlerTests
 
         var rooms = await new GetRoomsHandler(_store).HandleAsync(CancellationToken.None);
 
-        // Ordinal, like the schedule's ordering: R10 sorts before R2.
+        // Ordinal, like the day's sessions ordering: R10 sorts before R2.
         Assert.Equal(["R1", "R10", "R2", "R3"], rooms.Select(r => r.Id));
     }
 

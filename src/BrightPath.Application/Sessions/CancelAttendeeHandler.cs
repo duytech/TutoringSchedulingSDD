@@ -1,6 +1,5 @@
 using BrightPath.Application.Abstractions;
 using BrightPath.Application.Common;
-using BrightPath.Application.Schedule;
 using BrightPath.Domain;
 
 namespace BrightPath.Application.Sessions;
@@ -15,7 +14,7 @@ public sealed class CancelAttendeeHandler(
     BookingPolicy policy,
     TimeProvider clock)
 {
-    public async Task<Result<ScheduleSessionView>> HandleAsync(
+    public async Task<Result<SessionView>> HandleAsync(
         Guid id, Guid attendeeId, CancelAttendeeRequest request, CancellationToken ct)
     {
         var errors = new Dictionary<string, string[]>();

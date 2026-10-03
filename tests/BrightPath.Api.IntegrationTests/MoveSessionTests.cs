@@ -1,6 +1,6 @@
 using System.Net;
 using BrightPath.Api.IntegrationTests.Infrastructure;
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
 using BrightPath.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -92,14 +92,14 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     }
 
     [Fact]
-    public async Task The_schedule_shows_where_a_session_moved_to_on_another_day()
+    public async Task The_day_shows_where_a_session_moved_to_on_another_day()
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
             client, "T1", "R6", "2026-03-26 16:00", 60, await factory.StudentId("Bui An Nhien")));
         var moved = await ApiCalls.ReadSession(await ApiCalls.Move(client, booked.Id, "2026-03-27 16:00", "tutor"));
 
-        var day = await ApiCalls.Schedule(client, "2026-03-26");
+        var day = await ApiCalls.DaySessions(client, "2026-03-26");
 
         var old = day.Sessions.Single(s => s.Id == booked.Id);
         Assert.Equal(new MovedToView(moved.Id, DateTimeOffset.Parse("2026-03-27T16:00:00+07:00"), "R6"), old.MovedTo);

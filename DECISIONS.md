@@ -150,11 +150,11 @@ PostgreSQL. Only the tables this feature needs.
 
 | Method and path | Does | Returns |
 |---|---|---|
-| `GET /api/schedule?date=2026-03-06` | One day's sessions, defaulting to the pinned today. A flat `sessions` list (cancelled ones included, with attendees, their changes, `changedAfterCutoff`, `legacyViolation`, and a `state` of `past`, `in-progress` or `upcoming` against the clock). Times are local (`+07:00`). The rooms and tutors come from the two endpoints below. | 200. 400 for a bad date |
+| `GET /api/sessions?date=2026-03-06` | One day's sessions, defaulting to the pinned today. A flat `sessions` list (cancelled ones included, with attendees, their changes, `changedAfterCutoff`, `legacyViolation`, and a `state` of `past`, `in-progress` or `upcoming` against the clock). Times are local (`+07:00`). The rooms and tutors come from the two endpoints below. | 200. 400 for a bad date |
 | `GET /api/rooms` | Every room, ordered by id (`R1`…`R6`). Reference data, the same on every day. | 200 |
 | `GET /api/tutors` | Every tutor with `name` and `subject`, ordered by id. Reference data, the same on every day. | 200 |
 | `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset; without one it is refused, not guessed), `durationMin`, `studentIds` (ids from the schedule). Checks the new session with that day's sessions and lists only the conflicts it is part of, plus `in-the-past`. | 201 with `Location: /api/sessions/{id}` and the session. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, all at once, in the report's shape, e.g. `student-overlap: Le Minh Chau is in R3 with T3 and in R2 with T2 at 09:00` |
-| `GET /api/sessions/{id}` | One session, in the same shape as an item of the schedule. | 200. 404 |
+| `GET /api/sessions/{id}` | One session, in the same shape as an item of `GET /api/sessions`. | 200. 404 |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`), optional `note`. | 200 with the session view (the attendee's `chargeable`, the change with `afterCutoff`, `cancelled` if the session went too). 404 if the attendee is not in that session. **409** with `already-started` and/or `already-cancelled`. 400 for bad input |
 | `POST /api/sessions/{id}/move` | Body: `startsAt` (with offset), optional `roomId` and `durationMin` (default: unchanged), `movedBy` (`family`, `tutor` or `centre`), optional `note`. The tutor never changes. | 201 with `Location` and the new session. The old one keeps `movedTo` (id, time, room). 400 for bad input or nothing to move. 404. **409** with `already-started`, `already-cancelled` and the create conflicts |
 | `GET /api/tutors/{id}/day?date=` | One tutor's day, defaulting to the pinned today: their sessions in the schedule's shape (cancelled and moved ones included), the `cutoff` (16:00 the day before), `final` once it has passed, and `changesAfterCutoff`, a flat list, oldest first, of every change made after it, each with its session's time and room and the student's name. | 200, with empty lists on a day off. 400 for a bad date. 404 for an unknown tutor |
@@ -178,7 +178,7 @@ Instead, each change has its own named action (cancel, and move), and each one l
 
 - Phases 1–15 of the roadmap are done: the design, the schema with its constraints, the seed, the violation report, today's schedule, create, cancel, the integration tests and the README.
 - **Time:** phases 1–15 fit within the 2.5-hour box. The cut line did its job.
-- **After the box**, in about 30 more minutes, I built stretch phase 16, the React Today view (`web/`), with phase 17's "changed after tutor was told" badge merged in. It is a read-only room × time grid over `GET /api/schedule`.
+- **After the box**, in about 30 more minutes, I built stretch phase 16, the React Today view (`web/`), with phase 17's "changed after tutor was told" badge merged in. It is a read-only room × time grid over `GET /api/sessions`.
 - Then, in about 20 more minutes, stretch phase 18: **move** (`POST /api/sessions/{id}/move`), with a "moved →" label on the old card in the Today view.
 - Then, in about 20 more minutes, stretch phase 19: **the tutor day** (`GET /api/tutors/{id}/day`), one tutor's day with the changes after the cut-off listed at the top, and a page for it in the web app, linked from the Today view.
 

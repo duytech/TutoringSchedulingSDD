@@ -1,5 +1,6 @@
+using System.Text.Json;
 using BrightPath.Api.UnitTests.Infrastructure;
-using BrightPath.Application.Schedule;
+using BrightPath.Application.Sessions;
 using BrightPath.Application.Tutors;
 using BrightPath.Domain;
 
@@ -142,22 +143,42 @@ public sealed class TutorDaySheetTests
         Assert.Null(sheet.ChangesAfterCutoff[2].StudentName);
     }
 
-    private static TutorDaySheetView Export(string tutorId, DateOnly date) =>
-        TutorDaySheet.Build(Seed.Tutors.Single(t => t.Id == tutorId), date, PinnedNow, Seed.Sessions, Seed.Changes, Policy);
+    [Fact]
+    public void Every_seeded_session_shows_the_same_on_the_sheet_as_in_the_day_sessions()
+    {
+        var moveTargets = Seed.ForDaySessions.ToDictionary(s => s.Id, s => new MovedToView(s.Id, s.StartsAt, s.RoomId));
+        var dates = Seed.ForDaySessions.Select(s => Policy.LocalDate(s.StartsAt)).Distinct().ToList();
 
-    private static TutorDaySheetView Build(DateTimeOffset now, DaySession[] sessions, BookingChange[] changes) =>
+        foreach (var date in dates)
+        {
+            var day = DaySessions.Build(date, PinnedNow, Seed.ForDaySessions, Seed.Changes, Policy, moveTargets);
+            foreach (var tutor in Seed.Tutors)
+            {
+                var sheet = TutorDaySheet.Build(
+                    tutor, date, PinnedNow, Seed.ForTutorDay, Seed.Changes, Policy, moveTargets);
+                var inDay = day.Sessions.Where(s => s.TutorId == tutor.Id);
+
+                Assert.Equal(JsonSerializer.Serialize(inDay), JsonSerializer.Serialize(sheet.Sessions));
+            }
+        }
+    }
+
+    private static TutorDaySheetView Export(string tutorId, DateOnly date) =>
+        TutorDaySheet.Build(Seed.Tutors.Single(t => t.Id == tutorId), date, PinnedNow, Seed.ForTutorDay, Seed.Changes, Policy);
+
+    private static TutorDaySheetView Build(DateTimeOffset now, GetTutorDayResponse[] sessions, BookingChange[] changes) =>
         TutorDaySheet.Build(T1, Friday, now, sessions, changes, Policy);
 
-    private static DaySession Session(string tutorId, string room, DateOnly date, string start)
+    private static GetTutorDayResponse Session(string tutorId, string room, DateOnly date, string start)
     {
         var startsAt = Policy.ToInstant(date, TimeOnly.Parse(start));
-        return new DaySession(
+        return new GetTutorDayResponse(
             Guid.NewGuid(), tutorId, tutorId, room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);
     }
 
     /// <summary>A cancel, flagged the way every write flags it.</summary>
-    private static BookingChange Change(DaySession session, DateTimeOffset changedAt, Guid? attendeeId = null) => new()
+    private static BookingChange Change(GetTutorDayResponse session, DateTimeOffset changedAt, Guid? attendeeId = null) => new()
     {
         Id = Guid.NewGuid(),
         SessionId = session.Id,
@@ -168,5 +189,5 @@ public sealed class TutorDaySheetTests
         AfterCutoff = Policy.IsAfterCutoff(changedAt, session.StartsAt),
     };
 
-    private static string Lesson(ScheduleSessionView s) => s.Attendees[0].LessonId!;
+    private static string Lesson(SessionView s) => s.Attendees[0].LessonId!;
 }

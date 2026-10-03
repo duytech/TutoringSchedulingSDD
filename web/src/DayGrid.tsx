@@ -1,11 +1,11 @@
 import type { CSSProperties } from 'react'
-import type { ScheduleDay } from './api'
+import type { DaySessions } from './api'
 import { localDate } from './dates'
 import { layoutDay, minutesOf, OPENING, rowCount } from './layout'
 import { SessionCard } from './SessionCard'
 
 interface Props {
-  day: ScheduleDay
+  day: DaySessions
   /** The grid's columns, in order (GET /api/rooms). */
   roomIds: string[]
   tutorColour: (tutorId: string) => string
