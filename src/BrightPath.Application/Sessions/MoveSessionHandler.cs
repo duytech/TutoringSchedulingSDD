@@ -14,7 +14,8 @@ public sealed record MoveSessionRequest(
 /// created, and the old one points at the new one.
 /// </summary>
 public sealed class MoveSessionHandler(
-    IReferenceData referenceData,
+    ITutorRepository tutors,
+    IRoomRepository rooms,
     ISessionRepository sessions,
     IBookingChangeRepository bookingChanges,
     IBookingLocks locks,
@@ -31,7 +32,7 @@ public sealed class MoveSessionHandler(
             errors["startsAt"] = [SessionInput.StartsAtError];
         }
 
-        if (request.RoomId is { } roomId && !await referenceData.RoomExistsAsync(roomId, ct))
+        if (request.RoomId is { } roomId && !await rooms.ExistsAsync(roomId, ct))
         {
             errors["roomId"] = [$"No room '{roomId}'."];
         }
@@ -82,7 +83,7 @@ public sealed class MoveSessionHandler(
 
         var now = clock.GetUtcNow();
         var date = DateTimeUtils.LocalDate(policy.Zone, startsUtc);
-        var tutor = await referenceData.FindTutorAsync(old.TutorId, ct);
+        var tutor = await tutors.FindAsync(old.TutorId, ct);
         var booked = old.Attendees.Where(a => a.Status == AttendeeStatus.Booked).ToList();
         var newId = Guid.CreateVersion7();
         var candidate = new RuleSession(

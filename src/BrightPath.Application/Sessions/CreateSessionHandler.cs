@@ -11,7 +11,9 @@ public sealed record CreateSessionRequest(
 
 /// <summary>Book a session, or refuse it with every rule it breaks.</summary>
 public sealed class CreateSessionHandler(
-    IReferenceData referenceData,
+    ITutorRepository tutors,
+    IRoomRepository rooms,
+    IStudentRepository students,
     ISessionRepository sessions,
     IBookingChangeRepository bookingChanges,
     IBookingLocks locks,
@@ -26,14 +28,14 @@ public sealed class CreateSessionHandler(
 
         var tutor = string.IsNullOrWhiteSpace(request.TutorId)
             ? null
-            : await referenceData.FindTutorAsync(request.TutorId, ct);
+            : await tutors.FindAsync(request.TutorId, ct);
         if (tutor is null)
         {
             errors["tutorId"] = [$"No tutor '{request.TutorId}'."];
         }
 
         var roomExists = !string.IsNullOrWhiteSpace(request.RoomId)
-            && await referenceData.RoomExistsAsync(request.RoomId, ct);
+            && await rooms.ExistsAsync(request.RoomId, ct);
         if (!roomExists)
         {
             errors["roomId"] = [$"No room '{request.RoomId}'."];
@@ -50,7 +52,7 @@ public sealed class CreateSessionHandler(
         }
 
         var studentIds = request.StudentIds ?? [];
-        var students = await referenceData.FindStudentsAsync(studentIds, ct);
+        var foundStudents = await students.FindManyAsync(studentIds, ct);
         if (studentIds.Length == 0)
         {
             errors["studentIds"] = ["At least one student is required."];
@@ -59,7 +61,7 @@ public sealed class CreateSessionHandler(
         {
             errors["studentIds"] = ["A student is listed twice."];
         }
-        else if (studentIds.Except(students.Select(s => s.Id)).ToList() is { Count: > 0 } unknown)
+        else if (studentIds.Except(foundStudents.Select(s => s.Id)).ToList() is { Count: > 0 } unknown)
         {
             errors["studentIds"] = [$"No student with id {string.Join(", ", unknown)}."];
         }
@@ -74,7 +76,7 @@ public sealed class CreateSessionHandler(
         var endsUtc = startsUtc.AddMinutes(request.DurationMin!.Value);
         var date = DateTimeUtils.LocalDate(policy.Zone, startsUtc);
         var sessionId = Guid.CreateVersion7();
-        var byId = students.ToDictionary(s => s.Id);
+        var byId = foundStudents.ToDictionary(s => s.Id);
 
         var candidate = new RuleSession(
             sessionId, tutor!.Id, tutor.Name, request.RoomId!, startsUtc, endsUtc, Cancelled: false,

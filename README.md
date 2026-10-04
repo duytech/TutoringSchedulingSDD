@@ -1,5 +1,7 @@
 # Bright Path: conflict-safe schedule
 
+[![CI](https://github.com/duytech/TutoringSchedulingSDD/actions/workflows/ci.yml/badge.svg)](https://github.com/duytech/TutoringSchedulingSDD/actions/workflows/ci.yml)
+
 One feature from the Bright Path brief: **book and cancel lessons without ever putting a student, a room or a tutor in two places at once**, and keep a record of every change so a tutor can see what changed after they were told. It is an ASP.NET Core Minimal API on PostgreSQL. The overlap rules are enforced by the database itself (exclusion constraints), and the centre's policy rules are checked in code.
 
 - Why this feature, the data model and the rule split: [`DECISIONS.md`](DECISIONS.md).
@@ -67,7 +69,7 @@ dotnet ef migrations add <Name> --project src/BrightPath.Infrastructure --startu
 dotnet test
 ```
 
-The tests are in two projects. `tests/BrightPath.Api.UnitTests` needs no database, so it runs on its own with `dotnet test tests/BrightPath.Api.UnitTests`. `tests/BrightPath.Api.IntegrationTests` needs the same Postgres as the app. Each integration run creates one throwaway database `brightpath_test_<guid>` on the same server, migrates it, loads the export, and drops it at the end. Your `brightpath` database is never touched. The tests cover:
+The tests are in two projects. `tests/BrightPath.Api.UnitTests` needs no database, so it runs on its own with `dotnet test tests/BrightPath.Api.UnitTests`. `tests/BrightPath.Api.IntegrationTests` needs the same Postgres as the app. Each integration run creates one throwaway database `brightpath_test_<guid>` on the same server, migrates it, loads the export, and drops it at the end. Your `brightpath` database is never touched. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs both projects on every push to `main` and every pull request, against Postgres in a service container, and runs the web project's lint, tests and build next to them. The tests cover:
 
 - every rule, as unit tests on the real export;
 - the create use case with in-memory fakes (no database), and that the Domain and Application projects do not depend on EF Core, Npgsql or ASP.NET;
