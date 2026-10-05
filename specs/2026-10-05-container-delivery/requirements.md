@@ -74,9 +74,9 @@ The base URL defaults to `http://localhost:8080`. The script stops at the first 
 | 3 | `GET /tutors/T1` | 200, body contains `<div id="root">` | A page route falls back to `index.html` |
 | 4 | `GET /api/does-not-exist` | 404 | An unknown API path is the API's 404, not the page |
 
-## Owner actions (outside the repo)
+## Package visibility
 
-- After the first CD run, each of the two packages starts as **private**. Set them to public under GitHub → Packages → package settings → Change visibility, or `docker compose pull` fails for everyone else.
+None needed from the owner. The `org.opencontainers.image.source` label in both Dockerfiles links each package to this public repo, and GitHub makes the package public with it. This was confirmed after the first CD run: both images were pulled anonymously.
 
 ## Context
 

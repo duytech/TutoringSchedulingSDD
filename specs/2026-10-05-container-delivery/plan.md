@@ -36,7 +36,7 @@ The tasks run in order, and the whole phase is one commit at the end, on branch 
    - Job `publish`: `if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'`, and `permissions: contents: read, packages: write`.
    - Steps:
      - Check out `${{ github.event.workflow_run.head_sha || github.sha }}`.
-     - `docker/login-action@v3` to `ghcr.io` with `GITHUB_TOKEN`.
+     - `docker/login-action@v4` to `ghcr.io` with `GITHUB_TOKEN`.
      - `docker compose build`.
      - For `api` and `web`: tag `:latest` as `:<sha>`, then `docker push --all-tags`.
 

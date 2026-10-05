@@ -24,7 +24,7 @@
 
 - [ ] On the pull request, CI has three green jobs: `api`, `web` and `container`.
 - [ ] After merge, the CD run on `main` succeeds, and both packages show the commit SHA and `latest` tags.
-- [ ] After the owner sets both packages to public, `docker compose pull` followed by `docker compose up` runs the published images, and the smoke test passes.
+- [ ] Without logging in to `ghcr.io`, `docker compose pull` followed by `docker compose up` runs the published images, and the smoke test passes.
 
 ## Commit
 
