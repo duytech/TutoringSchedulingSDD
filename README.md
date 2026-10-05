@@ -12,6 +12,8 @@ One feature from the Bright Path brief: **book and cancel lessons without ever p
 
 ## Prerequisites
 
+To only try the app, Docker is enough: see [Run with Docker](#run-with-docker). To build, test and change it:
+
 - .NET 10 SDK.
 - Node 20 or later. The solution includes the web project (`web/BrightPath.Web.esproj`), so `dotnet build` and `dotnet test` at the root also run `npm install` and `npm run build` in `web/`.
 - PostgreSQL 13 or later on `localhost:5432`. The `btree_gist` extension ships with the standard installers.
@@ -44,6 +46,20 @@ dotnet run --project src/BrightPath.Api
 - On first start, it creates the database, applies the migrations and loads the export from `src/BrightPath.Infrastructure/Seed/`. An early `fail` line about connecting to `brightpath` is expected: that is EF Core checking for the database before it creates it. The SQL is logged at `Information`, so the log is long.
 - If the database already has data, it is not loaded again. To start over, run `DROP DATABASE brightpath WITH (FORCE);` in `psql`, then run the app again.
 - To move the clock: `Clock__Now=2026-03-07T10:00:00+07:00 dotnet run --project src/BrightPath.Api`.
+
+## Run with Docker
+
+No .NET, Node or Postgres needed:
+
+```bash
+docker compose up --build    # build the images from this checkout
+# or use the images published from main:
+docker compose pull && docker compose up
+```
+
+Open `http://localhost:8080/rooms`. Three containers run: Postgres, the API, and nginx serving the web page and forwarding `/api` to the API, as the Vite proxy does in dev. The database has no volume, so every start loads a fresh copy of the export. `docker compose down` removes it all. `bash scripts/smoke-test.sh` checks a running stack.
+
+Every commit on `main` that passes CI is built into two images and pushed to the GitHub Container Registry (`ghcr.io/duytech/tutoringschedulingsdd-api` and `-web`), tagged `latest` and with the commit SHA ([`.github/workflows/cd.yml`](.github/workflows/cd.yml)).
 
 ## Code layout
 

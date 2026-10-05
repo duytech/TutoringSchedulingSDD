@@ -15,7 +15,7 @@ Chosen for speed of delivery by a senior .NET developer, and so the **database i
 | Frontend | **React + Vite + TypeScript**, Vitest | A single Today view page. The Vite dev proxy calls the API, so no CORS setup is needed. Vitest tests the pure grid layout. It is in the solution as `web/BrightPath.Web.esproj` (JavaScript SDK), so building the solution also runs the npm build. |
 | Tests | **xUnit + WebApplicationFactory** against the local Postgres | End-to-end tests against a real Postgres. Each test run creates one throwaway database (`brightpath_test_<guid>`), migrates and seeds it, and drops it afterwards. The API tests share it, each booking on a date of its own. Each business rule has one test that proves it is enforced. Races are forced by holding a transaction open in the test, not by parallel requests, so a missing guard fails the test. |
 | Clock | `TimeProvider` (fixed, from `Clock:Now` in config) | Today is pinned to 2026-03-06 10:00 (+07:00). Tests and runs can move the clock by overriding `Clock:Now` (e.g. `Clock__Now`). Without the key, the real time is used. |
-| Local infra | None. Uses the PostgreSQL already installed on the machine | No Docker. The API runs with `dotnet run`. It applies migrations and seeds on startup when the DB is empty. |
+| Local infra | The PostgreSQL already installed on the machine, for dev and tests. Docker Compose only to try the app (phase 26) | Dev needs no Docker: the API runs with `dotnet run`, and it applies migrations and seeds on startup when the DB is empty. `compose.yaml` runs Postgres, the API and nginx for a reviewer who has only Docker. CD pushes those images to GHCR. |
 
 ## Database setup
 
@@ -78,6 +78,6 @@ The brief asks us to explain this split, so it is decided up front.
 - **MediatR, CQRS:** too heavy for 7 use cases. A use case is a plain handler class, injected into its endpoint.
 - **SQLite:** it has no range exclusion constraints, so we would lose the DB guarantee.
 - **SQL Server:** it would need triggers or serializable transactions for overlap checks.
-- **Docker / Testcontainers:** the machine already runs PostgreSQL locally, so a container would only add setup. Trade-off: a reviewer has to point the connection string at their own Postgres.
+- **Docker for dev / Testcontainers:** the machine already runs PostgreSQL locally, so a container would only add setup to the dev loop and the tests. A reviewer who does not want to set up Postgres can use `docker compose up` instead (phase 26).
 - **Angular:** too heavy for one screen.
 - **FluentAssertions:** its licence changed. We use plain xUnit `Assert`.

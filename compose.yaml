@@ -1,0 +1,31 @@
+# Runs the app with Docker alone: docker compose up --build, then http://localhost:8080/rooms.
+# Dev does not need this; it uses dotnet run, npm run dev and the local Postgres.
+services:
+  # No published port (5432 is the local Postgres) and no volume: every start is a freshly seeded week.
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+
+  api:
+    image: ghcr.io/duytech/tutoringschedulingsdd-api:latest
+    build:
+      context: .
+      dockerfile: src/BrightPath.Api/Dockerfile
+    environment:
+      ConnectionStrings__BrightPath: Host=db;Port=5432;Database=brightpath;Username=postgres;Password=postgres
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: ghcr.io/duytech/tutoringschedulingsdd-web:latest
+    build: ./web
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
