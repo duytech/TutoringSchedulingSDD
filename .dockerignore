@@ -1,0 +1,9 @@
+**/bin
+**/obj
+web
+tests
+specs
+.git
+.github
+.assignment
+.playwright-cli

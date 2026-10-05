@@ -1,0 +1,40 @@
+name: CD
+
+# Runs after CI on main, and only when it passed, so a red commit is never delivered.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/duytech/tutoringschedulingsdd
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # compose.yaml names the images :latest; each also gets the commit SHA, so a rollback is one tag away.
+      - run: docker compose build
+      - name: Push
+        run: |
+          for service in api web; do
+            docker tag "$IMAGE-$service:latest" "$IMAGE-$service:$SHA"
+            docker push --all-tags "$IMAGE-$service"
+          done

@@ -181,6 +181,7 @@ Instead, each change has its own named action (cancel, and move), and each one l
 - **After the box**, in about 30 more minutes, I built stretch phase 16, the React Today view (`web/`), with phase 17's "changed after tutor was told" badge merged in. It is a read-only room × time grid over `GET /api/sessions`.
 - Then, in about 20 more minutes, stretch phase 18: **move** (`POST /api/sessions/{id}/move`), with a "moved →" label on the old card in the Today view.
 - Then, in about 20 more minutes, stretch phase 19: **the tutor day** (`GET /api/tutors/{id}/day`), one tutor's day with the changes after the cut-off listed at the top, and a page for it in the web app, linked from the Today view.
+- Later, CI on GitHub Actions builds and tests every push and pull request. Container delivery came with it: each green commit on `main` is pushed as images, and `docker compose up` runs the whole app, so a reviewer needs only Docker.
 
 ### Next week
 

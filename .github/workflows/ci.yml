@@ -57,3 +57,15 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # The images CD publishes, built and checked through the web container before they reach main.
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build
+      - run: bash scripts/smoke-test.sh
+      - if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down
