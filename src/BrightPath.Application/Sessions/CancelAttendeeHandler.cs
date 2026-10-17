@@ -11,7 +11,7 @@ public sealed class CancelAttendeeHandler(
     ISessionRepository sessions,
     IBookingChangeRepository bookingChanges,
     IUnitOfWork unitOfWork,
-    GetSessionHandler views,
+    SessionViewLoader loader,
     BookingPolicy policy,
     TimeProvider clock)
 {
@@ -97,6 +97,6 @@ public sealed class CancelAttendeeHandler(
         await unitOfWork.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        return (await views.LoadAsync(id, ct))!;
+        return (await loader.LoadAsync(id, ct))!;
     }
 }

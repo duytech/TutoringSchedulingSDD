@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<GetRoomsHandler>();
         services.AddScoped<GetTutorsHandler>();
         services.AddScoped<GetViolationsHandler>();
+        services.AddScoped<SessionViewLoader>();
         services.AddScoped<GetSessionHandler>();
         services.AddScoped<CreateSessionHandler>();
         services.AddScoped<CancelAttendeeHandler>();
