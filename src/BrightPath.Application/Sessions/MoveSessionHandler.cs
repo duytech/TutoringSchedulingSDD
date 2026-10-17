@@ -20,7 +20,7 @@ public sealed class MoveSessionHandler(
     IBookingChangeRepository bookingChanges,
     IBookingLocks locks,
     IUnitOfWork unitOfWork,
-    GetSessionHandler views,
+    SessionViewLoader loader,
     BookingPolicy policy,
     TimeProvider clock)
 {
@@ -166,6 +166,6 @@ public sealed class MoveSessionHandler(
             return new ConflictError([RaceConflict.Create(ex.Slot, candidate, date)]);
         }
 
-        return (await views.LoadAsync(newId, ct))!;
+        return (await loader.LoadAsync(newId, ct))!;
     }
 }
