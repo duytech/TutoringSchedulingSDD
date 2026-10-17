@@ -1,0 +1,61 @@
+/* Violations: one section per date */
+
+.violations {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+  margin-top: 12px;
+}
+
+.violations h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.violations ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.violation {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--card-bg);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.violation__rule {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.violation__message,
+.violation__lessons {
+  margin: 0;
+}
+
+.violation__lessons {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .violation {
+    flex-direction: column;
+    gap: 2px;
+  }
+}

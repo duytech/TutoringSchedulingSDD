@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { asApiError, fetchTutorDay, type ApiError, type TutorDaySheet } from './api'
-import { tutorColour } from './colours'
-import { longDate } from './dates'
-import { cutoffLine } from './labels'
-import { ApiErrorMessage, PageHeader } from './PageHeader'
-import { TutorSheet } from './TutorSheet'
-import { onDate, useDate } from './useDate'
+import { asApiError, fetchTutorDay, type ApiError, type TutorDaySheet } from '../../api'
+import { tutorColour } from '../../colours'
+import { longDate } from '../../dates'
+import { cutoffLine } from '../../labels'
+import { ApiErrorMessage } from '../../components/ApiErrorMessage/ApiErrorMessage'
+import { PageHeader } from '../../components/PageHeader/PageHeader'
+import { TutorSheet } from '../../components/TutorSheet/TutorSheet'
+import { onDate, useDate } from '../../useDate'
+import './TutorDayPage.css'
 
 /** One tutor's day: their lessons by time, and what changed after they were told. */
 export function TutorDayPage() {

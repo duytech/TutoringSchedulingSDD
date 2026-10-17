@@ -1,7 +1,8 @@
-import type { TutorDaySheet } from './api'
-import { changeLine } from './labels'
-import { SessionCard } from './SessionCard'
-import { changesAfterCutoff } from './tutorChanges'
+import type { TutorDaySheet } from '../../api'
+import { changeLine } from '../../labels'
+import { SessionCard } from '../SessionCard/SessionCard'
+import { changesAfterCutoff } from '../../tutorChanges'
+import './TutorSheet.css'
 
 interface Props {
   sheet: TutorDaySheet

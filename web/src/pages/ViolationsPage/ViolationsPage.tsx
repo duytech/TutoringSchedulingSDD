@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { asApiError, fetchViolations, type ApiError, type ScheduleViolation, type ViolationReport } from './api'
-import { longDate } from './dates'
-import { ruleLabel } from './labels'
-import { ApiErrorMessage } from './PageHeader'
-import { groupByDate } from './violations'
-
-interface Range {
-  from: string | null
-  to: string | null
-}
+import { asApiError, fetchViolations, type ApiError, type ViolationReport } from '../../api'
+import { ApiErrorMessage } from '../../components/ApiErrorMessage/ApiErrorMessage'
+// This page writes its own header (the range form instead of the day arrows), with the same classes.
+import '../../components/PageHeader/PageHeader.css'
+import { RangeForm, type Range } from '../../components/RangeForm/RangeForm'
+import { ViolationList } from '../../components/ViolationList/ViolationList'
+import './ViolationsPage.css'
 
 /**
  * The range from `?from=` and `?to=` (either may be missing), and a way to change it. Changing it replaces the
@@ -102,56 +99,5 @@ export function ViolationsPage() {
       )}
       {report && <ViolationList violations={report.violations} />}
     </main>
-  )
-}
-
-function RangeForm({ range, onChange }: { range: Range; onChange: (range: Range) => void }) {
-  return (
-    <form className="range" onSubmit={(event) => event.preventDefault()}>
-      <label>
-        From{' '}
-        <input
-          type="date"
-          value={range.from ?? ''}
-          onChange={(event) => onChange({ ...range, from: event.target.value || null })}
-        />
-      </label>
-      <label>
-        To{' '}
-        <input
-          type="date"
-          value={range.to ?? ''}
-          onChange={(event) => onChange({ ...range, to: event.target.value || null })}
-        />
-      </label>
-      <button type="button" onClick={() => onChange({ from: null, to: null })} disabled={!range.from && !range.to}>
-        Clear
-      </button>
-    </form>
-  )
-}
-
-function ViolationList({ violations }: { violations: ScheduleViolation[] }) {
-  return (
-    <div className="violations">
-      {groupByDate(violations).map((day) => (
-        <section key={day.date}>
-          <h2>{longDate(day.date)}</h2>
-          <ul>
-            {day.violations.map((violation) => (
-              <li key={`${violation.rule}|${violation.message}`} className="violation">
-                <span className="violation__rule">{ruleLabel(violation.rule)}</span>
-                <div>
-                  <p className="violation__message">{violation.message}</p>
-                  {violation.lessonIds.length > 0 && (
-                    <p className="violation__lessons">{violation.lessonIds.join(' · ')}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </div>
   )
 }

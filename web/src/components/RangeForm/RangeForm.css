@@ -1,0 +1,28 @@
+/* The range inputs in the header of the violations page */
+
+.range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+
+.range input,
+.range button {
+  padding: 3px 8px;
+  font: inherit;
+  border: 1px solid var(--line-hour);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--fg);
+}
+
+.range button {
+  cursor: pointer;
+}
+
+.range button:disabled {
+  color: var(--muted);
+  cursor: default;
+}

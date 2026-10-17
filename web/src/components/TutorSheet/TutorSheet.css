@@ -1,0 +1,27 @@
+/* Tutor sheet: the late changes first, then the day as a list of cards */
+
+.changes {
+  margin: 8px 0 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 14px;
+}
+
+.changes h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.changes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 640px;
+}

@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react'
-import type { DaySessions } from './api'
-import { localDate } from './dates'
-import { layoutDay, minutesOf, OPENING, rowCount } from './layout'
-import { SessionCard } from './SessionCard'
+import type { DaySessions } from '../../api'
+import { localDate } from '../../dates'
+import { layoutDay, minutesOf, OPENING, rowCount } from '../../layout'
+import { SessionCard } from '../SessionCard/SessionCard'
+import './DayGrid.css'
 
 interface Props {
   day: DaySessions
