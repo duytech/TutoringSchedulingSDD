@@ -84,7 +84,7 @@ What the feature includes, and why:
 
 - **Tutors still get their day from Mai's messages.** The tutor day page (built after the time box, §4) shows each tutor's day with the changes after the cut-off at the top, so there is one version that is real. But a tutor has to open it: nothing sends it to them.
 - **A tutor can still drive in for a cancelled lesson** if nobody tells them. The system knows about the cancellation. The tutor does not.
-- **The owner can see a day on a screen, but only read it.** The Today view (a room × time grid, built after the time box, §4) shows the schedule. Booking and cancelling still go through the API.
+- **The owner can see a day on a screen, and change it there.** The Today view (a room × time grid, built after the time box, §4) shows the schedule, and since phase 28 a side panel books, moves and cancels. The rules are still only checked by the API.
 - **Families still cancel on WhatsApp at night**, and Mai still enters it the next morning.
 - **Freed slots are not offered to anyone.**
 - **Late cancellations are flagged, not billed**, and tutor pay is not tracked.
@@ -153,6 +153,7 @@ PostgreSQL. Only the tables this feature needs.
 | `GET /api/sessions?date=2026-03-06` | One day's sessions, defaulting to the pinned today. A flat `sessions` list (cancelled ones included, with attendees, their changes with `afterCutoff`, `cancelledAt`, `movedTo` and `legacyViolation`) and the clock's `now`. Times are local (`+07:00`). Values only for display (past/in-progress/upcoming, cancelled, changed after the cut-off) are left to the client, which works them out from these fields and `now`. The rooms and tutors come from the two endpoints below. | 200. 400 for a bad date |
 | `GET /api/rooms` | Every room, ordered by id (`R1`…`R6`). Reference data, the same on every day. | 200 |
 | `GET /api/tutors` | Every tutor with `name` and `subject`, ordered by id. Reference data, the same on every day. | 200 |
+| `GET /api/students` | Every student with `id` and `name`, ordered by name. The ids are the `studentIds` that create takes; the web's booking form picks from it. Reference data, the same on every day. | 200 |
 | `POST /api/sessions` | Body: `tutorId`, `roomId`, `startsAt` (local time with offset; without one it is refused, not guessed), `durationMin`, `studentIds` (ids from the schedule). Checks the new session with that day's sessions and lists only the conflicts it is part of, plus `in-the-past`. | 201 with `Location: /api/sessions/{id}` and the session. 400 for bad input. **409** `ProblemDetails` with a `conflicts` list, all at once, in the report's shape, e.g. `student-overlap: Le Minh Chau is in R3 with T3 and in R2 with T2 at 09:00` |
 | `GET /api/sessions/{id}` | One session, in the same shape as an item of `GET /api/sessions`. | 200. 404 |
 | `POST /api/sessions/{id}/attendees/{attendeeId}/cancel` | Body: `cancelledBy` (`family`, `tutor` or `centre`), optional `note`. | 200 with the session view (the attendee's `chargeable`, the change with `afterCutoff`, the session's `cancelledAt` if it went too). 404 if the attendee is not in that session. **409** with `already-started` and/or `already-cancelled`. 400 for bad input |
@@ -182,6 +183,7 @@ Instead, each change has its own named action (cancel, and move), and each one l
 - Then, in about 20 more minutes, stretch phase 18: **move** (`POST /api/sessions/{id}/move`), with a "moved →" label on the old card in the Today view.
 - Then, in about 20 more minutes, stretch phase 19: **the tutor day** (`GET /api/tutors/{id}/day`), one tutor's day with the changes after the cut-off listed at the top, and a page for it in the web app, linked from the Today view.
 - Later, CI on GitHub Actions builds and tests every push and pull request. Container delivery came with it: each green commit on `main` is pushed as images, and `docker compose up` runs the whole app, so a reviewer needs only Docker.
+- Then phase 28 let the web write: a side panel on the room grid books, moves and cancels, over a new `GET /api/students`. It has component tests (Vitest, Testing Library, jsdom) and Playwright end-to-end tests on a fresh `docker compose` stack, both in CI. The tutor's page stays read-only.
 
 ### Next week
 

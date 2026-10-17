@@ -1,0 +1,28 @@
+/* The rules a refused write breaks: a pill and the API's message, as in the violations list */
+
+.conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conflict {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--error-bg);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.conflict__rule {
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 12px;
+  white-space: nowrap;
+}

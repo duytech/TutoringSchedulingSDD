@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { TutorChange } from './tutorChanges'
-import { changeLine, cutoffLine, movedLabel, ruleLabel, shortDate } from './labels'
+import { cancelOutcomeLine, changeLine, cutoffLine, movedLabel, ruleLabel, shortDate } from './labels'
+import { anAttendee, aSession } from './testData'
 
 describe('movedLabel', () => {
   it('shows only the time and room when the session moved within the day', () => {
@@ -66,5 +67,50 @@ describe('ruleLabel', () => {
 
   it('shows an unknown rule code as it is', () => {
     expect(ruleLabel('new-rule')).toBe('new-rule')
+  })
+})
+
+describe('ruleLabel for the write-only codes', () => {
+  it.each([
+    ['in-the-past', 'In the past'],
+    ['already-started', 'Already started'],
+    ['already-cancelled', 'Already cancelled'],
+  ])('%s → %s', (code, label) => {
+    expect(ruleLabel(code)).toBe(label)
+  })
+})
+
+describe('cancelOutcomeLine', () => {
+  const cancelled = (afterCutoff: boolean) => ({
+    kind: 'cancelled' as const,
+    attendeeId: 'attendee-1',
+    changedAt: '2026-03-06T10:00:00+07:00',
+    changedBy: 'family',
+    afterCutoff,
+    note: null,
+  })
+
+  it('says chargeable, late and the session cancelled when the last student goes late (L020)', () => {
+    const session = aSession({
+      cancelledAt: '2026-03-06T10:00:00+07:00',
+      attendees: [anAttendee({ status: 'cancelled', chargeable: true })],
+      changes: [cancelled(true), { ...cancelled(true), attendeeId: null }],
+    })
+
+    expect(cancelOutcomeLine(session, 'attendee-1')).toBe(
+      'Bui An Nhien cancelled · chargeable · after the tutor was told · the session is cancelled',
+    )
+  })
+
+  it('says only the name when nothing else is true, and the session stays while another student is booked', () => {
+    const session = aSession({
+      attendees: [
+        anAttendee({ status: 'cancelled' }),
+        anAttendee({ id: 'attendee-2', studentName: 'Do Van Kien' }),
+      ],
+      changes: [cancelled(false)],
+    })
+
+    expect(cancelOutcomeLine(session, 'attendee-1')).toBe('Bui An Nhien cancelled')
   })
 })

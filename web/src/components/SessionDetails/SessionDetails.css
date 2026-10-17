@@ -1,0 +1,30 @@
+/* One session in the booking panel */
+
+.details__when {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.details__students {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.details__student {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.details__status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.details__heading {
+  margin: 12px 0 6px;
+  font-size: 14px;
+}

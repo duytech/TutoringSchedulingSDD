@@ -12,10 +12,12 @@ interface Props {
   onGoToDate: (date: string | null) => void
   /** The rest of the line under the title. */
   children?: ReactNode
+  /** Buttons before the day arrows, e.g. "+ New session". */
+  actions?: ReactNode
 }
 
 /** The title, the line under it, and ← / Today / → to move between days. */
-export function PageHeader({ title, date, now, loading, onGoToDate, children }: Props) {
+export function PageHeader({ title, date, now, loading, onGoToDate, children, actions }: Props) {
   const isToday = date !== null && now !== null && localDate(now) === date
   return (
     <header className="top">
@@ -27,6 +29,7 @@ export function PageHeader({ title, date, now, loading, onGoToDate, children }: 
           {loading && <span className="top__loading"> · loading…</span>}
         </p>
       </div>
+      {actions && <div className="top__actions">{actions}</div>}
       <nav className="top__nav" aria-label="Day">
         <button type="button" onClick={() => date && onGoToDate(addDays(date, -1))} disabled={!date}>
           ←

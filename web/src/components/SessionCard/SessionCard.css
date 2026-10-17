@@ -26,6 +26,16 @@
   font-weight: 600;
 }
 
+.card__open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .card__flag {
   margin-left: auto;
   color: #c2410c;
@@ -124,4 +134,14 @@ button.card__moved {
 .card--cancelled .card__students {
   text-decoration: line-through;
   color: var(--muted);
+}
+
+.card--selectable {
+  cursor: pointer;
+}
+
+.card--selected {
+  outline: 2px solid var(--tutor);
+  outline-offset: 1px;
+  z-index: 2;
 }

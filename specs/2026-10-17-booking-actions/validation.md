@@ -10,7 +10,7 @@ The phase can be merged when every item below is true.
 - [ ] In `web/`: `npm test` passes, with:
   - `bookingForm.test.ts` and the new `labels.test.ts` cases,
   - the seven component tests (`CreateSessionForm`, `MoveSessionForm`, `SessionDetails`, `ConflictList`, `BookingPanel`, `SessionCard`, `DayPage`),
-  - `structure.test.ts`, which sees the 5 new component folders.
+  - `structure.test.ts`, which sees the 9 new component folders.
 - [ ] On a fresh stack (`docker compose down`, `docker compose up -d --build`, `scripts/smoke-test.sh`): `npm run e2e` passes, all five spec files.
 - [ ] `npm run e2e` run a second time on the same stack fails (the data has changed). This shows the tests really write through the API, and that the README's "fresh stack" note is needed.
 

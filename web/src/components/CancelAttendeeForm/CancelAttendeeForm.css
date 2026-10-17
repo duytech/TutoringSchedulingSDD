@@ -1,0 +1,8 @@
+/* The cancel form, set in under the student it cancels */
+
+.cancel {
+  margin: 4px 0 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--card-bg);
+}

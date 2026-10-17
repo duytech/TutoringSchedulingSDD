@@ -18,9 +18,13 @@ interface Props {
   /** The API's now, to tell past, in-progress and upcoming apart. */
   now: string
   onGoToDate: (date: string) => void
+  /** Opens the session in the booking panel. Without it (the tutor's page), the card does nothing on click. */
+  onSelect?: (session: Session) => void
+  /** The session open in the booking panel. */
+  selected?: boolean
 }
 
-export function SessionCard({ session, placement, tutorColour, shownDate, now, onGoToDate }: Props) {
+export function SessionCard({ session, placement, tutorColour, shownDate, now, onGoToDate, onSelect, selected }: Props) {
   const flagged = session.legacyViolation || session.attendees.some((attendee) => attendee.legacyViolation)
   const lateChanges = session.changes.filter((change) => change.afterCutoff)
   const moved = session.movedTo ? movedLabel(shownDate, session.movedTo) : null
@@ -30,6 +34,8 @@ export function SessionCard({ session, placement, tutorColour, shownDate, now, o
     `card--${sessionState(session, now)}`,
     isCancelled(session) ? 'card--cancelled' : '',
     placement ? '' : 'card--row',
+    onSelect ? 'card--selectable' : '',
+    selected ? 'card--selected' : '',
   ].filter(Boolean)
 
   const style = {
@@ -43,11 +49,30 @@ export function SessionCard({ session, placement, tutorColour, shownDate, now, o
   } as CSSProperties
 
   return (
-    <article className={classes.join(' ')} style={style} aria-label={`${session.tutorName} in ${session.roomId}`}>
+    <article
+      className={classes.join(' ')}
+      style={style}
+      aria-label={`${session.tutorName} in ${session.roomId}`}
+      onClick={onSelect && (() => onSelect(session))}
+    >
       <header className="card__head">
-        <span className="card__time">
-          {localTime(session.startsAt)}–{localTime(session.endsAt)}
-        </span>
+        {onSelect ? (
+          // The keyboard's way in: a click anywhere on the card opens it too.
+          <button
+            type="button"
+            className="card__time card__open"
+            onClick={(event) => {
+              event.stopPropagation()
+              onSelect(session)
+            }}
+          >
+            {localTime(session.startsAt)}–{localTime(session.endsAt)}
+          </button>
+        ) : (
+          <span className="card__time">
+            {localTime(session.startsAt)}–{localTime(session.endsAt)}
+          </span>
+        )}
         <span className="card__tutor">{placement ? `${session.tutorId} ${session.tutorName}` : session.roomId}</span>
         {flagged && (
           <span className="card__flag" title={FLAG_TITLE}>
@@ -69,7 +94,11 @@ export function SessionCard({ session, placement, tutorColour, shownDate, now, o
             type="button"
             className="card__moved"
             title={moved.text}
-            onClick={() => onGoToDate(movedToDate)}
+            onClick={(event) => {
+              // The link goes to the other day; it does not open this card.
+              event.stopPropagation()
+              onGoToDate(movedToDate)
+            }}
           >
             {moved.text}
           </button>

@@ -93,19 +93,37 @@ The tests are in two projects. `tests/BrightPath.Api.UnitTests` needs no databas
 - the races: two bookings for one room, two bookings for a tutor's last slot of the day, and two cancels of a pair. Each race test holds a transaction open, so it fails if its guard is removed;
 - the pinned clock, and moving it.
 
+The web app has two more layers. `npm test` in `web/` runs its unit tests and **component tests** (Vitest, Testing Library and jsdom, with `fetch` faked): what each booking form sends, and how it shows a 400, 404 or 409. CI runs them in the web job. The **end-to-end tests** (Playwright, in `web/e2e/`) book, move and cancel through the real web and API, so they need a freshly seeded stack, and a second run on the same stack fails:
+
+```bash
+docker compose down && docker compose up -d --build && bash scripts/smoke-test.sh
+cd web && npx playwright install chromium && npm run e2e    # against http://localhost:8080
+```
+
+Without Docker, run the API on an empty database and point the tests at the dev server: `E2E_BASE_URL=http://localhost:5173 npm run e2e`. CI runs them in the container job, after the smoke test.
+
 ## Web: the Today view
 
-A read-only page with a room × time grid for one day: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, a badge on lessons changed after the tutor was told, and `moved →` on a lesson that was moved, pointing to where it went. It needs the API running. In Visual Studio, `BrightPath.Web` is in the solution: F5 on it runs `npm run dev`, and its Vitest tests show in Test Explorer.
+A page with a room × time grid for one day, where the receptionist can also book, move and cancel: cancelled lessons struck through, past ones faded, a line at "now", `⚑` on rows the export flagged, a badge on lessons changed after the tutor was told, and `moved →` on a lesson that was moved, pointing to where it went. It needs the API running. In Visual Studio, `BrightPath.Web` is in the solution: F5 on it runs `npm run dev`, and its Vitest tests show in Test Explorer.
 
 ```bash
 cd web
 npm install
 npm run dev     # http://localhost:5173, forwards /api to the API on :5238
-npm test        # the grid layout
+npm test        # unit and component tests
+npm run e2e     # end-to-end tests, on a fresh stack (see Test)
 npm run lint    # oxlint, then type-aware ESLint (typescript-eslint)
 ```
 
 The room grid is at `/rooms` (`/` goes there too). `←` and `→` move a day, `Today` goes back to the API's pinned today, and the date stays in the URL (`/rooms?date=2026-03-04`).
+
+**Book, move and cancel in the web.** On the pinned day (2026-03-06 10:00):
+
+- `+ New session` opens a form beside the grid. Book T2, R4, 2026-03-07 13:00, 60 min, Vu Ha My: the page goes to 03-07 with the new session open. Book it again and every conflict is listed at once (room, tutor and student overlap); the form keeps its values.
+- Click L020 (10:30 R3) and **Cancel** Bui An Nhien as `family`: the panel says `chargeable · after the tutor was told · the session is cancelled`, and the card is struck through. Who asked has no default, because it decides who pays.
+- On 03-07, click L028 and **Move** it to 14:00: the new session opens, and the old card says `moved → 14:00 R3`. A session that has started (L018) offers neither.
+
+The web checks no rule itself: the API's answer is shown as it comes. The tutor's page stays read-only.
 
 Each tutor in the header line (`T1 Ngoc Anh 7 · …`) links to **that tutor's day** (`/tutors/T1?date=2026-03-06`): their lessons as a list by time, whether the day is final yet (16:00 the day before), and a "Changed after you were told" box at the top. It reads `GET /api/tutors/{id}/day`. Back returns to the grid; moving the day does not add to the history. Old links (`/?tutor=T1&date=…`) still land on the right page.
 

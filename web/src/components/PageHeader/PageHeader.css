@@ -19,12 +19,17 @@
   font-size: 13px;
 }
 
+.top__actions {
+  margin-left: auto;
+}
+
 .top__nav {
   display: flex;
   gap: 6px;
 }
 
-.top__nav button {
+.top__nav button,
+.top__actions button {
   min-width: 40px;
   padding: 4px 10px;
   font: inherit;
