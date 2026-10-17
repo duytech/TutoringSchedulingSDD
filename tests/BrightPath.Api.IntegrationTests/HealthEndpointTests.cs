@@ -6,12 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace BrightPath.Api.IntegrationTests;
 
 [Collection(ApiCollection.Name)]
-public sealed class HealthEndpointTests(BrightPathApiFactory factory)
+public sealed class HealthEndpointTests(BrightPathApiFactory brightPathApiFactory)
 {
     [Fact]
     public async Task Health_reports_healthy_when_the_database_is_reachable()
     {
-        var client = factory.CreateClient();
+        var client = brightPathApiFactory.CreateClient();
 
         var response = await client.GetAsync("/health");
 
@@ -21,7 +21,7 @@ public sealed class HealthEndpointTests(BrightPathApiFactory factory)
     [Fact]
     public void The_tests_never_run_on_the_dev_database()
     {
-        using var scope = factory.Services.CreateScope();
+        using var scope = brightPathApiFactory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BrightPathDbContext>();
 
         Assert.StartsWith(BrightPathApiFactory.DatabasePrefix, db.Database.GetDbConnection().Database);

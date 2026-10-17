@@ -14,15 +14,15 @@ public sealed record MoveSessionRequest(
 /// created, and the old one points at the new one.
 /// </summary>
 public sealed class MoveSessionHandler(
-    ITutorRepository tutors,
-    IRoomRepository rooms,
-    ISessionRepository sessions,
-    IBookingChangeRepository bookingChanges,
-    IBookingLocks locks,
+    ITutorRepository tutorRepository,
+    IRoomRepository roomRepository,
+    ISessionRepository sessionRepository,
+    IBookingChangeRepository bookingChangeRepository,
+    IBookingLocks bookingLocks,
     IUnitOfWork unitOfWork,
-    SessionViewLoader loader,
-    BookingPolicy policy,
-    TimeProvider clock)
+    SessionViewLoader sessionViewLoader,
+    BookingPolicy bookingPolicy,
+    TimeProvider timeProvider)
 {
     public async Task<Result<SessionView>> HandleAsync(Guid id, MoveSessionRequest request, CancellationToken ct)
     {
@@ -32,7 +32,7 @@ public sealed class MoveSessionHandler(
             errors["startsAt"] = [SessionInput.StartsAtError];
         }
 
-        if (request.RoomId is { } roomId && !await rooms.ExistsAsync(roomId, ct))
+        if (request.RoomId is { } roomId && !await roomRepository.ExistsAsync(roomId, ct))
         {
             errors["roomId"] = [$"No room '{roomId}'."];
         }
@@ -60,7 +60,7 @@ public sealed class MoveSessionHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
         // A move and a cancel of the same session take turns, so a session cannot be moved after it was cancelled.
-        var old = await sessions.GetForUpdateAsync(id, ct);
+        var old = await sessionRepository.GetForUpdateAsync(id, ct);
         if (old is null)
         {
             return new NotFoundError("Session not found", $"No session {id}.");
@@ -81,9 +81,9 @@ public sealed class MoveSessionHandler(
             });
         }
 
-        var now = clock.GetUtcNow();
-        var date = DateTimeUtils.GetLocalDate(policy.Zone, startsUtc);
-        var tutor = await tutors.FindAsync(old.TutorId, ct);
+        var now = timeProvider.GetUtcNow();
+        var date = DateTimeUtils.GetLocalDate(bookingPolicy.Zone, startsUtc);
+        var tutor = await tutorRepository.FindAsync(old.TutorId, ct);
         var booked = old.Attendees.Where(a => a.Status == AttendeeStatus.Booked).ToList();
         var newId = Guid.CreateVersion7();
         var candidate = new RuleSession(
@@ -91,11 +91,11 @@ public sealed class MoveSessionHandler(
             booked.Select(a => new RuleAttendee(a.StudentId, a.Student.Name, AttendeeStatus.Booked, null)).ToList());
 
         // Same lock as create: the new day's tutor load is counted with no other booking for that tutor in between.
-        await locks.LockTutorDayAsync(old.TutorId, date, ct);
+        await bookingLocks.LockTutorDayAsync(old.TutorId, date, ct);
 
-        var sameDay = await sessions.ListActiveOnAsync(date, ct);
+        var sameDay = await sessionRepository.ListActiveOnAsync(date, ct);
 
-        var conflicts = MoveCheck.FindConflicts(source, candidate, sameDay, now, policy);
+        var conflicts = MoveCheck.FindConflicts(source, candidate, sameDay, now, bookingPolicy);
         if (conflicts.Count > 0)
         {
             return new ConflictError(conflicts);
@@ -114,8 +114,8 @@ public sealed class MoveSessionHandler(
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        var (noteOnOld, noteOnNew) = MoveCheck.BuildNotes(source, startsUtc, newRoomId, request.Note, policy);
-        sessions.Add(new Session
+        var (noteOnOld, noteOnNew) = MoveCheck.BuildNotes(source, startsUtc, newRoomId, request.Note, bookingPolicy);
+        sessionRepository.Add(new Session
         {
             Id = newId,
             TutorId = old.TutorId,
@@ -133,7 +133,7 @@ public sealed class MoveSessionHandler(
                 .ToList(),
         });
         old.MovedToSessionId = newId;
-        bookingChanges.AddChanges(
+        bookingChangeRepository.AddChanges(
             new BookingChange
             {
                 Id = Guid.CreateVersion7(),
@@ -141,7 +141,7 @@ public sealed class MoveSessionHandler(
                 Kind = ChangeKind.Moved,
                 ChangedAt = now,
                 ChangedBy = request.MovedBy,
-                AfterCutoff = policy.IsAfterCutoff(now, old.StartsAt),
+                AfterCutoff = bookingPolicy.IsAfterCutoff(now, old.StartsAt),
                 Note = noteOnOld,
             },
             new BookingChange
@@ -151,7 +151,7 @@ public sealed class MoveSessionHandler(
                 Kind = ChangeKind.Moved,
                 ChangedAt = now,
                 ChangedBy = request.MovedBy,
-                AfterCutoff = policy.IsAfterCutoff(now, startsUtc),
+                AfterCutoff = bookingPolicy.IsAfterCutoff(now, startsUtc),
                 Note = noteOnNew,
             });
 
@@ -166,6 +166,6 @@ public sealed class MoveSessionHandler(
             return new ConflictError([RaceConflict.Create(ex.Slot, candidate, date)]);
         }
 
-        return (await loader.LoadAsync(newId, ct))!;
+        return (await sessionViewLoader.LoadAsync(newId, ct))!;
     }
 }

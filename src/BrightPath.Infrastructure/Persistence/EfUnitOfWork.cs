@@ -5,16 +5,16 @@ using Npgsql;
 
 namespace BrightPath.Infrastructure.Persistence;
 
-internal sealed class EfUnitOfWork(BrightPathDbContext db) : IUnitOfWork
+internal sealed class EfUnitOfWork(BrightPathDbContext dbContext) : IUnitOfWork
 {
     public async Task<ITransaction> BeginTransactionAsync(CancellationToken ct) =>
-        new EfTransaction(await db.Database.BeginTransactionAsync(ct));
+        new EfTransaction(await dbContext.Database.BeginTransactionAsync(ct));
 
     public async Task SaveChangesAsync(CancellationToken ct)
     {
         try
         {
-            await db.SaveChangesAsync(ct);
+            await dbContext.SaveChangesAsync(ct);
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException
         {

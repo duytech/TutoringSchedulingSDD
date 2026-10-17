@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Infrastructure.Persistence;
 
-internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy) : ISessionReader
+internal sealed class SessionReader(BrightPathDbContext dbContext, BookingPolicy bookingPolicy) : ISessionReader
 {
     public Task<List<GetDaySessionsResponse>> GetDaySessionsAsync(DateOnly date, CancellationToken ct) =>
-        db.Sessions.AsNoTracking()
-            .FilterStartingOn(date, policy)
+        dbContext.Sessions.AsNoTracking()
+            .FilterStartingOn(date, bookingPolicy)
             .Select(s => new GetDaySessionsResponse(
                 s.Id,
                 s.TutorId,
@@ -29,8 +29,8 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
             .ToListAsync(ct);
 
     public Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct) =>
-        db.Sessions.AsNoTracking()
-            .FilterStartingOn(date, policy)
+        dbContext.Sessions.AsNoTracking()
+            .FilterStartingOn(date, bookingPolicy)
             .Where(s => s.TutorId == tutorId)
             .Select(s => new GetDaySessionsByTutorResponse(
                 s.Id,
@@ -50,7 +50,7 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
             .ToListAsync(ct);
 
     public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
-        db.Sessions.AsNoTracking()
+        dbContext.Sessions.AsNoTracking()
             .Where(s => s.Id == id)
             .Select(s => new GetSessionResponse(
                 s.Id,
@@ -77,7 +77,7 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
         }
 
         // A target can be on another day, so it is loaded by id rather than taken from the same day's sessions.
-        return await db.Sessions
+        return await dbContext.Sessions
             .Where(s => targetIds.Contains(s.Id))
             .Select(s => new MovedToView(s.Id, s.StartsAt, s.RoomId))
             .ToDictionaryAsync(t => t.Id, ct);

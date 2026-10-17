@@ -4,10 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Infrastructure.Persistence;
 
-internal sealed class BookingChangeRepository(BrightPathDbContext db) : IBookingChangeRepository
+internal sealed class BookingChangeRepository(BrightPathDbContext dbContext) : IBookingChangeRepository
 {
     public Task<List<BookingChange>> ListChangesAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
-        db.BookingChanges.AsNoTracking().Where(c => sessionIds.Contains(c.SessionId)).ToListAsync(ct);
+        dbContext.BookingChanges.AsNoTracking().Where(c => sessionIds.Contains(c.SessionId)).ToListAsync(ct);
 
-    public void AddChanges(params BookingChange[] changes) => db.BookingChanges.AddRange(changes);
+    public void AddChanges(params BookingChange[] changes) => dbContext.BookingChanges.AddRange(changes);
 }

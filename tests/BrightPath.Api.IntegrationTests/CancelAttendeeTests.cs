@@ -11,10 +11,10 @@ namespace BrightPath.Api.IntegrationTests;
 /// Tuesday 2026-03-24 10:00 and book their own sessions on 03-24 and 03-25, each in a room and time of its own.
 /// </summary>
 [Collection(ApiCollection.Name)]
-public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposable
+public sealed class CancelAttendeeTests(BrightPathApiFactory brightPathApiFactory) : IDisposable
 {
     private readonly WebApplicationFactory<Program> _moved =
-        factory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-24T10:00:00+07:00"));
+        brightPathApiFactory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-24T10:00:00+07:00"));
 
     public void Dispose() => _moved.Dispose();
 
@@ -22,7 +22,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
     public async Task A_late_family_cancel_is_charged_flagged_and_frees_the_slot()
     {
         var client = _moved.CreateClient();
-        var chau = await factory.GetStudentId("Le Minh Chau");
+        var chau = await brightPathApiFactory.GetStudentId("Le Minh Chau");
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(client, "T1", "R1", "2026-03-24 10:30", 60, chau));
 
         var response = await ApiCalls.Cancel(client, booked.Id, booked.Attendees[0].Id, "family", "flu");
@@ -52,7 +52,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
         var client = _moved.CreateClient();
         var pair = await ApiCalls.ReadSession(await ApiCalls.Book(
             client, "T2", "R2", "2026-03-25 10:00", 60,
-            await factory.GetStudentId("Vu Ha My"), await factory.GetStudentId("Tran Bao Long")));
+            await brightPathApiFactory.GetStudentId("Vu Ha My"), await brightPathApiFactory.GetStudentId("Tran Bao Long")));
 
         var first = await ApiCalls.ReadSession(
             await ApiCalls.Cancel(client, pair.Id, pair.Attendees[0].Id, "centre"));
@@ -72,7 +72,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T3", "R3", "2026-03-25 12:00", 60, await factory.GetStudentId("Do Van Kien")));
+            client, "T3", "R3", "2026-03-25 12:00", 60, await brightPathApiFactory.GetStudentId("Do Van Kien")));
         await ApiCalls.Cancel(client, booked.Id, booked.Attendees[0].Id, "family");
 
         var again = await ApiCalls.Cancel(client, booked.Id, booked.Attendees[0].Id, "family");
@@ -85,7 +85,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
     public async Task A_lesson_that_is_already_over_cannot_be_cancelled()
     {
         // The shared host's clock is 03-06 10:00, and L018 ran at 09:00. A refused cancel writes nothing.
-        var client = factory.CreateClient();
+        var client = brightPathApiFactory.CreateClient();
         var (session, attendee) = await Lesson(client, "L018");
 
         var response = await ApiCalls.Cancel(client, session, attendee, "family");
@@ -97,7 +97,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
     [Fact]
     public async Task An_attendee_under_another_session_is_not_found()
     {
-        var client = factory.CreateClient();
+        var client = brightPathApiFactory.CreateClient();
         var (_, l020) = await Lesson(client, "L020");
         var (l021Session, _) = await Lesson(client, "L021");
 
@@ -109,7 +109,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
     [Fact]
     public async Task Only_family_tutor_or_centre_can_cancel()
     {
-        var client = factory.CreateClient();
+        var client = brightPathApiFactory.CreateClient();
         var (session, attendee) = await Lesson(client, "L020");
 
         var response = await ApiCalls.Cancel(client, session, attendee, "teacher");
@@ -123,10 +123,10 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
         var client = _moved.CreateClient();
         var pair = await ApiCalls.ReadSession(await ApiCalls.Book(
             client, "T1", "R4", "2026-03-25 14:00", 60,
-            await factory.GetStudentId("Bui An Nhien"), await factory.GetStudentId("Nguyen Thi Ha")));
+            await brightPathApiFactory.GetStudentId("Bui An Nhien"), await brightPathApiFactory.GetStudentId("Nguyen Thi Ha")));
 
         // The other receptionist cancels the first student, holding the session row the API locks.
-        await using var other = factory.OpenDb();
+        await using var other = brightPathApiFactory.OpenDb();
         await using var transaction = await other.Database.BeginTransactionAsync();
         await other.Sessions.FromSql($"SELECT * FROM sessions WHERE id = {pair.Id} FOR UPDATE").SingleAsync();
         var first = await other.Attendees.SingleAsync(a => a.Id == pair.Attendees[0].Id);
@@ -137,7 +137,7 @@ public sealed class CancelAttendeeTests(BrightPathApiFactory factory) : IDisposa
 
         var ours = ApiCalls.Cancel(client, pair.Id, pair.Attendees[1].Id, "family");
         await ApiCalls.WaitUntilBlocked(
-            factory.ConnectionString,
+            brightPathApiFactory.ConnectionString,
             (type, _) => type == "Lock",
             ours,
             "The cancel did not wait for the session row");

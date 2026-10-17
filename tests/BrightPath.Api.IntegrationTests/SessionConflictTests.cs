@@ -9,14 +9,14 @@ namespace BrightPath.Api.IntegrationTests;
 /// these prove the endpoint runs them. Each test books on a date of its own, so the tests cannot see each other.
 /// </summary>
 [Collection(ApiCollection.Name)]
-public sealed class SessionConflictTests(BrightPathApiFactory factory)
+public sealed class SessionConflictTests(BrightPathApiFactory brightPathApiFactory)
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = brightPathApiFactory.CreateClient();
 
     [Fact]
     public async Task A_student_cannot_be_in_two_sessions_at_once()
     {
-        var chau = await factory.GetStudentId("Le Minh Chau");
+        var chau = await brightPathApiFactory.GetStudentId("Le Minh Chau");
 
         var first = await ApiCalls.Book(_client, "T1", "R1", "2026-03-11 09:00", 60, chau);
         var second = await ApiCalls.Book(_client, "T2", "R2", "2026-03-11 09:00", 60, chau);
@@ -29,8 +29,8 @@ public sealed class SessionConflictTests(BrightPathApiFactory factory)
     [Fact]
     public async Task A_room_cannot_hold_two_sessions_at_once()
     {
-        var first = await ApiCalls.Book(_client, "T1", "R1", "2026-03-12 09:00", 60, await factory.GetStudentId("Le Minh Chau"));
-        var second = await ApiCalls.Book(_client, "T2", "R1", "2026-03-12 09:30", 60, await factory.GetStudentId("Tran Bao Long"));
+        var first = await ApiCalls.Book(_client, "T1", "R1", "2026-03-12 09:00", 60, await brightPathApiFactory.GetStudentId("Le Minh Chau"));
+        var second = await ApiCalls.Book(_client, "T2", "R1", "2026-03-12 09:30", 60, await brightPathApiFactory.GetStudentId("Tran Bao Long"));
 
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
         await AssertOnlyConflict(second, RuleCodes.RoomOverlap);
@@ -39,8 +39,8 @@ public sealed class SessionConflictTests(BrightPathApiFactory factory)
     [Fact]
     public async Task A_tutor_cannot_be_in_two_rooms_at_once()
     {
-        var first = await ApiCalls.Book(_client, "T1", "R1", "2026-03-13 09:00", 60, await factory.GetStudentId("Le Minh Chau"));
-        var second = await ApiCalls.Book(_client, "T1", "R2", "2026-03-13 09:00", 60, await factory.GetStudentId("Tran Bao Long"));
+        var first = await ApiCalls.Book(_client, "T1", "R1", "2026-03-13 09:00", 60, await brightPathApiFactory.GetStudentId("Le Minh Chau"));
+        var second = await ApiCalls.Book(_client, "T1", "R2", "2026-03-13 09:00", 60, await brightPathApiFactory.GetStudentId("Tran Bao Long"));
 
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
         await AssertOnlyConflict(second, RuleCodes.TutorOverlap);
@@ -50,7 +50,7 @@ public sealed class SessionConflictTests(BrightPathApiFactory factory)
     public async Task A_tutor_already_over_the_daily_load_gets_no_more_sessions()
     {
         // T1 has 7 seeded sessions on 03-06. R4 and Do Van Kien are free at 14:30.
-        var response = await ApiCalls.Book(_client, "T1", "R4", "2026-03-06 14:30", 60, await factory.GetStudentId("Do Van Kien"));
+        var response = await ApiCalls.Book(_client, "T1", "R4", "2026-03-06 14:30", 60, await brightPathApiFactory.GetStudentId("Do Van Kien"));
 
         var conflict = await AssertOnlyConflict(response, RuleCodes.TutorLoad);
         Assert.Equal(8, conflict.SessionIds.Count);
@@ -59,7 +59,7 @@ public sealed class SessionConflictTests(BrightPathApiFactory factory)
     [Fact]
     public async Task Nothing_is_booked_on_a_Monday()
     {
-        var response = await ApiCalls.Book(_client, "T2", "R2", "2026-03-16 10:00", 60, await factory.GetStudentId("Le Minh Chau"));
+        var response = await ApiCalls.Book(_client, "T2", "R2", "2026-03-16 10:00", 60, await brightPathApiFactory.GetStudentId("Le Minh Chau"));
 
         await AssertOnlyConflict(response, RuleCodes.ClosedDay);
     }
@@ -67,8 +67,8 @@ public sealed class SessionConflictTests(BrightPathApiFactory factory)
     [Fact]
     public async Task An_exam_pair_is_one_session_with_two_attendees()
     {
-        var ha = await factory.GetStudentId("Nguyen Thi Ha");
-        var kien = await factory.GetStudentId("Do Van Kien");
+        var ha = await brightPathApiFactory.GetStudentId("Nguyen Thi Ha");
+        var kien = await brightPathApiFactory.GetStudentId("Do Van Kien");
 
         var response = await ApiCalls.Book(_client, "T3", "R5", "2026-03-18 14:00", 90, ha, kien);
 
