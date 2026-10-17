@@ -6,8 +6,8 @@ namespace BrightPath.Infrastructure.Persistence;
 
 internal sealed class TutorRepository(BrightPathDbContext dbContext) : ITutorRepository
 {
-    public Task<Tutor?> FindAsync(string id, CancellationToken ct) =>
-        dbContext.Tutors.AsNoTracking().SingleOrDefaultAsync(t => t.Id == id, ct);
+    public Task<Tutor?> FindAsync(string tutorId, CancellationToken ct) =>
+        dbContext.Tutors.AsNoTracking().SingleOrDefaultAsync(t => t.Id == tutorId, ct);
 
     public Task<List<Tutor>> ListAsync(CancellationToken ct) =>
         dbContext.Tutors.AsNoTracking().ToListAsync(ct);

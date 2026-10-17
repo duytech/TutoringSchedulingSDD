@@ -23,14 +23,14 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
 
     // ITutorRepository
 
-    public Task<Tutor?> FindAsync(string id, CancellationToken ct) =>
-        Task.FromResult(Tutors.SingleOrDefault(t => t.Id == id));
+    public Task<Tutor?> FindAsync(string tutorId, CancellationToken ct) =>
+        Task.FromResult(Tutors.SingleOrDefault(t => t.Id == tutorId));
 
     public Task<List<Tutor>> ListAsync(CancellationToken ct) => Task.FromResult(Tutors.ToList());
 
     // IRoomRepository
 
-    public Task<bool> ExistsAsync(string id, CancellationToken ct) => Task.FromResult(RoomIds.Contains(id));
+    public Task<bool> ExistsAsync(string roomId, CancellationToken ct) => Task.FromResult(RoomIds.Contains(roomId));
 
     public Task<List<string>> ListIdsAsync(CancellationToken ct) => Task.FromResult(RoomIds.ToList());
 
@@ -41,8 +41,8 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
 
     // ISessionRepository
 
-    public Task<Session?> GetForUpdateAsync(Guid id, CancellationToken ct) =>
-        Task.FromResult(Sessions.SingleOrDefault(s => s.Id == id));
+    public Task<Session?> GetForUpdateAsync(Guid sessionId, CancellationToken ct) =>
+        Task.FromResult(Sessions.SingleOrDefault(s => s.Id == sessionId));
 
     public Task<List<RuleSession>> ListActiveOnAsync(DateOnly date, CancellationToken ct) =>
         Task.FromResult(new List<RuleSession>());
@@ -67,8 +67,8 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
     public Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct) =>
         Task.FromResult(new List<GetDaySessionsByTutorResponse>());
 
-    public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
-        Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToGetSessionResponse).SingleOrDefault());
+    public Task<GetSessionResponse?> GetSessionAsync(Guid sessionId, CancellationToken ct) =>
+        Task.FromResult(Sessions.Where(s => s.Id == sessionId).Select(ToGetSessionResponse).SingleOrDefault());
 
     public Task<Dictionary<Guid, MovedToView>> GetMoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct) =>
         Task.FromResult(new Dictionary<Guid, MovedToView>());
@@ -93,17 +93,17 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
         return Task.CompletedTask;
     }
 
-    private GetSessionResponse ToGetSessionResponse(Session s) => new(
-        s.Id,
-        s.TutorId,
-        Tutors.Single(t => t.Id == s.TutorId).Name,
-        s.RoomId,
-        s.StartsAt,
-        s.EndsAt,
-        s.CancelledAt,
-        s.MovedToSessionId,
-        s.LegacyViolation,
-        s.Attendees
+    private GetSessionResponse ToGetSessionResponse(Session session) => new(
+        session.Id,
+        session.TutorId,
+        Tutors.Single(t => t.Id == session.TutorId).Name,
+        session.RoomId,
+        session.StartsAt,
+        session.EndsAt,
+        session.CancelledAt,
+        session.MovedToSessionId,
+        session.LegacyViolation,
+        session.Attendees
             .Select(a => new GetSessionResponse.Attendee(
                 a.Id, a.StudentId, Students.Single(st => st.Id == a.StudentId).Name, a.SourceLessonId, a.Status,
                 a.CancelledAt, a.CancelledBy, a.Chargeable, a.LegacyViolation, a.Note))

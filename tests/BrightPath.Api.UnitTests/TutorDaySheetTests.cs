@@ -131,5 +131,5 @@ public sealed class TutorDaySheetTests
 
     private static TutorDaySheetView EmptyDay(DateTimeOffset now) => TutorDaySheet.Build(T1, Friday, now, [], [], Policy);
 
-    private static string Lesson(SessionView s) => s.Attendees[0].LessonId!;
+    private static string Lesson(SessionView session) => session.Attendees[0].LessonId!;
 }

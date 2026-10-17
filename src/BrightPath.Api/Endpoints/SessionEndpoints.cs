@@ -31,13 +31,13 @@ public static class SessionEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-        sessions.MapGet("/{id:guid}", GetSession)
+        sessions.MapGet("/{sessionId:guid}", GetSession)
             .WithName("GetSession")
             .WithSummary("One session, in the same shape as an item of GET /api/sessions")
             .Produces<SessionView>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        sessions.MapPost("/{id:guid}/attendees/{attendeeId:guid}/cancel", Cancel)
+        sessions.MapPost("/{sessionId:guid}/attendees/{attendeeId:guid}/cancel", Cancel)
             .WithName("CancelAttendee")
             .WithSummary("Cancel one student's place, freeing the slot")
             .WithDescription(
@@ -49,7 +49,7 @@ public static class SessionEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-        sessions.MapPost("/{id:guid}/move", Move)
+        sessions.MapPost("/{sessionId:guid}/move", Move)
             .WithName("MoveSession")
             .WithSummary("Move a session to a new time, room or length, linking the old one to the new one")
             .WithDescription(
@@ -73,15 +73,15 @@ public static class SessionEndpoints
         (await handler.HandleAsync(request, ct))
             .ToHttp(view => TypedResults.Created($"/api/sessions/{view.Id}", view));
 
-    private static async Task<IResult> GetSession(Guid id, GetSessionHandler handler, CancellationToken ct) =>
-        (await handler.HandleAsync(id, ct)).ToHttp(view => TypedResults.Ok(view));
+    private static async Task<IResult> GetSession(Guid sessionId, GetSessionHandler handler, CancellationToken ct) =>
+        (await handler.HandleAsync(sessionId, ct)).ToHttp(view => TypedResults.Ok(view));
 
     private static async Task<IResult> Cancel(
-        Guid id, Guid attendeeId, CancelAttendeeRequest request, CancelAttendeeHandler handler, CancellationToken ct) =>
-        (await handler.HandleAsync(id, attendeeId, request, ct)).ToHttp(view => TypedResults.Ok(view));
+        Guid sessionId, Guid attendeeId, CancelAttendeeRequest request, CancelAttendeeHandler handler, CancellationToken ct) =>
+        (await handler.HandleAsync(sessionId, attendeeId, request, ct)).ToHttp(view => TypedResults.Ok(view));
 
     private static async Task<IResult> Move(
-        Guid id, MoveSessionRequest request, MoveSessionHandler handler, CancellationToken ct) =>
-        (await handler.HandleAsync(id, request, ct))
+        Guid sessionId, MoveSessionRequest request, MoveSessionHandler handler, CancellationToken ct) =>
+        (await handler.HandleAsync(sessionId, request, ct))
             .ToHttp(view => TypedResults.Created($"/api/sessions/{view.Id}", view));
 }

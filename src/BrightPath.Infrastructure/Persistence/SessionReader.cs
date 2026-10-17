@@ -49,9 +49,9 @@ internal sealed class SessionReader(BrightPathDbContext dbContext, BookingPolicy
                     .ToList()))
             .ToListAsync(ct);
 
-    public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
+    public Task<GetSessionResponse?> GetSessionAsync(Guid sessionId, CancellationToken ct) =>
         dbContext.Sessions.AsNoTracking()
-            .Where(s => s.Id == id)
+            .Where(s => s.Id == sessionId)
             .Select(s => new GetSessionResponse(
                 s.Id,
                 s.TutorId,

@@ -15,7 +15,7 @@ public static class TutorEndpoints
             .WithDescription("Every tutor with their name and subject, ordered by id. Reference data: the same on every day.")
             .Produces<IReadOnlyList<TutorView>>();
 
-        tutors.MapGet("/{id}/day", GetTutorDay)
+        tutors.MapGet("/{tutorId}/day", GetTutorDay)
             .WithName("GetTutorDay")
             .WithSummary("One tutor's day, with its cut-off")
             .WithDescription(
@@ -34,6 +34,6 @@ public static class TutorEndpoints
         TypedResults.Ok(await handler.HandleAsync(ct));
 
     private static async Task<IResult> GetTutorDay(
-        string id, DateOnly? date, GetTutorDayHandler handler, CancellationToken ct) =>
-        (await handler.HandleAsync(id, date, ct)).ToHttp(sheet => TypedResults.Ok(sheet));
+        string tutorId, DateOnly? date, GetTutorDayHandler handler, CancellationToken ct) =>
+        (await handler.HandleAsync(tutorId, date, ct)).ToHttp(sheet => TypedResults.Ok(sheet));
 }

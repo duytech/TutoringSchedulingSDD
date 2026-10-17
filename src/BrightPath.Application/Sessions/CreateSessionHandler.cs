@@ -80,7 +80,7 @@ public sealed class CreateSessionHandler(
 
         var candidate = new RuleSession(
             sessionId, tutor!.Id, tutor.Name, request.RoomId!, startsUtc, endsUtc, Cancelled: false,
-            studentIds.Select(id => new RuleAttendee(id, byId[id].Name, AttendeeStatus.Booked, null)).ToList());
+            studentIds.Select(studentId => new RuleAttendee(studentId, byId[studentId].Name, AttendeeStatus.Booked, null)).ToList());
 
         await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
@@ -103,11 +103,11 @@ public sealed class CreateSessionHandler(
             StartsAt = startsUtc,
             EndsAt = endsUtc,
             Attendees = studentIds
-                .Select(id => new Attendee
+                .Select(studentId => new Attendee
                 {
                     Id = Guid.CreateVersion7(),
                     SessionId = sessionId,
-                    StudentId = id,
+                    StudentId = studentId,
                     Status = AttendeeStatus.Booked,
                 })
                 .ToList(),
