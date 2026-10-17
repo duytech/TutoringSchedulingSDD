@@ -11,16 +11,16 @@ public sealed record CreateSessionRequest(
 
 /// <summary>Book a session, or refuse it with every rule it breaks.</summary>
 public sealed class CreateSessionHandler(
-    ITutorRepository tutors,
-    IRoomRepository rooms,
-    IStudentRepository students,
-    ISessionRepository sessions,
-    IBookingChangeRepository bookingChanges,
-    IBookingLocks locks,
+    ITutorRepository tutorRepository,
+    IRoomRepository roomRepository,
+    IStudentRepository studentRepository,
+    ISessionRepository sessionRepository,
+    IBookingChangeRepository bookingChangeRepository,
+    IBookingLocks bookingLocks,
     IUnitOfWork unitOfWork,
-    SessionViewLoader loader,
-    BookingPolicy policy,
-    TimeProvider clock)
+    SessionViewLoader sessionViewLoader,
+    BookingPolicy bookingPolicy,
+    TimeProvider timeProvider)
 {
     public async Task<Result<SessionView>> HandleAsync(CreateSessionRequest request, CancellationToken ct)
     {
@@ -28,14 +28,14 @@ public sealed class CreateSessionHandler(
 
         var tutor = string.IsNullOrWhiteSpace(request.TutorId)
             ? null
-            : await tutors.FindAsync(request.TutorId, ct);
+            : await tutorRepository.FindAsync(request.TutorId, ct);
         if (tutor is null)
         {
             errors["tutorId"] = [$"No tutor '{request.TutorId}'."];
         }
 
         var roomExists = !string.IsNullOrWhiteSpace(request.RoomId)
-            && await rooms.ExistsAsync(request.RoomId, ct);
+            && await roomRepository.ExistsAsync(request.RoomId, ct);
         if (!roomExists)
         {
             errors["roomId"] = [$"No room '{request.RoomId}'."];
@@ -52,7 +52,7 @@ public sealed class CreateSessionHandler(
         }
 
         var studentIds = request.StudentIds ?? [];
-        var foundStudents = await students.FindManyAsync(studentIds, ct);
+        var foundStudents = await studentRepository.FindManyAsync(studentIds, ct);
         if (studentIds.Length == 0)
         {
             errors["studentIds"] = ["At least one student is required."];
@@ -71,10 +71,10 @@ public sealed class CreateSessionHandler(
             return new ValidationError(errors);
         }
 
-        var now = clock.GetUtcNow();
+        var now = timeProvider.GetUtcNow();
         var startsUtc = startsAt.ToUniversalTime();
         var endsUtc = startsUtc.AddMinutes(request.DurationMin!.Value);
-        var date = DateTimeUtils.GetLocalDate(policy.Zone, startsUtc);
+        var date = DateTimeUtils.GetLocalDate(bookingPolicy.Zone, startsUtc);
         var sessionId = Guid.CreateVersion7();
         var byId = foundStudents.ToDictionary(s => s.Id);
 
@@ -85,17 +85,17 @@ public sealed class CreateSessionHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
         // Bookings for the same tutor and day take turns, so the tutor load is counted with no other booking in between.
-        await locks.LockTutorDayAsync(tutor.Id, date, ct);
+        await bookingLocks.LockTutorDayAsync(tutor.Id, date, ct);
 
-        var sameDay = await sessions.ListActiveOnAsync(date, ct);
+        var sameDay = await sessionRepository.ListActiveOnAsync(date, ct);
 
-        var conflicts = BookingCheck.FindConflicts(candidate, sameDay, now, policy);
+        var conflicts = BookingCheck.FindConflicts(candidate, sameDay, now, bookingPolicy);
         if (conflicts.Count > 0)
         {
             return new ConflictError(conflicts);
         }
 
-        sessions.Add(new Session
+        sessionRepository.Add(new Session
         {
             Id = sessionId,
             TutorId = tutor.Id,
@@ -112,14 +112,14 @@ public sealed class CreateSessionHandler(
                 })
                 .ToList(),
         });
-        bookingChanges.AddChanges(new BookingChange
+        bookingChangeRepository.AddChanges(new BookingChange
         {
             Id = Guid.CreateVersion7(),
             SessionId = sessionId,
             Kind = ChangeKind.Created,
             ChangedAt = now,
             ChangedBy = CancelledBy.Centre,
-            AfterCutoff = policy.IsAfterCutoff(now, startsUtc),
+            AfterCutoff = bookingPolicy.IsAfterCutoff(now, startsUtc),
         });
 
         try
@@ -133,6 +133,6 @@ public sealed class CreateSessionHandler(
             return new ConflictError([RaceConflict.Create(ex.Slot, candidate, date)]);
         }
 
-        return (await loader.LoadAsync(sessionId, ct))!;
+        return (await sessionViewLoader.LoadAsync(sessionId, ct))!;
     }
 }

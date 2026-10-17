@@ -12,23 +12,23 @@ namespace BrightPath.Api.IntegrationTests;
 /// it, and only then commits. Each test fails if its guard is removed.
 /// </summary>
 [Collection(ApiCollection.Name)]
-public sealed class BookingRaceTests(BrightPathApiFactory factory)
+public sealed class BookingRaceTests(BrightPathApiFactory brightPathApiFactory)
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = brightPathApiFactory.CreateClient();
 
     [Fact]
     public async Task A_room_taken_between_the_check_and_the_insert_is_a_409_not_a_500()
     {
-        await using var other = factory.OpenDb();
+        await using var other = brightPathApiFactory.OpenDb();
         await using var transaction = await other.Database.BeginTransactionAsync();
         var theirs = NewSession("T1", "R6", "2026-03-19 10:00");
         other.Sessions.Add(theirs);
         await other.SaveChangesAsync();
 
         // T2, not T1: a different tutor-day lock, so the API reads the day, sees nothing committed, and passes.
-        var ours = ApiCalls.Book(_client, "T2", "R6", "2026-03-19 10:00", 60, await factory.GetStudentId("Tran Bao Long"));
+        var ours = ApiCalls.Book(_client, "T2", "R6", "2026-03-19 10:00", 60, await brightPathApiFactory.GetStudentId("Tran Bao Long"));
         await ApiCalls.WaitUntilBlocked(
-            factory.ConnectionString,
+            brightPathApiFactory.ConnectionString,
             (type, _) => type == "Lock",
             ours,
             "The insert did not wait on the room constraint");
@@ -50,7 +50,7 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
     [Fact]
     public async Task Two_bookings_for_the_last_slot_of_a_tutors_day_cannot_both_get_it()
     {
-        var my = await factory.GetStudentId("Vu Ha My");
+        var my = await brightPathApiFactory.GetStudentId("Vu Ha My");
         foreach (var start in new[] { "09:00", "10:30", "12:00", "13:30", "15:00" })
         {
             var booked = await ApiCalls.Book(_client, "T2", "R1", $"2026-03-17 {start}", 60, my);
@@ -58,7 +58,7 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
         }
 
         // The other receptionist takes the 6th slot, holding the same lock the API takes.
-        await using var other = factory.OpenDb();
+        await using var other = brightPathApiFactory.OpenDb();
         await using var transaction = await other.Database.BeginTransactionAsync();
         var key = BookingLocks.BuildTutorDayLockKey("T2", new DateOnly(2026, 3, 17));
         await other.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))");
@@ -67,7 +67,7 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
 
         var ours = ApiCalls.Book(_client, "T2", "R3", "2026-03-17 18:00", 60, my);
         await ApiCalls.WaitUntilBlocked(
-            factory.ConnectionString,
+            brightPathApiFactory.ConnectionString,
             (type, name) => type == "Lock" && name == "advisory",
             ours,
             "The booking did not wait for the tutor-day lock");

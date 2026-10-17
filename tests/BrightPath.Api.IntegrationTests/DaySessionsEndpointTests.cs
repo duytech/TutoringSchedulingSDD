@@ -7,12 +7,12 @@ namespace BrightPath.Api.IntegrationTests;
 
 /// <summary>The day's sessions over HTTP, with the clock read from config. No other test books on 03-06 or 03-07.</summary>
 [Collection(ApiCollection.Name)]
-public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
+public sealed class DaySessionsEndpointTests(BrightPathApiFactory brightPathApiFactory)
 {
     [Fact]
     public async Task Today_is_the_pinned_day()
     {
-        var day = await ApiCalls.GetDaySessions(factory.CreateClient());
+        var day = await ApiCalls.GetDaySessions(brightPathApiFactory.CreateClient());
 
         Assert.Equal(new DateOnly(2026, 3, 6), day.Date);
         Assert.Equal(DateTimeOffset.Parse("2026-03-06T10:00:00+07:00"), day.Now);
@@ -25,7 +25,7 @@ public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
     [Fact]
     public async Task Moving_the_clock_in_config_moves_today()
     {
-        using var moved = factory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-07T10:00:00+07:00"));
+        using var moved = brightPathApiFactory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-07T10:00:00+07:00"));
 
         var day = await ApiCalls.GetDaySessions(moved.CreateClient());
 

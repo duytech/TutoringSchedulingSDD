@@ -11,20 +11,20 @@ public sealed record DaySessionsView(
 
 /// <summary>One day's sessions.</summary>
 public sealed class GetDaySessionsHandler(
-    ISessionReader reader, IBookingChangeRepository bookingChanges, BookingPolicy policy, TimeProvider clock)
+    ISessionReader sessionReader, IBookingChangeRepository bookingChangeRepository, BookingPolicy bookingPolicy, TimeProvider timeProvider)
 {
     /// <summary>The default date is today on the clock.</summary>
     public async Task<DaySessionsView> HandleAsync(DateOnly? date, CancellationToken ct)
     {
-        var utcNow = clock.GetUtcNow();
-        var localDate = date ?? DateTimeUtils.GetLocalDate(policy.Zone, utcNow);
-        var sessions = await reader.GetDaySessionsAsync(localDate, ct);
+        var utcNow = timeProvider.GetUtcNow();
+        var localDate = date ?? DateTimeUtils.GetLocalDate(bookingPolicy.Zone, utcNow);
+        var sessions = await sessionReader.GetDaySessionsAsync(localDate, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
-        var changes = await bookingChanges.ListChangesAsync(sessionIds, ct);
-        var moveTargets = await reader.GetMoveTargetsAsync(targetIds, ct);
+        var changes = await bookingChangeRepository.ListChangesAsync(sessionIds, ct);
+        var moveTargets = await sessionReader.GetMoveTargetsAsync(targetIds, ct);
 
-        var views = DaySessions.Build(sessions, changes, policy, moveTargets);
-        return new DaySessionsView(localDate, DateTimeUtils.ToLocal(policy.Zone, utcNow), views);
+        var views = DaySessions.Build(sessions, changes, bookingPolicy, moveTargets);
+        return new DaySessionsView(localDate, DateTimeUtils.ToLocal(bookingPolicy.Zone, utcNow), views);
     }
 }

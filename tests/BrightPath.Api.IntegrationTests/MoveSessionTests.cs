@@ -12,10 +12,10 @@ namespace BrightPath.Api.IntegrationTests;
 /// stay untouched, and each test books its own sessions on 03-26 and 03-27, in rooms and times of its own.
 /// </summary>
 [Collection(ApiCollection.Name)]
-public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
+public sealed class MoveSessionTests(BrightPathApiFactory brightPathApiFactory) : IDisposable
 {
     private readonly WebApplicationFactory<Program> _moved =
-        factory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-24T10:00:00+07:00"));
+        brightPathApiFactory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-24T10:00:00+07:00"));
 
     public void Dispose() => _moved.Dispose();
 
@@ -23,8 +23,8 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     public async Task A_move_cancels_the_old_session_links_it_and_takes_only_the_booked_students()
     {
         var client = _moved.CreateClient();
-        var my = await factory.GetStudentId("Vu Ha My");
-        var long_ = await factory.GetStudentId("Tran Bao Long");
+        var my = await brightPathApiFactory.GetStudentId("Vu Ha My");
+        var long_ = await brightPathApiFactory.GetStudentId("Tran Bao Long");
         var pair = await ApiCalls.ReadSession(await ApiCalls.Book(client, "T1", "R1", "2026-03-26 10:00", 60, my, long_));
         await ApiCalls.Cancel(client, pair.Id, pair.Attendees.Single(a => a.StudentId == my).Id, "centre");
 
@@ -53,7 +53,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T2", "R3", "2026-03-26 14:00", 90, await factory.GetStudentId("Le Minh Chau")));
+            client, "T2", "R3", "2026-03-26 14:00", 90, await brightPathApiFactory.GetStudentId("Le Minh Chau")));
 
         var response = await ApiCalls.Move(client, booked.Id, "2026-03-26 14:30", "centre");
 
@@ -64,9 +64,9 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     public async Task A_move_into_a_taken_room_is_refused_and_changes_nothing()
     {
         var client = _moved.CreateClient();
-        await ApiCalls.Book(client, "T3", "R4", "2026-03-27 09:00", 60, await factory.GetStudentId("Do Van Kien"));
+        await ApiCalls.Book(client, "T3", "R4", "2026-03-27 09:00", 60, await brightPathApiFactory.GetStudentId("Do Van Kien"));
         var mine = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T1", "R5", "2026-03-27 09:00", 60, await factory.GetStudentId("Nguyen Thi Ha")));
+            client, "T1", "R5", "2026-03-27 09:00", 60, await brightPathApiFactory.GetStudentId("Nguyen Thi Ha")));
 
         var response = await ApiCalls.Move(client, mine.Id, "2026-03-27 09:00", "centre", "R4");
 
@@ -82,7 +82,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T3", "R5", "2026-03-27 13:00", 60, await factory.GetStudentId("Bui An Nhien")));
+            client, "T3", "R5", "2026-03-27 13:00", 60, await brightPathApiFactory.GetStudentId("Bui An Nhien")));
         await ApiCalls.Move(client, booked.Id, "2026-03-27 15:00", "centre");
 
         var again = await ApiCalls.Move(client, booked.Id, "2026-03-27 17:00", "centre");
@@ -96,7 +96,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T1", "R6", "2026-03-26 16:00", 60, await factory.GetStudentId("Bui An Nhien")));
+            client, "T1", "R6", "2026-03-26 16:00", 60, await brightPathApiFactory.GetStudentId("Bui An Nhien")));
         var moved = await ApiCalls.ReadSession(await ApiCalls.Move(client, booked.Id, "2026-03-27 16:00", "tutor"));
 
         var day = await ApiCalls.GetDaySessions(client, "2026-03-26");
@@ -111,10 +111,10 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T2", "R6", "2026-03-27 10:00", 60, await factory.GetStudentId("Vu Ha My")));
+            client, "T2", "R6", "2026-03-27 10:00", 60, await brightPathApiFactory.GetStudentId("Vu Ha My")));
 
         // The other receptionist cancels the session, holding the row the API locks.
-        await using var other = factory.OpenDb();
+        await using var other = brightPathApiFactory.OpenDb();
         await using var transaction = await other.Database.BeginTransactionAsync();
         var session = await other.Sessions.FromSql($"SELECT * FROM sessions WHERE id = {booked.Id} FOR UPDATE").SingleAsync();
         var attendee = await other.Attendees.SingleAsync(a => a.SessionId == booked.Id);
@@ -127,7 +127,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
 
         var ours = ApiCalls.Move(client, booked.Id, "2026-03-27 11:00", "centre");
         await ApiCalls.WaitUntilBlocked(
-            factory.ConnectionString,
+            brightPathApiFactory.ConnectionString,
             (type, _) => type == "Lock",
             ours,
             "The move did not wait for the session row");

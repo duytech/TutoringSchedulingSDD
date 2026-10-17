@@ -5,10 +5,10 @@ namespace BrightPath.Application.Rooms;
 public sealed record RoomView(string Id);
 
 /// <summary>Every room, ordered by id. Reference data: the same on every day.</summary>
-public sealed class GetRoomsHandler(IRoomRepository rooms)
+public sealed class GetRoomsHandler(IRoomRepository roomRepository)
 {
     public async Task<IReadOnlyList<RoomView>> HandleAsync(CancellationToken ct) =>
-        (await rooms.ListIdsAsync(ct))
+        (await roomRepository.ListIdsAsync(ct))
             .Order(StringComparer.Ordinal)
             .Select(id => new RoomView(id))
             .ToList();

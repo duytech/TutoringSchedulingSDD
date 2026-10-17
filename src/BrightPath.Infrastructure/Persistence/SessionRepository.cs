@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BrightPath.Infrastructure.Persistence;
 
-internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy policy) : ISessionRepository
+internal sealed class SessionRepository(BrightPathDbContext dbContext, BookingPolicy bookingPolicy) : ISessionRepository
 {
     public async Task<Session?> GetForUpdateAsync(Guid id, CancellationToken ct)
     {
-        var session = await db.Sessions
+        var session = await dbContext.Sessions
             .FromSql($"SELECT * FROM sessions WHERE id = {id} FOR UPDATE")
             .SingleOrDefaultAsync(ct);
         if (session is null)
@@ -17,7 +17,7 @@ internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy po
         }
 
         // Loading the attendees into the same context fills session.Attendees.
-        await db.Attendees.Include(a => a.Student).Where(a => a.SessionId == id).LoadAsync(ct);
+        await dbContext.Attendees.Include(a => a.Student).Where(a => a.SessionId == id).LoadAsync(ct);
         return session;
     }
 
@@ -25,9 +25,9 @@ internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy po
         ListActiveBetweenAsync(date, date, ct);
 
     public Task<List<RuleSession>> ListActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct) =>
-        db.Sessions.AsNoTracking()
+        dbContext.Sessions.AsNoTracking()
             .Where(s => s.CancelledAt == null)
-            .FilterStartingBetween(from, to, policy)
+            .FilterStartingBetween(from, to, bookingPolicy)
             .Select(s => new RuleSession(
                 s.Id,
                 s.TutorId,
@@ -41,5 +41,5 @@ internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy po
                     .ToList()))
             .ToListAsync(ct);
 
-    public void Add(Session session) => db.Sessions.Add(session);
+    public void Add(Session session) => dbContext.Sessions.Add(session);
 }

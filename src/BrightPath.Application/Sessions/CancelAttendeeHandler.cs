@@ -8,12 +8,12 @@ public sealed record CancelAttendeeRequest(string? CancelledBy, string? Note);
 
 /// <summary>Cancel one student's place, freeing the slot. The last one out cancels the session too.</summary>
 public sealed class CancelAttendeeHandler(
-    ISessionRepository sessions,
-    IBookingChangeRepository bookingChanges,
+    ISessionRepository sessionRepository,
+    IBookingChangeRepository bookingChangeRepository,
     IUnitOfWork unitOfWork,
-    SessionViewLoader loader,
-    BookingPolicy policy,
-    TimeProvider clock)
+    SessionViewLoader sessionViewLoader,
+    BookingPolicy bookingPolicy,
+    TimeProvider timeProvider)
 {
     public async Task<Result<SessionView>> HandleAsync(
         Guid id, Guid attendeeId, CancelAttendeeRequest request, CancellationToken ct)
@@ -38,14 +38,14 @@ public sealed class CancelAttendeeHandler(
 
         // Two cancels on one session take turns, so the last one out always sees the other one gone
         // and cancels the session.
-        var session = await sessions.GetForUpdateAsync(id, ct);
+        var session = await sessionRepository.GetForUpdateAsync(id, ct);
         var attendee = session?.Attendees.SingleOrDefault(a => a.Id == attendeeId);
         if (session is null || attendee is null)
         {
             return new NotFoundError("Attendee not found", $"Session {id} has no attendee {attendeeId}.");
         }
 
-        var now = clock.GetUtcNow();
+        var now = timeProvider.GetUtcNow();
         var decision = CancelCheck.Decide(
             new CancelSession(
                 session.Id,
@@ -57,7 +57,7 @@ public sealed class CancelAttendeeHandler(
             attendeeId,
             request.CancelledBy!,
             now,
-            policy);
+            bookingPolicy);
         if (decision.Conflicts.Count > 0)
         {
             return new ConflictError(decision.Conflicts);
@@ -67,7 +67,7 @@ public sealed class CancelAttendeeHandler(
         attendee.CancelledAt = now;
         attendee.CancelledBy = request.CancelledBy;
         attendee.Chargeable = decision.Chargeable;
-        bookingChanges.AddChanges(new BookingChange
+        bookingChangeRepository.AddChanges(new BookingChange
         {
             Id = Guid.CreateVersion7(),
             SessionId = id,
@@ -83,7 +83,7 @@ public sealed class CancelAttendeeHandler(
         {
             // The last one out cancels the session, with a change of its own so the tutor sees the slot is gone.
             session.CancelledAt = now;
-            bookingChanges.AddChanges(new BookingChange
+            bookingChangeRepository.AddChanges(new BookingChange
             {
                 Id = Guid.CreateVersion7(),
                 SessionId = id,
@@ -97,6 +97,6 @@ public sealed class CancelAttendeeHandler(
         await unitOfWork.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        return (await loader.LoadAsync(id, ct))!;
+        return (await sessionViewLoader.LoadAsync(id, ct))!;
     }
 }
