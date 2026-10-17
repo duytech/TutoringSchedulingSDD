@@ -98,17 +98,17 @@ public sealed class TutorDaySheetTests
     {
         var moveTargets = Seed.ForDaySessions.ToDictionary(s => s.Id, s => new MovedToView(s.Id, s.StartsAt, s.RoomId));
         var dates = Seed.ForDaySessions
-            .Select(s => DateTimeUtils.LocalDate(Policy.Zone, s.StartsAt))
+            .Select(s => DateTimeUtils.GetLocalDate(Policy.Zone, s.StartsAt))
             .Distinct()
             .ToList();
 
         foreach (var date in dates)
         {
-            var day = DaySessions.Build(Seed.DaySessionsOn(date, Policy), Seed.Changes, Policy, moveTargets);
+            var day = DaySessions.Build(Seed.GetDaySessionsOn(date, Policy), Seed.Changes, Policy, moveTargets);
             foreach (var tutor in Seed.Tutors)
             {
                 var sheet = TutorDaySheet.Build(
-                    tutor, date, PinnedNow, Seed.TutorDayOn(tutor.Id, date, Policy), Seed.Changes, Policy, moveTargets);
+                    tutor, date, PinnedNow, Seed.GetTutorDayOn(tutor.Id, date, Policy), Seed.Changes, Policy, moveTargets);
                 var inDay = day.Where(s => s.TutorId == tutor.Id);
 
                 Assert.Equal(JsonSerializer.Serialize(inDay), JsonSerializer.Serialize(sheet.Sessions));
@@ -125,7 +125,7 @@ public sealed class TutorDaySheetTests
             Seed.Tutors.Single(t => t.Id == tutorId),
             date,
             PinnedNow,
-            Seed.TutorDayOn(tutorId, date, Policy),
+            Seed.GetTutorDayOn(tutorId, date, Policy),
             Seed.Changes,
             Policy);
 

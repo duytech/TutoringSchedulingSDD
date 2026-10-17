@@ -23,12 +23,12 @@ public sealed class GetTutorDayHandler(
         }
 
         var utcNow = clock.GetUtcNow();
-        var localDate = date ?? DateTimeUtils.LocalDate(policy.Zone, utcNow);
+        var localDate = date ?? DateTimeUtils.GetLocalDate(policy.Zone, utcNow);
         var sessions = await reader.GetDaySessionsByTutorAsync(localDate, tutorId, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
-        var changes = await bookingChanges.ChangesOfAsync(sessionIds, ct);
-        var moveTargets = await reader.MoveTargetsAsync(targetIds, ct);
+        var changes = await bookingChanges.ListChangesAsync(sessionIds, ct);
+        var moveTargets = await reader.GetMoveTargetsAsync(targetIds, ct);
 
         return TutorDaySheet.Build(tutor, localDate, utcNow, sessions, changes, policy, moveTargets);
     }

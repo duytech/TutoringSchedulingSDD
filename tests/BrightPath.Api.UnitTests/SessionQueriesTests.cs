@@ -20,7 +20,7 @@ public sealed class SessionQueriesTests
 
         var picked = new[] { thursdayLate, fridayMidnight, fridayLate, saturdayMidnight }
             .AsQueryable()
-            .StartingOn(Friday, Policy)
+            .FilterStartingOn(Friday, Policy)
             .ToList();
 
         Assert.Equal([fridayMidnight, fridayLate], picked);
@@ -28,7 +28,7 @@ public sealed class SessionQueriesTests
 
     private static Session At(DateOnly date, string localTime)
     {
-        var startsAt = DateTimeUtils.LocalToUtc(Policy.Zone, date, TimeOnly.Parse(localTime));
+        var startsAt = DateTimeUtils.ConvertLocalToUtc(Policy.Zone, date, TimeOnly.Parse(localTime));
         return new Session
         {
             Id = Guid.NewGuid(), TutorId = "T1", RoomId = "R1", StartsAt = startsAt, EndsAt = startsAt.AddHours(1),

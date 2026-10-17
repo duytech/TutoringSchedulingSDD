@@ -23,8 +23,8 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     public async Task A_move_cancels_the_old_session_links_it_and_takes_only_the_booked_students()
     {
         var client = _moved.CreateClient();
-        var my = await factory.StudentId("Vu Ha My");
-        var long_ = await factory.StudentId("Tran Bao Long");
+        var my = await factory.GetStudentId("Vu Ha My");
+        var long_ = await factory.GetStudentId("Tran Bao Long");
         var pair = await ApiCalls.ReadSession(await ApiCalls.Book(client, "T1", "R1", "2026-03-26 10:00", 60, my, long_));
         await ApiCalls.Cancel(client, pair.Id, pair.Attendees.Single(a => a.StudentId == my).Id, "centre");
 
@@ -53,7 +53,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T2", "R3", "2026-03-26 14:00", 90, await factory.StudentId("Le Minh Chau")));
+            client, "T2", "R3", "2026-03-26 14:00", 90, await factory.GetStudentId("Le Minh Chau")));
 
         var response = await ApiCalls.Move(client, booked.Id, "2026-03-26 14:30", "centre");
 
@@ -64,9 +64,9 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     public async Task A_move_into_a_taken_room_is_refused_and_changes_nothing()
     {
         var client = _moved.CreateClient();
-        await ApiCalls.Book(client, "T3", "R4", "2026-03-27 09:00", 60, await factory.StudentId("Do Van Kien"));
+        await ApiCalls.Book(client, "T3", "R4", "2026-03-27 09:00", 60, await factory.GetStudentId("Do Van Kien"));
         var mine = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T1", "R5", "2026-03-27 09:00", 60, await factory.StudentId("Nguyen Thi Ha")));
+            client, "T1", "R5", "2026-03-27 09:00", 60, await factory.GetStudentId("Nguyen Thi Ha")));
 
         var response = await ApiCalls.Move(client, mine.Id, "2026-03-27 09:00", "centre", "R4");
 
@@ -82,7 +82,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T3", "R5", "2026-03-27 13:00", 60, await factory.StudentId("Bui An Nhien")));
+            client, "T3", "R5", "2026-03-27 13:00", 60, await factory.GetStudentId("Bui An Nhien")));
         await ApiCalls.Move(client, booked.Id, "2026-03-27 15:00", "centre");
 
         var again = await ApiCalls.Move(client, booked.Id, "2026-03-27 17:00", "centre");
@@ -96,10 +96,10 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T1", "R6", "2026-03-26 16:00", 60, await factory.StudentId("Bui An Nhien")));
+            client, "T1", "R6", "2026-03-26 16:00", 60, await factory.GetStudentId("Bui An Nhien")));
         var moved = await ApiCalls.ReadSession(await ApiCalls.Move(client, booked.Id, "2026-03-27 16:00", "tutor"));
 
-        var day = await ApiCalls.DaySessions(client, "2026-03-26");
+        var day = await ApiCalls.GetDaySessions(client, "2026-03-26");
 
         var old = day.Sessions.Single(s => s.Id == booked.Id);
         Assert.Equal(new MovedToView(moved.Id, DateTimeOffset.Parse("2026-03-27T16:00:00+07:00"), "R6"), old.MovedTo);
@@ -111,7 +111,7 @@ public sealed class MoveSessionTests(BrightPathApiFactory factory) : IDisposable
     {
         var client = _moved.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T2", "R6", "2026-03-27 10:00", 60, await factory.StudentId("Vu Ha My")));
+            client, "T2", "R6", "2026-03-27 10:00", 60, await factory.GetStudentId("Vu Ha My")));
 
         // The other receptionist cancels the session, holding the row the API locks.
         await using var other = factory.OpenDb();

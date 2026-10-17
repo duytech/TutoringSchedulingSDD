@@ -128,7 +128,7 @@ public sealed class DaySessionsTests
     private static List<SessionView> Export(DateOnly date)
     {
         var export = SeedExport.Load(Policy);
-        return DaySessions.Build(export.DaySessionsOn(date, Policy), export.Changes, Policy);
+        return DaySessions.Build(export.GetDaySessionsOn(date, Policy), export.Changes, Policy);
     }
 
     private static List<SessionView> Build(params GetDaySessionsResponse[] sessions) =>
@@ -137,7 +137,7 @@ public sealed class DaySessionsTests
     /// <summary>A one-hour session for T1 on Friday 2026-03-06.</summary>
     private static GetDaySessionsResponse Session(string room, string start)
     {
-        var startsAt = DateTimeUtils.LocalToUtc(Policy.Zone, Friday, TimeOnly.Parse(start));
+        var startsAt = DateTimeUtils.ConvertLocalToUtc(Policy.Zone, Friday, TimeOnly.Parse(start));
         return new GetDaySessionsResponse(
             Guid.NewGuid(), "T1", "T1", room, startsAt, startsAt.AddMinutes(60), CancelledAt: null,
             MovedToSessionId: null, LegacyViolation: false, Attendees: []);

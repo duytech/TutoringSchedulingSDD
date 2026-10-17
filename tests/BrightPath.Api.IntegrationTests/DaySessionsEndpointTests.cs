@@ -12,7 +12,7 @@ public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
     [Fact]
     public async Task Today_is_the_pinned_day()
     {
-        var day = await ApiCalls.DaySessions(factory.CreateClient());
+        var day = await ApiCalls.GetDaySessions(factory.CreateClient());
 
         Assert.Equal(new DateOnly(2026, 3, 6), day.Date);
         Assert.Equal(DateTimeOffset.Parse("2026-03-06T10:00:00+07:00"), day.Now);
@@ -27,7 +27,7 @@ public sealed class DaySessionsEndpointTests(BrightPathApiFactory factory)
     {
         using var moved = factory.WithWebHostBuilder(b => b.UseSetting("Clock:Now", "2026-03-07T10:00:00+07:00"));
 
-        var day = await ApiCalls.DaySessions(moved.CreateClient());
+        var day = await ApiCalls.GetDaySessions(moved.CreateClient());
 
         Assert.Equal(new DateOnly(2026, 3, 7), day.Date);
         Assert.Equal(DateTimeOffset.Parse("2026-03-07T10:00:00+07:00"), day.Now);

@@ -82,7 +82,7 @@ public sealed class MoveSessionHandler(
         }
 
         var now = clock.GetUtcNow();
-        var date = DateTimeUtils.LocalDate(policy.Zone, startsUtc);
+        var date = DateTimeUtils.GetLocalDate(policy.Zone, startsUtc);
         var tutor = await tutors.FindAsync(old.TutorId, ct);
         var booked = old.Attendees.Where(a => a.Status == AttendeeStatus.Booked).ToList();
         var newId = Guid.CreateVersion7();
@@ -91,11 +91,11 @@ public sealed class MoveSessionHandler(
             booked.Select(a => new RuleAttendee(a.StudentId, a.Student.Name, AttendeeStatus.Booked, null)).ToList());
 
         // Same lock as create: the new day's tutor load is counted with no other booking for that tutor in between.
-        await locks.TutorDayAsync(old.TutorId, date, ct);
+        await locks.LockTutorDayAsync(old.TutorId, date, ct);
 
-        var sameDay = await sessions.ActiveOnAsync(date, ct);
+        var sameDay = await sessions.ListActiveOnAsync(date, ct);
 
-        var conflicts = MoveCheck.Conflicts(source, candidate, sameDay, now, policy);
+        var conflicts = MoveCheck.FindConflicts(source, candidate, sameDay, now, policy);
         if (conflicts.Count > 0)
         {
             return new ConflictError(conflicts);
@@ -114,7 +114,7 @@ public sealed class MoveSessionHandler(
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        var (noteOnOld, noteOnNew) = MoveCheck.Notes(source, startsUtc, newRoomId, request.Note, policy);
+        var (noteOnOld, noteOnNew) = MoveCheck.BuildNotes(source, startsUtc, newRoomId, request.Note, policy);
         sessions.Add(new Session
         {
             Id = newId,
@@ -163,7 +163,7 @@ public sealed class MoveSessionHandler(
         catch (SlotTakenException ex)
         {
             // Disposing the transaction rolls back the cancel too.
-            return new ConflictError([RaceConflict.For(ex.Slot, candidate, date)]);
+            return new ConflictError([RaceConflict.Create(ex.Slot, candidate, date)]);
         }
 
         return (await views.LoadAsync(newId, ct))!;

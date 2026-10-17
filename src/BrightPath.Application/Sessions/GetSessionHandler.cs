@@ -23,8 +23,8 @@ public sealed class GetSessionHandler(ISessionReader reader, IBookingChangeRepos
             return null;
         }
 
-        var changes = await bookingChanges.ChangesOfAsync([session.Id], ct);
-        var moveTargets = await reader.MoveTargetsAsync(session.MovedToSessionId is { } targetId ? [targetId] : [], ct);
+        var changes = await bookingChanges.ListChangesAsync([session.Id], ct);
+        var moveTargets = await reader.GetMoveTargetsAsync(session.MovedToSessionId is { } targetId ? [targetId] : [], ct);
         return ToView(session, changes, policy, moveTargets);
     }
 

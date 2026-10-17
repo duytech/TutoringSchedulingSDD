@@ -29,7 +29,7 @@ public sealed class MoveCheckTests
     {
         var (source, candidate) = Move(lessonId, start, room);
 
-        var conflicts = MoveCheck.Conflicts(source, candidate, SameDay(candidate), PinnedNow, Policy);
+        var conflicts = MoveCheck.FindConflicts(source, candidate, SameDay(candidate), PinnedNow, Policy);
 
         Assert.Equal(expected.Split(',', StringSplitOptions.RemoveEmptyEntries), conflicts.Select(c => c.Rule));
     }
@@ -40,7 +40,7 @@ public sealed class MoveCheckTests
         var (source, candidate) = Move("L028", "2026-03-07 17:00", null);
         var moved = source with { CancelledAt = PinnedNow };
 
-        var conflict = Assert.Single(MoveCheck.Conflicts(moved, candidate, SameDay(candidate), PinnedNow, Policy));
+        var conflict = Assert.Single(MoveCheck.FindConflicts(moved, candidate, SameDay(candidate), PinnedNow, Policy));
 
         Assert.Equal(RuleCodes.AlreadyCancelled, conflict.Rule);
         Assert.Equal("The session was already cancelled at 2026-03-06 10:00.", conflict.Message);
@@ -54,7 +54,7 @@ public sealed class MoveCheckTests
     {
         var (source, candidate) = Move("L028", "2026-03-07 14:00", null);
 
-        var conflicts = MoveCheck.Conflicts(
+        var conflicts = MoveCheck.FindConflicts(
             source, candidate, SameDay(candidate), source.StartsAt.AddMinutes(-minutesBefore), Policy);
 
         Assert.Equal(refused, conflicts.Any(c => c.Rule == RuleCodes.AlreadyStarted));
@@ -75,7 +75,7 @@ public sealed class MoveCheckTests
     {
         var (source, candidate) = Move("L028", "2026-03-07 16:00", "R4");
 
-        var (onOld, onNew) = MoveCheck.Notes(source, candidate.StartsAt, "R4", "exam moved", Policy);
+        var (onOld, onNew) = MoveCheck.BuildNotes(source, candidate.StartsAt, "R4", "exam moved", Policy);
 
         Assert.Equal("to 2026-03-07 16:00 in R4; exam moved", onOld);
         Assert.Equal("from 2026-03-07 09:00 in R3; exam moved", onNew);
@@ -91,7 +91,7 @@ public sealed class MoveCheckTests
             session.Attendees.Select(a => a.SourceLessonId).OfType<string>().ToList());
 
         var local = DateTime.Parse(start, System.Globalization.CultureInfo.InvariantCulture);
-        var startsAt = DateTimeUtils.LocalToUtc(
+        var startsAt = DateTimeUtils.ConvertLocalToUtc(
             Policy.Zone, DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
         var candidate = new RuleSession(
             Guid.NewGuid(), session.TutorId, Plan.Tutors.Single(t => t.Id == session.TutorId).Name,
@@ -106,11 +106,11 @@ public sealed class MoveCheckTests
     /// <summary>The export's active sessions on the candidate's local date, as the endpoint loads them.</summary>
     private static List<RuleSession> SameDay(RuleSession candidate)
     {
-        var date = DateTimeUtils.LocalDate(Policy.Zone, candidate.StartsAt);
+        var date = DateTimeUtils.GetLocalDate(Policy.Zone, candidate.StartsAt);
         var tutors = Plan.Tutors.ToDictionary(t => t.Id, t => t.Name);
         var students = Plan.Students.ToDictionary(s => s.Id, s => s.Name);
         return Plan.Sessions
-            .Where(s => s.CancelledAt is null && DateTimeUtils.LocalDate(Policy.Zone, s.StartsAt) == date)
+            .Where(s => s.CancelledAt is null && DateTimeUtils.GetLocalDate(Policy.Zone, s.StartsAt) == date)
             .Select(s => new RuleSession(
                 s.Id, s.TutorId, tutors[s.TutorId], s.RoomId, s.StartsAt, s.EndsAt, Cancelled: false,
                 s.Attendees

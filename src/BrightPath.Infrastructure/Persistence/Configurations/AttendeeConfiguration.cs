@@ -10,10 +10,10 @@ internal sealed class AttendeeConfiguration : IEntityTypeConfiguration<Attendee>
     {
         builder.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_attendees_status", SqlList.In("status", AttendeeStatus.All));
+            t.HasCheckConstraint("ck_attendees_status", SqlList.BuildInClause("status", AttendeeStatus.All));
             t.HasCheckConstraint(
                 "ck_attendees_cancelled_by",
-                $"cancelled_by IS NULL OR {SqlList.In("cancelled_by", CancelledBy.All)}");
+                $"cancelled_by IS NULL OR {SqlList.BuildInClause("cancelled_by", CancelledBy.All)}");
             t.HasCheckConstraint(
                 "ck_attendees_cancelled_consistent",
                 $"(status = '{AttendeeStatus.Cancelled}') = (cancelled_at IS NOT NULL)");

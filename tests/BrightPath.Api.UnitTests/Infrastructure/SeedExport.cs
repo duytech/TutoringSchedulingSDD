@@ -38,12 +38,12 @@ internal sealed record SeedExport(
     }
 
     /// <summary>The sessions starting on the local date, as the reader's GetDaySessionsAsync loads them.</summary>
-    public List<GetDaySessionsResponse> DaySessionsOn(DateOnly date, BookingPolicy policy) =>
-        ForDaySessions.Where(s => DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date).ToList();
+    public List<GetDaySessionsResponse> GetDaySessionsOn(DateOnly date, BookingPolicy policy) =>
+        ForDaySessions.Where(s => DateTimeUtils.GetLocalDate(policy.Zone, s.StartsAt) == date).ToList();
 
     /// <summary>One tutor's sessions starting on the local date, as the reader's GetDaySessionsByTutorAsync loads them.</summary>
-    public List<GetDaySessionsByTutorResponse> TutorDayOn(string tutorId, DateOnly date, BookingPolicy policy) =>
+    public List<GetDaySessionsByTutorResponse> GetTutorDayOn(string tutorId, DateOnly date, BookingPolicy policy) =>
         ForTutorDay
-            .Where(s => s.TutorId == tutorId && DateTimeUtils.LocalDate(policy.Zone, s.StartsAt) == date)
+            .Where(s => s.TutorId == tutorId && DateTimeUtils.GetLocalDate(policy.Zone, s.StartsAt) == date)
             .ToList();
 }

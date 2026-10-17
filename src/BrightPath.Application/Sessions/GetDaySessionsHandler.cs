@@ -17,12 +17,12 @@ public sealed class GetDaySessionsHandler(
     public async Task<DaySessionsView> HandleAsync(DateOnly? date, CancellationToken ct)
     {
         var utcNow = clock.GetUtcNow();
-        var localDate = date ?? DateTimeUtils.LocalDate(policy.Zone, utcNow);
+        var localDate = date ?? DateTimeUtils.GetLocalDate(policy.Zone, utcNow);
         var sessions = await reader.GetDaySessionsAsync(localDate, ct);
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var targetIds = sessions.Select(s => s.MovedToSessionId).OfType<Guid>().ToList();
-        var changes = await bookingChanges.ChangesOfAsync(sessionIds, ct);
-        var moveTargets = await reader.MoveTargetsAsync(targetIds, ct);
+        var changes = await bookingChanges.ListChangesAsync(sessionIds, ct);
+        var moveTargets = await reader.GetMoveTargetsAsync(targetIds, ct);
 
         var views = DaySessions.Build(sessions, changes, policy, moveTargets);
         return new DaySessionsView(localDate, DateTimeUtils.ToLocal(policy.Zone, utcNow), views);

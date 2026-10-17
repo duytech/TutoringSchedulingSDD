@@ -10,7 +10,7 @@ public sealed class ReferenceListEndpointTests(BrightPathApiFactory factory)
     [Fact]
     public async Task Rooms_lists_the_six_rooms_in_order()
     {
-        var rooms = await ApiCalls.Rooms(factory.CreateClient());
+        var rooms = await ApiCalls.GetRooms(factory.CreateClient());
 
         Assert.Equal(["R1", "R2", "R3", "R4", "R5", "R6"], rooms.Select(r => r.Id));
     }
@@ -18,7 +18,7 @@ public sealed class ReferenceListEndpointTests(BrightPathApiFactory factory)
     [Fact]
     public async Task Tutors_lists_the_seeded_tutors_in_order()
     {
-        var tutors = await ApiCalls.Tutors(factory.CreateClient());
+        var tutors = await ApiCalls.GetTutors(factory.CreateClient());
 
         Assert.Equal(
             [

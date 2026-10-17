@@ -10,10 +10,10 @@ internal sealed class BookingChangeConfiguration : IEntityTypeConfiguration<Book
     {
         builder.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_booking_changes_kind", SqlList.In("kind", ChangeKind.All));
+            t.HasCheckConstraint("ck_booking_changes_kind", SqlList.BuildInClause("kind", ChangeKind.All));
             t.HasCheckConstraint(
                 "ck_booking_changes_changed_by",
-                $"changed_by IS NULL OR {SqlList.In("changed_by", CancelledBy.All)}");
+                $"changed_by IS NULL OR {SqlList.BuildInClause("changed_by", CancelledBy.All)}");
         });
 
         builder.HasKey(c => c.Id);

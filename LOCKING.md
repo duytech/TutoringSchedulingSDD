@@ -9,7 +9,7 @@ Có hai loại khóa, cả hai đều chỉ được giữ **đến khi transact
 | Khóa | Nơi gọi | Dùng trong |
 |---|---|---|
 | Khóa dòng `SELECT * FROM sessions WHERE id = … FOR UPDATE` | `SessionRepository.GetForUpdateAsync` (Infrastructure) | Cancel, Move |
-| Advisory lock `pg_advisory_xact_lock` theo (tutor, ngày) | `PostgresBookingLocks.TutorDayAsync` (Infrastructure) | Create, Move |
+| Advisory lock `pg_advisory_xact_lock` theo (tutor, ngày) | `PostgresBookingLocks.LockTutorDayAsync` (Infrastructure) | Create, Move |
 
 Transaction thì được mở ở chỗ khác, trong từng handler (Application):
 
@@ -23,13 +23,13 @@ await transaction.CommitAsync(ct);                         // nhả khóa
 
 ## 1. Khóa và transaction nằm ở hai nơi
 
-Khóa có tác dụng hay không là do **caller** quyết định, không phải hàm khóa. `GetForUpdateAsync` và `TutorDayAsync` âm thầm giả định caller đã mở transaction, nhưng không có gì trong chữ ký hàm bắt buộc điều đó. Chỉ có doc comment trên `ISessionRepository` nhắc: *"locked until the transaction ends"*.
+Khóa có tác dụng hay không là do **caller** quyết định, không phải hàm khóa. `GetForUpdateAsync` và `LockTutorDayAsync` âm thầm giả định caller đã mở transaction, nhưng không có gì trong chữ ký hàm bắt buộc điều đó. Chỉ có doc comment trên `ISessionRepository` nhắc: *"locked until the transaction ends"*.
 
 Hậu quả: đọc riêng handler thì không thấy khóa cần transaction, còn đọc riêng repository thì không thấy transaction được mở ở đâu. Muốn hiểu phải đọc cả hai.
 
 ## 2. Quên mở transaction thì hỏng mà không báo lỗi
 
-Nếu một handler mới gọi `GetForUpdateAsync` hoặc `TutorDayAsync` mà không gọi `BeginTransactionAsync` trước:
+Nếu một handler mới gọi `GetForUpdateAsync` hoặc `LockTutorDayAsync` mà không gọi `BeginTransactionAsync` trước:
 
 - Câu `SELECT … FOR UPDATE` chạy ở chế độ autocommit, tự commit ngay, **khóa bị nhả luôn**.
 - Không có exception, không có warning. Code vẫn chạy đúng khi chỉ có một người dùng.
@@ -42,7 +42,7 @@ Tương tự, nếu `SaveChangesAsync` hoặc `CommitAsync` bị đẩy ra ngoà
 `tests/BrightPath.Api.UnitTests/Fakes/InMemoryBooking.cs` giả lập mọi port trong bộ nhớ:
 
 - `GetForUpdateAsync` chỉ trả về session, không khóa gì.
-- `TutorDayAsync` là `Task.CompletedTask`.
+- `LockTutorDayAsync` là `Task.CompletedTask`.
 - `BeginTransactionAsync` trả về một transaction giả, chỉ đếm `Commits`.
 
 Fake này không biết khóa đang được gọi trong hay ngoài transaction. Handler quên `BeginTransactionAsync` vẫn pass hết unit test.
@@ -75,7 +75,7 @@ Các nhánh `return` sớm (404, 409, bắt `SlotTakenException`) không gọi r
 
 Chưa làm, ghi lại để cân nhắc:
 
-1. **Guard fail-fast** (rẻ nhất): trong `GetForUpdateAsync` và `TutorDayAsync`, nếu `db.Database.CurrentTransaction is null` thì throw `InvalidOperationException`. Quên transaction sẽ thành lỗi rõ ràng ngay ở lần chạy đầu tiên, kể cả khi chỉ có một người dùng. Cách này xử lý được hạn chế 2. Hạn chế 1 vẫn còn, nhưng không còn nguy hiểm.
+1. **Guard fail-fast** (rẻ nhất): trong `GetForUpdateAsync` và `LockTutorDayAsync`, nếu `db.Database.CurrentTransaction is null` thì throw `InvalidOperationException`. Quên transaction sẽ thành lỗi rõ ràng ngay ở lần chạy đầu tiên, kể cả khi chỉ có một người dùng. Cách này xử lý được hạn chế 2. Hạn chế 1 vẫn còn, nhưng không còn nguy hiểm.
 2. **Gom transaction vào một chỗ**: thêm `IUnitOfWork.InTransactionAsync(Func<CancellationToken, Task<Result<T>>>)`. Hàm này mở transaction, commit khi `Result` thành công, rollback khi lỗi. Handler không còn tự gọi `BeginTransactionAsync`/`CommitAsync`, xử lý được hạn chế 1 và 6. Đổi lại phải sửa ba handler, và code bên trong lambda khó đọc hơn một chút.
-3. **Fake biết về transaction**: cho `InMemoryBooking` ghi nhận transaction đang mở, và throw nếu `GetForUpdateAsync`/`TutorDayAsync` được gọi ngoài transaction. Unit test sẽ bắt được hạn chế 3.
+3. **Fake biết về transaction**: cho `InMemoryBooking` ghi nhận transaction đang mở, và throw nếu `GetForUpdateAsync`/`LockTutorDayAsync` được gọi ngoài transaction. Unit test sẽ bắt được hạn chế 3.
 4. **Đặt `lock_timeout`** (ví dụ vài giây) cho các transaction ghi, và map lỗi `55P03 lock_not_available` / `40P01 deadlock_detected` thành 409 thay vì 500. Xử lý hạn chế 4 và 5.

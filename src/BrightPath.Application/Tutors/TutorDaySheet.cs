@@ -37,7 +37,7 @@ public static class TutorDaySheet
             .Select(s => ToView(s, changesBySession[s.Id], policy, moveTargets))
             .ToList();
 
-        var cutoff = policy.Cutoff(date);
+        var cutoff = policy.GetCutoff(date);
         return new TutorDaySheetView(
             tutor.Id,
             tutor.Name,

@@ -16,5 +16,5 @@ public interface ISessionReader
     Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct);
 
     /// <summary>The sessions that moved sessions went to, by id. A target can be on another day.</summary>
-    Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct);
+    Task<Dictionary<Guid, MovedToView>> GetMoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct);
 }

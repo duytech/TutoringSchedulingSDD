@@ -26,7 +26,7 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
         await other.SaveChangesAsync();
 
         // T2, not T1: a different tutor-day lock, so the API reads the day, sees nothing committed, and passes.
-        var ours = ApiCalls.Book(_client, "T2", "R6", "2026-03-19 10:00", 60, await factory.StudentId("Tran Bao Long"));
+        var ours = ApiCalls.Book(_client, "T2", "R6", "2026-03-19 10:00", 60, await factory.GetStudentId("Tran Bao Long"));
         await ApiCalls.WaitUntilBlocked(
             factory.ConnectionString,
             (type, _) => type == "Lock",
@@ -43,14 +43,14 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
         Assert.NotEqual(theirs.Id, conflict.SessionIds[0]);
         Assert.Empty(conflict.LessonIds);
 
-        var day = await ApiCalls.DaySessions(_client, "2026-03-19");
+        var day = await ApiCalls.GetDaySessions(_client, "2026-03-19");
         Assert.Equal([theirs.Id], day.Sessions.Where(s => s.RoomId == "R6").Select(s => s.Id));
     }
 
     [Fact]
     public async Task Two_bookings_for_the_last_slot_of_a_tutors_day_cannot_both_get_it()
     {
-        var my = await factory.StudentId("Vu Ha My");
+        var my = await factory.GetStudentId("Vu Ha My");
         foreach (var start in new[] { "09:00", "10:30", "12:00", "13:30", "15:00" })
         {
             var booked = await ApiCalls.Book(_client, "T2", "R1", $"2026-03-17 {start}", 60, my);
@@ -60,7 +60,7 @@ public sealed class BookingRaceTests(BrightPathApiFactory factory)
         // The other receptionist takes the 6th slot, holding the same lock the API takes.
         await using var other = factory.OpenDb();
         await using var transaction = await other.Database.BeginTransactionAsync();
-        var key = BookingLocks.TutorDay("T2", new DateOnly(2026, 3, 17));
+        var key = BookingLocks.BuildTutorDayLockKey("T2", new DateOnly(2026, 3, 17));
         await other.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))");
         other.Sessions.Add(NewSession("T2", "R2", "2026-03-17 16:30"));
         await other.SaveChangesAsync();

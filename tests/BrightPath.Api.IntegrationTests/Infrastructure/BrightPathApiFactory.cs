@@ -18,7 +18,7 @@ public sealed class BrightPathApiFactory : WebApplicationFactory<Program>, IAsyn
 
     public BrightPathApiFactory()
     {
-        var builder = new NpgsqlConnectionStringBuilder(BaseConnectionString())
+        var builder = new NpgsqlConnectionStringBuilder(ReadBaseConnectionString())
         {
             Database = $"{DatabasePrefix}{Guid.NewGuid():N}",
         };
@@ -63,7 +63,7 @@ public sealed class BrightPathApiFactory : WebApplicationFactory<Program>, IAsyn
             .UseSnakeCaseNamingConvention()
             .Options);
 
-    public async Task<Guid> StudentId(string name)
+    public async Task<Guid> GetStudentId(string name)
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BrightPathDbContext>();
@@ -71,10 +71,10 @@ public sealed class BrightPathApiFactory : WebApplicationFactory<Program>, IAsyn
     }
 
     /// <summary>Read the same way the app reads it, so the password in user-secrets is used.</summary>
-    private static string BaseConnectionString()
+    private static string ReadBaseConnectionString()
     {
         var config = new ConfigurationBuilder()
-            .AddJsonFile(Path.Combine(ApiDirectory(), "appsettings.Development.json"), optional: true)
+            .AddJsonFile(Path.Combine(FindApiDirectory(), "appsettings.Development.json"), optional: true)
             .AddUserSecrets<Program>(optional: true)
             .AddEnvironmentVariables()
             .Build();
@@ -83,7 +83,7 @@ public sealed class BrightPathApiFactory : WebApplicationFactory<Program>, IAsyn
                 "Connection string 'BrightPath' is not set. The tests create their own database on the same server.");
     }
 
-    private static string ApiDirectory()
+    private static string FindApiDirectory()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {

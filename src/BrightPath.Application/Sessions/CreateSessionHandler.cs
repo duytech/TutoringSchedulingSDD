@@ -74,7 +74,7 @@ public sealed class CreateSessionHandler(
         var now = clock.GetUtcNow();
         var startsUtc = startsAt.ToUniversalTime();
         var endsUtc = startsUtc.AddMinutes(request.DurationMin!.Value);
-        var date = DateTimeUtils.LocalDate(policy.Zone, startsUtc);
+        var date = DateTimeUtils.GetLocalDate(policy.Zone, startsUtc);
         var sessionId = Guid.CreateVersion7();
         var byId = foundStudents.ToDictionary(s => s.Id);
 
@@ -85,11 +85,11 @@ public sealed class CreateSessionHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
         // Bookings for the same tutor and day take turns, so the tutor load is counted with no other booking in between.
-        await locks.TutorDayAsync(tutor.Id, date, ct);
+        await locks.LockTutorDayAsync(tutor.Id, date, ct);
 
-        var sameDay = await sessions.ActiveOnAsync(date, ct);
+        var sameDay = await sessions.ListActiveOnAsync(date, ct);
 
-        var conflicts = BookingCheck.Conflicts(candidate, sameDay, now, policy);
+        var conflicts = BookingCheck.FindConflicts(candidate, sameDay, now, policy);
         if (conflicts.Count > 0)
         {
             return new ConflictError(conflicts);
@@ -130,7 +130,7 @@ public sealed class CreateSessionHandler(
         catch (SlotTakenException ex)
         {
             // Disposing the transaction rolls it back.
-            return new ConflictError([RaceConflict.For(ex.Slot, candidate, date)]);
+            return new ConflictError([RaceConflict.Create(ex.Slot, candidate, date)]);
         }
 
         return (await views.LoadAsync(sessionId, ct))!;

@@ -12,10 +12,10 @@ public interface ISessionRepository
     Task<Session?> GetForUpdateAsync(Guid id, CancellationToken ct);
 
     /// <summary>The not-cancelled sessions whose local start date is <paramref name="date"/>.</summary>
-    Task<List<RuleSession>> ActiveOnAsync(DateOnly date, CancellationToken ct);
+    Task<List<RuleSession>> ListActiveOnAsync(DateOnly date, CancellationToken ct);
 
     /// <summary>The not-cancelled sessions whose local start date is between the bounds, both inclusive. A missing bound is open.</summary>
-    Task<List<RuleSession>> ActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct);
+    Task<List<RuleSession>> ListActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct);
 
     void Add(Session session);
 }
