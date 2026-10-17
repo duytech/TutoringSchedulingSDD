@@ -1,0 +1,46 @@
+/* Grid: a time gutter, one column per room, one row per 15 minutes */
+
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px repeat(var(--rooms), minmax(0, 1fr));
+  grid-template-rows: 24px repeat(var(--rows), var(--row));
+}
+
+.grid__corner,
+.grid__room {
+  grid-row: 1;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid var(--line-hour);
+}
+
+.grid__line {
+  grid-column: 1 / -1;
+  grid-row-end: span 2;
+  border-top: 1px dashed var(--line);
+}
+
+.grid__line--hour {
+  border-top: 1px solid var(--line-hour);
+}
+
+.grid__time {
+  display: block;
+  width: 44px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+  background: var(--bg);
+}
+
+.grid__now {
+  position: relative;
+  grid-column: 2 / -1;
+  height: 0;
+  border-top: 2px solid var(--now);
+  z-index: 3;
+  pointer-events: none;
+}

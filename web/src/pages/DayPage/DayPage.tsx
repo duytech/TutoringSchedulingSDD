@@ -9,13 +9,15 @@ import {
   type Room,
   type DaySessions,
   type Tutor,
-} from './api'
-import { tutorColour } from './colours'
-import { longDate } from './dates'
-import { DayGrid } from './DayGrid'
-import { ApiErrorMessage, PageHeader } from './PageHeader'
-import { isCancelled } from './sessionStatus'
-import { onDate, useDate } from './useDate'
+} from '../../api'
+import { tutorColour } from '../../colours'
+import { longDate } from '../../dates'
+import { DayGrid } from '../../components/DayGrid/DayGrid'
+import { ApiErrorMessage } from '../../components/ApiErrorMessage/ApiErrorMessage'
+import { PageHeader } from '../../components/PageHeader/PageHeader'
+import { TutorLoads } from '../../components/TutorLoads/TutorLoads'
+import { useDate } from '../../useDate'
+import './DayPage.css'
 
 interface DayData {
   day: DaySessions
@@ -85,17 +87,4 @@ export function DayPage() {
       )}
     </main>
   )
-}
-
-/** "T1 Ngoc Anh 7 · T2 Pham Duc 2 · T3 Le Thu 1": active sessions per tutor that day, each a link to their sheet. */
-function TutorLoads({ day, tutors }: { day: DaySessions; tutors: Tutor[] }) {
-  const active = day.sessions.filter((session) => !isCancelled(session))
-  return tutors.map((tutor, index) => (
-    <span key={tutor.id}>
-      {index > 0 && ' · '}
-      <Link to={onDate(`/tutors/${encodeURIComponent(tutor.id)}`, day.date)}>
-        {tutor.id} {tutor.name} {active.filter((session) => session.tutorId === tutor.id).length}
-      </Link>
-    </span>
-  ))
 }

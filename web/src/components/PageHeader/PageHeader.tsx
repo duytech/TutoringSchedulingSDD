@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { ApiError } from './api'
-import { addDays, localDate, localTime } from './dates'
+import { addDays, localDate, localTime } from '../../dates'
+import './PageHeader.css'
 
 interface Props {
   title: string
@@ -39,14 +39,5 @@ export function PageHeader({ title, date, now, loading, onGoToDate, children }: 
         </button>
       </nav>
     </header>
-  )
-}
-
-export function ApiErrorMessage({ error }: { error: ApiError }) {
-  return (
-    <p className="message message--error" role="alert">
-      Cannot reach the API. Is it running (<code>dotnet run --project src/BrightPath.Api</code>)?
-      {error.status !== null && <> The API answered {error.status}.</>}
-    </p>
   )
 }

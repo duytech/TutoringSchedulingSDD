@@ -1,8 +1,8 @@
-import { Navigate, Route, Routes, useSearchParams } from 'react-router'
-import { DayPage } from './DayPage'
-import { TutorDayPage } from './TutorDayPage'
-import { onDate } from './useDate'
-import { ViolationsPage } from './ViolationsPage'
+import { Navigate, Route, Routes } from 'react-router'
+import { DayPage } from './pages/DayPage/DayPage'
+import { LegacyRedirect } from './pages/LegacyRedirect/LegacyRedirect'
+import { TutorDayPage } from './pages/TutorDayPage/TutorDayPage'
+import { ViolationsPage } from './pages/ViolationsPage/ViolationsPage'
 
 export default function App() {
   return (
@@ -14,12 +14,4 @@ export default function App() {
       <Route path="*" element={<Navigate to="/rooms" replace />} />
     </Routes>
   )
-}
-
-/** Links from before the routes (`/?tutor=T1&date=…`, `/?date=…`) still land on the right page. */
-function LegacyRedirect() {
-  const [params] = useSearchParams()
-  const tutor = params.get('tutor')
-  const path = tutor ? `/tutors/${encodeURIComponent(tutor)}` : '/rooms'
-  return <Navigate to={onDate(path, params.get('date'))} replace />
 }

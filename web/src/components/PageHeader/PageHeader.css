@@ -1,0 +1,46 @@
+/* Header: the title, the line under it, and the day buttons. ViolationsPage reuses these classes. */
+
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.top h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.top__sub {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.top__nav {
+  display: flex;
+  gap: 6px;
+}
+
+.top__nav button {
+  min-width: 40px;
+  padding: 4px 10px;
+  font: inherit;
+  border: 1px solid var(--line-hour);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.top a {
+  color: var(--link);
+}
+
+@media (max-width: 640px) {
+  .top {
+    flex-wrap: wrap;
+  }
+}

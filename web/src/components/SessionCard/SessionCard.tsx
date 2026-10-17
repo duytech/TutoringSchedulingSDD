@@ -1,9 +1,10 @@
 import type { CSSProperties } from 'react'
-import type { Session } from './api'
-import { localDate, localTime } from './dates'
-import { movedLabel } from './labels'
-import type { Placement } from './layout'
-import { changedAfterCutoff, isCancelled, sessionState } from './sessionStatus'
+import type { Session } from '../../api'
+import { localDate, localTime } from '../../dates'
+import { movedLabel } from '../../labels'
+import type { Placement } from '../../layout'
+import { changedAfterCutoff, isCancelled, sessionState } from '../../sessionStatus'
+import './SessionCard.css'
 
 const FLAG_TITLE = 'Loaded from the export; breaks a centre rule. See /api/reports/violations.'
 
