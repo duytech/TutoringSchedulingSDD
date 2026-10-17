@@ -61,3 +61,67 @@ body {
 .message--error {
   background: var(--error-bg);
 }
+
+/* Forms in the booking panel: one labelled field per line, its 400 message under it */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form__row {
+  display: flex;
+  gap: 8px;
+}
+
+.form__row > .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  padding: 4px 6px;
+  border: 1px solid var(--line-hour);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+}
+
+.field__error {
+  color: var(--now);
+  font-size: 12px;
+}
+
+.form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.form__actions button,
+.button {
+  padding: 4px 12px;
+  border: 1px solid var(--line-hour);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.form__actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -8,4 +8,7 @@ internal sealed class StudentRepository(BrightPathDbContext dbContext) : IStuden
 {
     public Task<List<Student>> FindManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
         dbContext.Students.AsNoTracking().Where(s => ids.Contains(s.Id)).ToListAsync(ct);
+
+    public Task<List<Student>> ListAsync(CancellationToken ct) =>
+        dbContext.Students.AsNoTracking().ToListAsync(ct);
 }

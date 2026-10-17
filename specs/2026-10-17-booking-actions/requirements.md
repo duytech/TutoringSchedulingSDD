@@ -19,7 +19,7 @@ One gap blocks the create form: there is no way to list students. `IStudentRepos
 - `GET /api/students`, with one integration test.
 - The four calls in `api.ts`: `fetchStudents`, `createSession`, `moveSession`, `cancelAttendee`.
 - Pure form helpers with unit tests.
-- Five new components: `BookingPanel`, `CreateSessionForm`, `SessionDetails`, `MoveSessionForm`, `ConflictList`.
+- Five main components: `BookingPanel`, `CreateSessionForm`, `SessionDetails`, `MoveSessionForm`, `ConflictList`, and four small ones they share (see the note under Components).
 - `SessionCard` can be selected, and `DayPage` holds the panel.
 - **Component tests** (Vitest, Testing Library, jsdom) for the forms, the panel, the card and the page, with `fetch` faked. They run in `npm test`, so in the CI `web` job.
 - **End-to-end tests** (Playwright Test) for the main flows, against the real API and a freshly seeded database (the `docker compose` stack). They run in the CI `container` job.
@@ -108,7 +108,7 @@ In `src/bookingForm.ts`:
 | Function | Does |
 |---|---|
 | `toStartsAt(date, time, now)` | `("2026-03-07", "13:00", "2026-03-06T10:00:00+07:00")` → `"2026-03-07T13:00:00+07:00"`. The offset is the last 6 characters of `now`. |
-| `timeOptions()` | Start times from `OPENING.opens` up to `OPENING.closes`, every 30 minutes (`09:00`, `09:30`, …). Every seeded lesson starts on one of them. |
+| `timeOptions()` | Start times from `OPENING.opens`, every 30 minutes (`09:00`, `09:30`, …), up to the last one at which a 60-minute lesson still ends by `OPENING.closes` (`20:30`). Every seeded lesson starts on one of them. |
 | `moveFormFrom(session)` | The Move form filled in from the session: date, time, room, length. `movedBy` empty, note empty. |
 | `isUnchangedMove(form, session)` | True when date, time, room and length are all the session's own. The Move button is then disabled. The API's 400 `Nothing to move` stays the backstop. |
 
@@ -128,6 +128,17 @@ Each one is a folder `<Name>/` with `<Name>.tsx` and `<Name>.css` under `src/com
 | `SessionDetails` | Time, tutor and room, then each attendee with their status, and `chargeable` when set. Each `booked` attendee has a **Cancel** that opens a small form: `cancelledBy` (required), note, **Confirm cancel**. Under the attendees, `MoveSessionForm`. |
 | `MoveSessionForm` | Date, start time, room, length (filled in by `moveFormFrom`), `movedBy` (required), note. **Move** is disabled while the request runs or while `isUnchangedMove`. |
 | `ConflictList` | The 409's conflicts, one per line: the rule pill (the same look as `ViolationList`) and the API's message. |
+
+Built, the forms share four small components, each in its own folder as `CLAUDE.md` asks, so no form holds an inner component:
+
+| Component | Shows |
+|---|---|
+| `Field` | A label, its control and the 400 message under it. The label points at the control by `useId` instead of wrapping it, so the control's accessible name is the label alone (a wrapping label would add the `<select>`'s options to it, and the tests could not find the field by label). |
+| `ChangedBySelect` | The required `family` / `tutor` / `centre` choice with no default, for `cancelledBy` and `movedBy`. |
+| `CancelAttendeeForm` | The cancel form `SessionDetails` opens under a student. |
+| `WriteProblemMessage` | Why a write failed: the `ConflictList`, the 404 line, the "Cannot reach the API" message, or a 400 message with no field of its own. |
+
+`src/useWrite.ts` runs one write for a form (`sending`, the problem to show, the callback on success), so the three forms do not repeat it.
 
 - For a session that is cancelled, or that has started (`isCancelled`, `sessionState` ≠ `upcoming`), `SessionDetails` shows no Cancel and no Move. One line says why: `Cancelled — nothing to change.` or `Started at 09:00 — it can no longer be moved or cancelled.` This only hides buttons that would surely fail; the API still refuses (409 `already-started`, `already-cancelled`).
 - A 400 shows each message under its field. A 404 shows `This session no longer exists.` A thrown `ApiError` shows the `ApiErrorMessage` text inside the panel. In every case the form keeps what was typed.
@@ -161,10 +172,11 @@ After a write:
 
 ### Component tests (Vitest + Testing Library + jsdom)
 
-- New devDependencies: `jsdom`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`.
+- New devDependencies: `jsdom`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, and `@testing-library/dom`, which `@testing-library/react` needs as a peer.
 - The existing pure tests keep running in Node. A component test opts in to jsdom with `// @vitest-environment jsdom` on its first line.
 - `src/testSetup.ts` (Vitest `setupFiles`) loads the jest-dom matchers and runs `cleanup` after each test.
 - `src/fakeFetch.ts`: a small test helper over `vi.stubGlobal('fetch', …)`. It answers by method and URL with a status and a JSON body, and keeps the requests it saw, so a test can read the last request's URL and body.
+- `src/testData.ts`: builders for a valid session and attendee, and the rooms, tutors and students as seeded, shared by the unit and component tests.
 - Each test sits next to its component: `src/components/<Name>/<Name>.test.tsx`. `structure.test.ts` still passes: it only asks that `<Name>.tsx` and `<Name>.css` are there.
 
 | File | Checks |
@@ -185,7 +197,9 @@ The pure helpers (`bookingForm.ts`, `labels.ts`) keep plain unit tests, as befor
 - `web/playwright.config.ts`: `testDir: 'e2e'`, `baseURL` from `E2E_BASE_URL` (default `http://localhost:8080`), one worker, no retries, trace on the first failure. No `webServer`: the stack is started outside, so the test cannot reuse an old, already-changed database by mistake.
 - `npm run e2e` runs `playwright test`. Vitest only includes `src/**/*.test.{ts,tsx}`, so it never picks up `e2e/`.
 - `e2e/` and `playwright.config.ts` are in `tsconfig.node.json`, so ESLint type-checks them.
-- The tests change the data, so they need a **fresh stack**: `docker compose down` then `docker compose up -d --build`. Each test uses its own sessions and slots, so the tests do not depend on each other's order, but a second run on the same stack fails.
+- The tests change the data, so they need a **fresh stack**: `docker compose down` then `docker compose up -d --build`. Without Docker, the same holds for the API on an empty database with the Vite dev server: `E2E_BASE_URL=http://localhost:5173 npm run e2e`. Each test uses its own sessions and slots, so the tests do not depend on each other's order, but a second run on the same stack fails.
+
+Shared steps (open a day, open a lesson's card, fill in the booking form, read the conflict labels) are in `e2e/rooms.ts`.
 
 | File | Scenario |
 |---|---|

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { DaySessions } from '../../api'
+import type { DaySessions, Session } from '../../api'
 import { localDate } from '../../dates'
 import { layoutDay, minutesOf, OPENING, rowCount } from '../../layout'
 import { SessionCard } from '../SessionCard/SessionCard'
@@ -11,9 +11,12 @@ interface Props {
   roomIds: string[]
   tutorColour: (tutorId: string) => string
   onGoToDate: (date: string) => void
+  onSelect: (session: Session) => void
+  /** The session open in the booking panel, if any. */
+  selectedSessionId: string | null
 }
 
-export function DayGrid({ day, roomIds, tutorColour, onGoToDate }: Props) {
+export function DayGrid({ day, roomIds, tutorColour, onGoToDate, onSelect, selectedSessionId }: Props) {
   const rows = rowCount(OPENING)
   const opens = minutesOf(`T${OPENING.opens}`)
   const placements = layoutDay(day.sessions, roomIds)
@@ -54,6 +57,8 @@ export function DayGrid({ day, roomIds, tutorColour, onGoToDate }: Props) {
           shownDate={day.date}
           now={day.now}
           onGoToDate={onGoToDate}
+          onSelect={onSelect}
+          selected={session.id === selectedSessionId}
         />
       ))}
 

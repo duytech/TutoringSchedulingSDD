@@ -3,7 +3,7 @@ using BrightPath.Application.Tutors;
 
 namespace BrightPath.Api.IntegrationTests;
 
-/// <summary>The rooms and tutors over HTTP, as seeded. Read only.</summary>
+/// <summary>The rooms, tutors and students over HTTP, as seeded. Read only.</summary>
 [Collection(ApiCollection.Name)]
 public sealed class ReferenceListEndpointTests(BrightPathApiFactory brightPathApiFactory)
 {
@@ -27,5 +27,16 @@ public sealed class ReferenceListEndpointTests(BrightPathApiFactory brightPathAp
                 new TutorView("T3", "Le Thu", "Physics"),
             ],
             tutors);
+    }
+
+    [Fact]
+    public async Task Students_lists_the_seeded_students_by_name()
+    {
+        var students = await ApiCalls.GetStudents(brightPathApiFactory.CreateClient());
+
+        Assert.Equal(
+            ["Bui An Nhien", "Do Van Kien", "Le Minh Chau", "Nguyen Thi Ha", "Tran Bao Long", "Vu Ha My"],
+            students.Select(student => student.Name));
+        Assert.DoesNotContain(students, student => student.Id == Guid.Empty);
     }
 }

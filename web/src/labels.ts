@@ -1,4 +1,4 @@
-import type { MovedTo, TutorDaySheet } from './api'
+import type { MovedTo, Session, TutorDaySheet } from './api'
 import type { TutorChange } from './tutorChanges'
 import { localDate, localTime } from './dates'
 
@@ -56,9 +56,35 @@ const ruleLabels: Record<string, string> = {
   'closed-day': 'Closed day',
   'outside-hours': 'Outside hours',
   'too-many-attendees': 'Too many attendees',
+  'in-the-past': 'In the past',
+  'already-started': 'Already started',
+  'already-cancelled': 'Already cancelled',
 }
 
 /** "student-overlap" → "Student overlap". A code this page does not know is shown as it is. */
 export function ruleLabel(code: string): string {
   return ruleLabels[code] ?? code
+}
+
+/**
+ * What a cancel did, read from the session the API sent back, e.g.
+ * "Bui An Nhien cancelled · chargeable · after the tutor was told · the session is cancelled".
+ * Each part after the name is there only when it is true.
+ */
+export function cancelOutcomeLine(session: Session, attendeeId: string): string {
+  const attendee = session.attendees.find((candidate) => candidate.id === attendeeId)
+  const change = session.changes.findLast(
+    (candidate) => candidate.kind === 'cancelled' && candidate.attendeeId === attendeeId,
+  )
+  const parts = [`${attendee?.studentName ?? 'The student'} cancelled`]
+  if (attendee?.chargeable) {
+    parts.push('chargeable')
+  }
+  if (change?.afterCutoff) {
+    parts.push('after the tutor was told')
+  }
+  if (session.cancelledAt !== null) {
+    parts.push('the session is cancelled')
+  }
+  return parts.join(' · ')
 }

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using BrightPath.Application.Rooms;
 using BrightPath.Application.Sessions;
+using BrightPath.Application.Students;
 using BrightPath.Application.Tutors;
 using BrightPath.Domain;
 using Npgsql;
@@ -49,6 +50,9 @@ public static class ApiCalls
 
     public static async Task<IReadOnlyList<RoomView>> GetRooms(HttpClient client) =>
         (await client.GetFromJsonAsync<List<RoomView>>("/api/rooms", Json))!;
+
+    public static async Task<IReadOnlyList<StudentView>> GetStudents(HttpClient client) =>
+        (await client.GetFromJsonAsync<List<StudentView>>("/api/students", Json))!;
 
     public static async Task<IReadOnlyList<TutorView>> GetTutors(HttpClient client) =>
         (await client.GetFromJsonAsync<List<TutorView>>("/api/tutors", Json))!;

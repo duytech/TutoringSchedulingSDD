@@ -39,6 +39,9 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
     public Task<List<Student>> FindManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
         Task.FromResult(Students.Where(s => ids.Contains(s.Id)).ToList());
 
+    // Explicit: ITutorRepository.ListAsync has the same signature apart from the return type.
+    Task<List<Student>> IStudentRepository.ListAsync(CancellationToken ct) => Task.FromResult(Students.ToList());
+
     // ISessionRepository
 
     public Task<Session?> GetForUpdateAsync(Guid sessionId, CancellationToken ct) =>

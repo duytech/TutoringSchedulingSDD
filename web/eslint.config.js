@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 // ESLint runs the type-aware typescript-eslint rules that oxlint cannot. Rules oxlint already
 // checks (see .oxlintrc.json) are turned off here by the oxlint preset, which must stay last.
 export default defineConfig([
-  globalIgnores(['dist', 'obj']),
+  globalIgnores(['dist', 'obj', 'playwright-report', 'test-results']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -35,7 +35,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['vite.config.ts'],
+    files: ['vite.config.ts', 'playwright.config.ts', 'e2e/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
   ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json'),

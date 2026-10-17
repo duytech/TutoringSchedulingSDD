@@ -1,0 +1,40 @@
+/* The side panel beside the room grid. Under 640px it stacks under the grid (DayPage.css). */
+
+.panel {
+  flex: none;
+  width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-hour);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 14px;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.panel__head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.panel__close {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .panel {
+    width: 100%;
+  }
+}

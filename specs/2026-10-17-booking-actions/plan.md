@@ -43,7 +43,7 @@ The tasks run in order, on their own branch, and the whole phase is one commit a
 7. **End-to-end tests**
    - `npm i -D @playwright/test`, then `npx playwright install chromium`.
    - `playwright.config.ts` and the `e2e` script, as in `requirements.md`. Add `playwright.config.ts` and `e2e/**/*.ts` to `tsconfig.node.json`'s `include`, and `playwright-report` and `test-results` to `.gitignore` and to ESLint's ignores.
-   - The five spec files from the "End-to-end tests" table.
+   - `e2e/rooms.ts` with the shared steps, and the five spec files from the "End-to-end tests" table.
    - Run them: `docker compose down`, `docker compose up -d --build`, `scripts/smoke-test.sh`, `npm run e2e`.
 
 8. **CI**: in the `container` job, after the smoke test: `actions/setup-node` (Node 22, npm cache on `web/package-lock.json`), `npm ci`, `npx playwright install --with-deps chromium`, `npm run e2e` (all in `web/`), and `actions/upload-artifact` for `web/playwright-report/` and `web/test-results/` when it fails.
