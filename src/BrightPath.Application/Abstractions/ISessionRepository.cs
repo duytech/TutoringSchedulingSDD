@@ -9,7 +9,7 @@ public interface ISessionRepository
     /// The session, locked until the transaction ends, with its attendees and their students. Null when there
     /// is no such session. Writes to the same session take turns.
     /// </summary>
-    Task<Session?> GetForUpdateAsync(Guid id, CancellationToken ct);
+    Task<Session?> GetForUpdateAsync(Guid sessionId, CancellationToken ct);
 
     /// <summary>The not-cancelled sessions whose local start date is <paramref name="date"/>.</summary>
     Task<List<RuleSession>> ListActiveOnAsync(DateOnly date, CancellationToken ct);

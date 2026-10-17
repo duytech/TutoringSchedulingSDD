@@ -13,7 +13,7 @@ public interface ISessionReader
     /// <summary>The tutor's sessions whose local start date is <paramref name="date"/>, cancelled ones included.</summary>
     Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct);
 
-    Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct);
+    Task<GetSessionResponse?> GetSessionAsync(Guid sessionId, CancellationToken ct);
 
     /// <summary>The sessions that moved sessions went to, by id. A target can be on another day.</summary>
     Task<Dictionary<Guid, MovedToView>> GetMoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct);

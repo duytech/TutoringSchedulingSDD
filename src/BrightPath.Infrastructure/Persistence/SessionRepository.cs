@@ -6,10 +6,10 @@ namespace BrightPath.Infrastructure.Persistence;
 
 internal sealed class SessionRepository(BrightPathDbContext dbContext, BookingPolicy bookingPolicy) : ISessionRepository
 {
-    public async Task<Session?> GetForUpdateAsync(Guid id, CancellationToken ct)
+    public async Task<Session?> GetForUpdateAsync(Guid sessionId, CancellationToken ct)
     {
         var session = await dbContext.Sessions
-            .FromSql($"SELECT * FROM sessions WHERE id = {id} FOR UPDATE")
+            .FromSql($"SELECT * FROM sessions WHERE id = {sessionId} FOR UPDATE")
             .SingleOrDefaultAsync(ct);
         if (session is null)
         {
@@ -17,7 +17,7 @@ internal sealed class SessionRepository(BrightPathDbContext dbContext, BookingPo
         }
 
         // Loading the attendees into the same context fills session.Attendees.
-        await dbContext.Attendees.Include(a => a.Student).Where(a => a.SessionId == id).LoadAsync(ct);
+        await dbContext.Attendees.Include(a => a.Student).Where(a => a.SessionId == sessionId).LoadAsync(ct);
         return session;
     }
 

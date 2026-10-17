@@ -24,7 +24,7 @@ public sealed class MoveSessionHandler(
     BookingPolicy bookingPolicy,
     TimeProvider timeProvider)
 {
-    public async Task<Result<SessionView>> HandleAsync(Guid id, MoveSessionRequest request, CancellationToken ct)
+    public async Task<Result<SessionView>> HandleAsync(Guid sessionId, MoveSessionRequest request, CancellationToken ct)
     {
         var errors = new Dictionary<string, string[]>();
         if (!SessionInput.TryParseWithOffset(request.StartsAt, out var startsAt))
@@ -60,10 +60,10 @@ public sealed class MoveSessionHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
         // A move and a cancel of the same session take turns, so a session cannot be moved after it was cancelled.
-        var old = await sessionRepository.GetForUpdateAsync(id, ct);
+        var old = await sessionRepository.GetForUpdateAsync(sessionId, ct);
         if (old is null)
         {
-            return new NotFoundError("Session not found", $"No session {id}.");
+            return new NotFoundError("Session not found", $"No session {sessionId}.");
         }
 
         var source = new MoveSource(

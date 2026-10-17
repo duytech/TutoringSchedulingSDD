@@ -146,7 +146,7 @@ public sealed class DaySessionsTests
     private static SessionView SessionOf(List<SessionView> day, string lessonId) =>
         day.Single(s => s.Attendees.Any(a => a.LessonId == lessonId));
 
-    private static string Lesson(SessionView s) => s.Attendees[0].LessonId!;
+    private static string Lesson(SessionView session) => session.Attendees[0].LessonId!;
 
     private static IEnumerable<string> Lessons(List<SessionView> day, Func<SessionView, bool> which) =>
         day.Where(which).Select(Lesson);

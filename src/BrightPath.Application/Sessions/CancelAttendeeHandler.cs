@@ -16,7 +16,7 @@ public sealed class CancelAttendeeHandler(
     TimeProvider timeProvider)
 {
     public async Task<Result<SessionView>> HandleAsync(
-        Guid id, Guid attendeeId, CancelAttendeeRequest request, CancellationToken ct)
+        Guid sessionId, Guid attendeeId, CancelAttendeeRequest request, CancellationToken ct)
     {
         var errors = new Dictionary<string, string[]>();
         if (request.CancelledBy is not { } cancelledBy || !CancelledBy.All.Contains(cancelledBy))
@@ -38,11 +38,11 @@ public sealed class CancelAttendeeHandler(
 
         // Two cancels on one session take turns, so the last one out always sees the other one gone
         // and cancels the session.
-        var session = await sessionRepository.GetForUpdateAsync(id, ct);
+        var session = await sessionRepository.GetForUpdateAsync(sessionId, ct);
         var attendee = session?.Attendees.SingleOrDefault(a => a.Id == attendeeId);
         if (session is null || attendee is null)
         {
-            return new NotFoundError("Attendee not found", $"Session {id} has no attendee {attendeeId}.");
+            return new NotFoundError("Attendee not found", $"Session {sessionId} has no attendee {attendeeId}.");
         }
 
         var now = timeProvider.GetUtcNow();
@@ -70,7 +70,7 @@ public sealed class CancelAttendeeHandler(
         bookingChangeRepository.AddChanges(new BookingChange
         {
             Id = Guid.CreateVersion7(),
-            SessionId = id,
+            SessionId = sessionId,
             AttendeeId = attendeeId,
             Kind = ChangeKind.Cancelled,
             ChangedAt = now,
@@ -86,7 +86,7 @@ public sealed class CancelAttendeeHandler(
             bookingChangeRepository.AddChanges(new BookingChange
             {
                 Id = Guid.CreateVersion7(),
-                SessionId = id,
+                SessionId = sessionId,
                 Kind = ChangeKind.Cancelled,
                 ChangedAt = now,
                 ChangedBy = request.CancelledBy,
@@ -97,6 +97,6 @@ public sealed class CancelAttendeeHandler(
         await unitOfWork.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        return (await sessionViewLoader.LoadAsync(id, ct))!;
+        return (await sessionViewLoader.LoadAsync(sessionId, ct))!;
     }
 }

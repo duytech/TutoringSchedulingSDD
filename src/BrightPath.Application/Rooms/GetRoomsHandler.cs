@@ -10,6 +10,6 @@ public sealed class GetRoomsHandler(IRoomRepository roomRepository)
     public async Task<IReadOnlyList<RoomView>> HandleAsync(CancellationToken ct) =>
         (await roomRepository.ListIdsAsync(ct))
             .Order(StringComparer.Ordinal)
-            .Select(id => new RoomView(id))
+            .Select(roomId => new RoomView(roomId))
             .ToList();
 }

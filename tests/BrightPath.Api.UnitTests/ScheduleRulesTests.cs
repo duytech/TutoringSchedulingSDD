@@ -159,8 +159,8 @@ public sealed class ScheduleRulesTests
     }
 
     /// <summary>Moves a Friday session to Monday 2026-03-09.</summary>
-    private static RuleSession OnMonday(RuleSession s) =>
-        s with { StartsAt = s.StartsAt.AddDays(3), EndsAt = s.EndsAt.AddDays(3) };
+    private static RuleSession OnMonday(RuleSession session) =>
+        session with { StartsAt = session.StartsAt.AddDays(3), EndsAt = session.EndsAt.AddDays(3) };
 
     private static RuleAttendee Booked(string name) => new(Guid.NewGuid(), name, AttendeeStatus.Booked, null);
 

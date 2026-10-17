@@ -191,9 +191,9 @@ public static class ScheduleRules
             message);
 
     // Half-open [start, end), the same as the tstzrange in the exclusion constraints.
-    private static bool Overlaps(RuleSession a, RuleSession b) => a.StartsAt < b.EndsAt && b.StartsAt < a.EndsAt;
+    private static bool Overlaps(RuleSession first, RuleSession second) => first.StartsAt < second.EndsAt && second.StartsAt < first.EndsAt;
 
-    private static bool HaveSameStart(RuleSession a, RuleSession b) => a.StartsAt == b.StartsAt;
+    private static bool HaveSameStart(RuleSession first, RuleSession second) => first.StartsAt == second.StartsAt;
 
     private static IEnumerable<(RuleSession A, RuleSession B)> FindOverlappingPairs(
         List<RuleSession> sessions, Func<RuleSession, string> key) =>
@@ -203,8 +203,8 @@ public static class ScheduleRules
     private static IEnumerable<(T A, T B)> ListPairs<T>(List<T> items) =>
         items.SelectMany((a, i) => items.Skip(i + 1).Select(b => (a, b)));
 
-    private static string GetFirstLessonId(RuleSession s) =>
-        s.Attendees.Select(a => a.LessonId).Where(id => id is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
+    private static string GetFirstLessonId(RuleSession session) =>
+        session.Attendees.Select(a => a.LessonId).Where(lessonId => lessonId is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
 
     /// <summary>For example "R3 with T3".</summary>
     private static string GetRoomAndTutorId(string roomId, string tutorId) => $"{roomId} with {tutorId}";
@@ -214,6 +214,6 @@ public static class ScheduleRules
 
 
 
-    private static string GetLocalStartTime(RuleSession s, BookingPolicy policy) =>
-        DateTimeUtils.FormatTime(DateTimeUtils.GetLocalTime(policy.Zone, s.StartsAt));
+    private static string GetLocalStartTime(RuleSession session, BookingPolicy policy) =>
+        DateTimeUtils.FormatTime(DateTimeUtils.GetLocalTime(policy.Zone, session.StartsAt));
 }
