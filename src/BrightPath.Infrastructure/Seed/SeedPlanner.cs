@@ -40,7 +40,7 @@ public static class SeedPlanner
             .GroupBy(r => (r.Date, r.StartTime, r.DurationMin, r.TutorId, r.Room))
             .Select(g =>
             {
-                var startsAt = DateTimeUtils.LocalToUtc(policy.Zone, g.Key.Date, g.Key.StartTime);
+                var startsAt = DateTimeUtils.ConvertLocalToUtc(policy.Zone, g.Key.Date, g.Key.StartTime);
                 var rows = g.OrderBy(r => r.LessonId, StringComparer.Ordinal).ToList();
                 return new Slot(rows, startsAt, startsAt.AddMinutes(g.Key.DurationMin));
             })
@@ -72,7 +72,7 @@ public static class SeedPlanner
                     Chargeable = cancelledAt is { } at && policy.IsChargeable(cancelledBy, at, slot.StartsAt),
                     LegacyViolation = legacyRows.Contains(row),
                     SourceLessonId = row.LessonId,
-                    Note = NullIfEmpty(row.Note),
+                    Note = ToNullIfEmpty(row.Note),
                 };
                 attendees.Add(attendee);
 
@@ -148,7 +148,7 @@ public static class SeedPlanner
         return legacy;
     }
 
-    private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+    private static string? ToNullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     private sealed record Slot(List<LessonRow> Rows, DateTimeOffset StartsAt, DateTimeOffset EndsAt)
     {

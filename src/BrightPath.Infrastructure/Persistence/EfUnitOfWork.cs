@@ -21,12 +21,12 @@ internal sealed class EfUnitOfWork(BrightPathDbContext db) : IUnitOfWork
             SqlState: PostgresErrorCodes.ExclusionViolation,
         } pg)
         {
-            throw new SlotTakenException(SlotOf(pg.ConstraintName), ex);
+            throw new SlotTakenException(GetSlotKind(pg.ConstraintName), ex);
         }
     }
 
     /// <summary>The exclusion constraints from the <c>ExclusionConstraints</c> migration.</summary>
-    private static SlotKind SlotOf(string? constraint) => constraint switch
+    private static SlotKind GetSlotKind(string? constraint) => constraint switch
     {
         "ex_sessions_room_slot" => SlotKind.Room,
         "ex_sessions_tutor_slot" => SlotKind.Tutor,

@@ -28,7 +28,7 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
     [Fact]
     public async Task No_date_is_the_pinned_day()
     {
-        var sheet = await ApiCalls.TutorDay(factory.CreateClient(), "T1");
+        var sheet = await ApiCalls.GetTutorDaySheet(factory.CreateClient(), "T1");
 
         Assert.Equal(new DateOnly(2026, 3, 6), sheet.Date);
         Assert.Equal(DateTimeOffset.Parse("2026-03-05T16:00:00+07:00"), sheet.Cutoff);
@@ -51,11 +51,11 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
     public async Task A_cancel_after_the_cutoff_is_flagged_student_first()
     {
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            _morning.CreateClient(), "T2", "R6", "2026-04-02 14:00", 60, await factory.StudentId("Vu Ha My")));
+            _morning.CreateClient(), "T2", "R6", "2026-04-02 14:00", 60, await factory.GetStudentId("Vu Ha My")));
         var evening = _evening.CreateClient();
 
         await ApiCalls.Cancel(evening, booked.Id, booked.Attendees[0].Id, "family", "sick");
-        var sheet = await ApiCalls.TutorDay(evening, "T2", "2026-04-02");
+        var sheet = await ApiCalls.GetTutorDaySheet(evening, "T2", "2026-04-02");
 
         var session = Assert.Single(sheet.Sessions);
         Assert.NotNull(session.CancelledAt);
@@ -70,11 +70,11 @@ public sealed class TutorDayEndpointTests(BrightPathApiFactory factory) : IDispo
     {
         var client = _morning.CreateClient();
         var booked = await ApiCalls.ReadSession(await ApiCalls.Book(
-            client, "T3", "R6", "2026-04-02 09:00", 60, await factory.StudentId("Do Van Kien")));
+            client, "T3", "R6", "2026-04-02 09:00", 60, await factory.GetStudentId("Do Van Kien")));
         var moved = await ApiCalls.ReadSession(await ApiCalls.Move(client, booked.Id, "2026-04-03 09:00", "family"));
 
-        var before = await ApiCalls.TutorDay(client, "T3", "2026-04-02");
-        var after = await ApiCalls.TutorDay(client, "T3", "2026-04-03");
+        var before = await ApiCalls.GetTutorDaySheet(client, "T3", "2026-04-02");
+        var after = await ApiCalls.GetTutorDaySheet(client, "T3", "2026-04-03");
 
         var old = Assert.Single(before.Sessions);
         Assert.Equal(moved.Id, old.MovedTo?.Id);

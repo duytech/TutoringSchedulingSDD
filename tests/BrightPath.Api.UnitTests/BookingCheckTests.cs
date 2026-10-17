@@ -31,7 +31,7 @@ public sealed class BookingCheckTests
     {
         var candidate = Candidate(tutor, room, start, minutes, students.Split('|'));
 
-        var conflicts = BookingCheck.Conflicts(candidate, SameDay(candidate), PinnedNow, Policy);
+        var conflicts = BookingCheck.FindConflicts(candidate, SameDay(candidate), PinnedNow, Policy);
 
         Assert.Equal(expected.Split(',', StringSplitOptions.RemoveEmptyEntries), conflicts.Select(c => c.Rule));
         Assert.All(conflicts, c => Assert.Contains(candidate.Id, c.SessionIds));
@@ -42,7 +42,7 @@ public sealed class BookingCheckTests
     {
         var candidate = Candidate("T3", "R3", "2026-03-07 10:00", 60, "Tran Bao Long");
 
-        var conflicts = BookingCheck.Conflicts(candidate, SameDay(candidate), PinnedNow, Policy);
+        var conflicts = BookingCheck.FindConflicts(candidate, SameDay(candidate), PinnedNow, Policy);
 
         Assert.All(conflicts, c => Assert.Equal(["L028"], c.LessonIds));
         Assert.Equal("R3 holds two sessions at once: T3 at 09:00 and T3 at 10:00.", conflicts[0].Message);
@@ -53,7 +53,7 @@ public sealed class BookingCheckTests
     {
         var candidate = Candidate("T1", "R4", "2026-03-06 14:30", 60, "Do Van Kien");
 
-        var load = Assert.Single(BookingCheck.Conflicts(candidate, SameDay(candidate), PinnedNow, Policy));
+        var load = Assert.Single(BookingCheck.FindConflicts(candidate, SameDay(candidate), PinnedNow, Policy));
 
         Assert.Equal(8, load.SessionIds.Count);
         Assert.Equal("T1 Ngoc Anh has 8 sessions on 2026-03-06; the limit is 6.", load.Message);
@@ -65,7 +65,7 @@ public sealed class BookingCheckTests
         var first = Candidate("T2", "R4", "2026-03-07 13:00", 60, "Vu Ha My");
         var again = first with { Id = Guid.NewGuid() };
 
-        var conflicts = BookingCheck.Conflicts(again, [.. SameDay(first), first], PinnedNow, Policy);
+        var conflicts = BookingCheck.FindConflicts(again, [.. SameDay(first), first], PinnedNow, Policy);
 
         Assert.Equal(
             [RuleCodes.RoomOverlap, RuleCodes.TutorOverlap, RuleCodes.StudentOverlap], conflicts.Select(c => c.Rule));
@@ -77,7 +77,7 @@ public sealed class BookingCheckTests
         var first = Candidate("T2", "R4", "2026-03-07 13:00", 60, "Vu Ha My");
         var again = first with { Id = Guid.NewGuid() };
 
-        Assert.Empty(BookingCheck.Conflicts(again, [.. SameDay(first), first with { Cancelled = true }], PinnedNow, Policy));
+        Assert.Empty(BookingCheck.FindConflicts(again, [.. SameDay(first), first with { Cancelled = true }], PinnedNow, Policy));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class BookingCheckTests
         // L018 and L019 end at 10:00, so touching them is fine too.
         var candidate = Candidate("T2", "R4", "2026-03-06 10:00", 60, "Vu Ha My");
 
-        Assert.Empty(BookingCheck.Conflicts(candidate, SameDay(candidate), PinnedNow, Policy));
+        Assert.Empty(BookingCheck.FindConflicts(candidate, SameDay(candidate), PinnedNow, Policy));
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class BookingCheckTests
     {
         var candidate = Candidate("T2", "R4", "2026-03-06 09:59", 60, "Vu Ha My");
 
-        var conflicts = BookingCheck.Conflicts(candidate, SameDay(candidate), PinnedNow, Policy);
+        var conflicts = BookingCheck.FindConflicts(candidate, SameDay(candidate), PinnedNow, Policy);
 
         Assert.Equal(RuleCodes.InThePast, conflicts[0].Rule);
         Assert.Equal("The session starts at 2026-03-06 09:59, before now (2026-03-06 10:00).", conflicts[0].Message);
@@ -105,7 +105,7 @@ public sealed class BookingCheckTests
     private static RuleSession Candidate(string tutor, string room, string start, int minutes, params string[] students)
     {
         var local = DateTime.Parse(start, System.Globalization.CultureInfo.InvariantCulture);
-        var startsAt = DateTimeUtils.LocalToUtc(
+        var startsAt = DateTimeUtils.ConvertLocalToUtc(
             Policy.Zone, DateOnly.FromDateTime(local), TimeOnly.FromDateTime(local));
         var names = Plan.Students.ToDictionary(s => s.Name, s => s.Id);
         return new RuleSession(
@@ -117,11 +117,11 @@ public sealed class BookingCheckTests
     /// <summary>The export's active sessions on the candidate's local date, as the endpoint loads them.</summary>
     private static List<RuleSession> SameDay(RuleSession candidate)
     {
-        var date = DateTimeUtils.LocalDate(Policy.Zone, candidate.StartsAt);
+        var date = DateTimeUtils.GetLocalDate(Policy.Zone, candidate.StartsAt);
         var tutors = Plan.Tutors.ToDictionary(t => t.Id, t => t.Name);
         var students = Plan.Students.ToDictionary(s => s.Id, s => s.Name);
         return Plan.Sessions
-            .Where(s => s.CancelledAt is null && DateTimeUtils.LocalDate(Policy.Zone, s.StartsAt) == date)
+            .Where(s => s.CancelledAt is null && DateTimeUtils.GetLocalDate(Policy.Zone, s.StartsAt) == date)
             .Select(s => new RuleSession(
                 s.Id, s.TutorId, tutors[s.TutorId], s.RoomId, s.StartsAt, s.EndsAt, Cancelled: false,
                 s.Attendees

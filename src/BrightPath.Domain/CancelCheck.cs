@@ -55,7 +55,7 @@ public static class CancelCheck
 
         ScheduleViolation Conflict(string rule, string message) =>
             new(
-                rule, DateTimeUtils.LocalDate(policy.Zone, session.StartsAt), [session.Id],
+                rule, DateTimeUtils.GetLocalDate(policy.Zone, session.StartsAt), [session.Id],
                 attendee.LessonId is { } l ? [l] : [], message);
     }
 }

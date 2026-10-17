@@ -10,7 +10,7 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
 {
     public Task<List<GetDaySessionsResponse>> GetDaySessionsAsync(DateOnly date, CancellationToken ct) =>
         db.Sessions.AsNoTracking()
-            .StartingOn(date, policy)
+            .FilterStartingOn(date, policy)
             .Select(s => new GetDaySessionsResponse(
                 s.Id,
                 s.TutorId,
@@ -30,7 +30,7 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
 
     public Task<List<GetDaySessionsByTutorResponse>> GetDaySessionsByTutorAsync(DateOnly date, string tutorId, CancellationToken ct) =>
         db.Sessions.AsNoTracking()
-            .StartingOn(date, policy)
+            .FilterStartingOn(date, policy)
             .Where(s => s.TutorId == tutorId)
             .Select(s => new GetDaySessionsByTutorResponse(
                 s.Id,
@@ -69,7 +69,7 @@ internal sealed class SessionReader(BrightPathDbContext db, BookingPolicy policy
                     .ToList()))
             .SingleOrDefaultAsync(ct);
 
-    public async Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct)
+    public async Task<Dictionary<Guid, MovedToView>> GetMoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct)
     {
         if (targetIds.Count == 0)
         {

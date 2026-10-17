@@ -43,20 +43,20 @@ public static class ApiCalls
     public static async Task<SessionView> ReadSession(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<SessionView>(Json))!;
 
-    public static async Task<DaySessionsView> DaySessions(HttpClient client, string? date = null) =>
+    public static async Task<DaySessionsView> GetDaySessions(HttpClient client, string? date = null) =>
         (await client.GetFromJsonAsync<DaySessionsView>(
             date is null ? "/api/sessions" : $"/api/sessions?date={date}", Json))!;
 
-    public static async Task<IReadOnlyList<RoomView>> Rooms(HttpClient client) =>
+    public static async Task<IReadOnlyList<RoomView>> GetRooms(HttpClient client) =>
         (await client.GetFromJsonAsync<List<RoomView>>("/api/rooms", Json))!;
 
-    public static async Task<IReadOnlyList<TutorView>> Tutors(HttpClient client) =>
+    public static async Task<IReadOnlyList<TutorView>> GetTutors(HttpClient client) =>
         (await client.GetFromJsonAsync<List<TutorView>>("/api/tutors", Json))!;
 
     public static Task<HttpResponseMessage> GetTutorDay(HttpClient client, string tutorId, string? date = null) =>
         client.GetAsync(date is null ? $"/api/tutors/{tutorId}/day" : $"/api/tutors/{tutorId}/day?date={date}");
 
-    public static async Task<TutorDaySheetView> TutorDay(HttpClient client, string tutorId, string? date = null)
+    public static async Task<TutorDaySheetView> GetTutorDaySheet(HttpClient client, string tutorId, string? date = null)
     {
         var response = await GetTutorDay(client, tutorId, date);
         response.EnsureSuccessStatusCode();
@@ -83,7 +83,7 @@ public static class ApiCalls
         while (timer.Elapsed < TimeSpan.FromSeconds(10))
         {
             Assert.False(request.IsCompleted, failure);
-            if (await AnyBlocked(connection, waitEvent))
+            if (await IsAnyBlocked(connection, waitEvent))
             {
                 return;
             }
@@ -94,7 +94,7 @@ public static class ApiCalls
         Assert.Fail($"{failure} (nothing was blocked after 10 s)");
     }
 
-    private static async Task<bool> AnyBlocked(NpgsqlConnection connection, Func<string, string, bool> waitEvent)
+    private static async Task<bool> IsAnyBlocked(NpgsqlConnection connection, Func<string, string, bool> waitEvent)
     {
         await using var query = new NpgsqlCommand(
             """

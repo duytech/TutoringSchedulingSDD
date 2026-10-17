@@ -6,7 +6,7 @@ namespace BrightPath.Application.Abstractions;
 public interface IBookingChangeRepository
 {
     /// <summary>The booking changes of the sessions with these ids.</summary>
-    Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct);
+    Task<List<BookingChange>> ListChangesAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct);
 
     void AddChanges(params BookingChange[] changes);
 }

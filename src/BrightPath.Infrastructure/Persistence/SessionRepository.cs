@@ -21,13 +21,13 @@ internal sealed class SessionRepository(BrightPathDbContext db, BookingPolicy po
         return session;
     }
 
-    public Task<List<RuleSession>> ActiveOnAsync(DateOnly date, CancellationToken ct) =>
-        ActiveBetweenAsync(date, date, ct);
+    public Task<List<RuleSession>> ListActiveOnAsync(DateOnly date, CancellationToken ct) =>
+        ListActiveBetweenAsync(date, date, ct);
 
-    public Task<List<RuleSession>> ActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct) =>
+    public Task<List<RuleSession>> ListActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct) =>
         db.Sessions.AsNoTracking()
             .Where(s => s.CancelledAt == null)
-            .StartingBetween(from, to, policy)
+            .FilterStartingBetween(from, to, policy)
             .Select(s => new RuleSession(
                 s.Id,
                 s.TutorId,

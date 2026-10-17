@@ -12,7 +12,7 @@ public static class BookingCheck
     /// Only violations the new session is part of. A rule the day already broke (T1's 7 sessions on 03-06) is not
     /// the new booking's fault, unless the booking adds to it. <c>in-the-past</c> comes first.
     /// </summary>
-    public static List<ScheduleViolation> Conflicts(
+    public static List<ScheduleViolation> FindConflicts(
         RuleSession candidate, IEnumerable<RuleSession> sameDay, DateTimeOffset now, BookingPolicy policy)
     {
         var conflicts = new List<ScheduleViolation>();
@@ -20,7 +20,7 @@ public static class BookingCheck
         {
             conflicts.Add(new ScheduleViolation(
                 RuleCodes.InThePast,
-                DateTimeUtils.LocalDate(policy.Zone, candidate.StartsAt),
+                DateTimeUtils.GetLocalDate(policy.Zone, candidate.StartsAt),
                 [candidate.Id],
                 [],
                 $"The session starts at {DateTimeUtils.FormatLocalDateTime(policy.Zone, candidate.StartsAt)}, " +

@@ -21,10 +21,10 @@ internal static partial class SessionInput
     {
         result = default;
         return value is not null
-            && OffsetSuffix().IsMatch(value)
+            && GetOffsetSuffixRegex().IsMatch(value)
             && DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
     }
 
     [GeneratedRegex(@"(Z|[+-]\d{2}:\d{2})$", RegexOptions.IgnoreCase)]
-    private static partial Regex OffsetSuffix();
+    private static partial Regex GetOffsetSuffixRegex();
 }

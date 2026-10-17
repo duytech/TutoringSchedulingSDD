@@ -19,7 +19,7 @@ Each of these compares **one pair of rows**, which is exactly what `EXCLUDE USIN
 "At most 6 sessions per tutor per day" is a **count across many rows**. An exclusion constraint compares rows two at a time, so it cannot say "no more than N rows". The rule has to be checked in code:
 
 1. read the tutor's sessions for that day,
-2. count them (`BookingCheck.Conflicts`),
+2. count them (`BookingCheck.FindConflicts`),
 3. insert the new session.
 
 Without a lock, two receptionists booking the same tutor on the same day can both read 5 sessions, both pass the check, and both insert: 7 sessions. This is a classic check-then-act race.

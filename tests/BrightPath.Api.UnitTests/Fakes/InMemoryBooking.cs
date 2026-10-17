@@ -44,17 +44,17 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
     public Task<Session?> GetForUpdateAsync(Guid id, CancellationToken ct) =>
         Task.FromResult(Sessions.SingleOrDefault(s => s.Id == id));
 
-    public Task<List<RuleSession>> ActiveOnAsync(DateOnly date, CancellationToken ct) =>
+    public Task<List<RuleSession>> ListActiveOnAsync(DateOnly date, CancellationToken ct) =>
         Task.FromResult(new List<RuleSession>());
 
-    public Task<List<RuleSession>> ActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct) =>
+    public Task<List<RuleSession>> ListActiveBetweenAsync(DateOnly? from, DateOnly? to, CancellationToken ct) =>
         Task.FromResult(new List<RuleSession>());
 
     public void Add(Session session) => Sessions.Add(session);
 
     // IBookingChangeRepository
 
-    public Task<List<BookingChange>> ChangesOfAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
+    public Task<List<BookingChange>> ListChangesAsync(IReadOnlyCollection<Guid> sessionIds, CancellationToken ct) =>
         Task.FromResult(Changes.Where(c => sessionIds.Contains(c.SessionId)).ToList());
 
     public void AddChanges(params BookingChange[] changes) => Changes.AddRange(changes);
@@ -70,12 +70,12 @@ internal sealed class InMemoryBooking : ITutorRepository, IRoomRepository, IStud
     public Task<GetSessionResponse?> GetSessionAsync(Guid id, CancellationToken ct) =>
         Task.FromResult(Sessions.Where(s => s.Id == id).Select(ToGetSessionResponse).SingleOrDefault());
 
-    public Task<Dictionary<Guid, MovedToView>> MoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct) =>
+    public Task<Dictionary<Guid, MovedToView>> GetMoveTargetsAsync(IReadOnlyCollection<Guid> targetIds, CancellationToken ct) =>
         Task.FromResult(new Dictionary<Guid, MovedToView>());
 
     // IBookingLocks
 
-    public Task TutorDayAsync(string tutorId, DateOnly date, CancellationToken ct) => Task.CompletedTask;
+    public Task LockTutorDayAsync(string tutorId, DateOnly date, CancellationToken ct) => Task.CompletedTask;
 
     // IUnitOfWork
 

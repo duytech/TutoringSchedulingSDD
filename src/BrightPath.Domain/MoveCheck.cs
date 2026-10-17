@@ -17,13 +17,13 @@ public static class MoveCheck
     /// The old session's conflicts (<c>already-started</c>, <c>already-cancelled</c>), then the new slot's, in the
     /// create order. <paramref name="sameDay"/> is the new date's active sessions; the old one is removed here.
     /// </summary>
-    public static List<ScheduleViolation> Conflicts(
+    public static List<ScheduleViolation> FindConflicts(
         MoveSource old, RuleSession candidate, IEnumerable<RuleSession> sameDay, DateTimeOffset now, BookingPolicy policy)
     {
         var conflicts = new List<ScheduleViolation>();
         if (now >= old.StartsAt)
         {
-            conflicts.Add(OldConflict(
+            conflicts.Add(CreateOldConflict(
                 old,
                 RuleCodes.AlreadyStarted,
                 $"The session started at {DateTimeUtils.FormatLocalDateTime(policy.Zone, old.StartsAt)}, " +
@@ -33,14 +33,14 @@ public static class MoveCheck
 
         if (old.CancelledAt is { } cancelledAt)
         {
-            conflicts.Add(OldConflict(
+            conflicts.Add(CreateOldConflict(
                 old,
                 RuleCodes.AlreadyCancelled,
                 $"The session was already cancelled at {DateTimeUtils.FormatLocalDateTime(policy.Zone, cancelledAt)}.",
                 policy));
         }
 
-        conflicts.AddRange(BookingCheck.Conflicts(candidate, sameDay.Where(s => s.Id != old.Id), now, policy));
+        conflicts.AddRange(BookingCheck.FindConflicts(candidate, sameDay.Where(s => s.Id != old.Id), now, policy));
         return conflicts;
     }
 
@@ -51,7 +51,7 @@ public static class MoveCheck
         && durationMin == (int)(old.EndsAt - old.StartsAt).TotalMinutes;
 
     /// <summary>The notes on the two <c>moved</c> changes: "to …" on the old session, "from …" on the new one.</summary>
-    public static (string OnOld, string OnNew) Notes(
+    public static (string OnOld, string OnNew) BuildNotes(
         MoveSource old, DateTimeOffset newStartsAt, string newRoomId, string? note, BookingPolicy policy)
     {
         var suffix = string.IsNullOrWhiteSpace(note) ? "" : $"; {note}";
@@ -60,6 +60,6 @@ public static class MoveCheck
             $"from {DateTimeUtils.FormatLocalDateTime(policy.Zone, old.StartsAt)} in {old.RoomId}{suffix}");
     }
 
-    private static ScheduleViolation OldConflict(MoveSource old, string rule, string message, BookingPolicy policy) =>
-        new(rule, DateTimeUtils.LocalDate(policy.Zone, old.StartsAt), [old.Id], old.LessonIds, message);
+    private static ScheduleViolation CreateOldConflict(MoveSource old, string rule, string message, BookingPolicy policy) =>
+        new(rule, DateTimeUtils.GetLocalDate(policy.Zone, old.StartsAt), [old.Id], old.LessonIds, message);
 }
