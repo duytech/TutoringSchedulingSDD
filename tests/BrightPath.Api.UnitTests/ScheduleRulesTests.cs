@@ -41,6 +41,37 @@ public sealed class ScheduleRulesTests
         var violation = Assert.Single(ScheduleRules.Check(
             [Session("T1", "R1", "09:00", 60), Session("T2", "R1", "09:30", 60)], Policy));
         Assert.Equal(RuleCodes.RoomOverlap, violation.Rule);
+        Assert.Equal("R1 holds two sessions at once: T1 at 09:00 and T2 at 09:30.", violation.Message);
+    }
+
+    [Theory]
+    [InlineData("R1", "09:00", "T1 Ngoc Anh has two sessions in R1 at 09:00.")]
+    [InlineData("R1", "09:30", "T1 Ngoc Anh has two sessions in R1, at 09:00 and 09:30.")]
+    [InlineData("R2", "09:00", "T1 Ngoc Anh is in R1 and R2 at 09:00.")]
+    [InlineData("R2", "09:30", "T1 Ngoc Anh is in R1 at 09:00 and in R2 at 09:30.")]
+    public void Tutor_overlap_message_names_rooms_and_times(string secondRoom, string secondStart, string message)
+    {
+        var first = Session("T1", "R1", "09:00", 60) with { TutorName = "Ngoc Anh" };
+        var second = Session("T1", secondRoom, secondStart, 60) with { TutorName = "Ngoc Anh" };
+
+        var violations = ScheduleRules.Check([first, second], Policy);
+
+        var tutorOverlap = Assert.Single(violations, violation => violation.Rule == RuleCodes.TutorOverlap);
+        Assert.Equal(message, tutorOverlap.Message);
+    }
+
+    [Fact]
+    public void Student_overlap_names_both_sessions_and_their_lessons()
+    {
+        var student = Booked("A");
+        var first = Session("T1", "R1", "09:00", 60, student with { LessonId = "L1" });
+        var second = Session("T2", "R2", "09:30", 60, student with { LessonId = "L2" });
+
+        var violation = Assert.Single(ScheduleRules.Check([first, second], Policy));
+
+        Assert.Equal(RuleCodes.StudentOverlap, violation.Rule);
+        Assert.Equal("A is in R1 with T1 at 09:00 and in R2 with T2 at 09:30.", violation.Message);
+        Assert.Equal(["L1", "L2"], violation.LessonIds);
     }
 
     [Fact]
@@ -52,8 +83,10 @@ public sealed class ScheduleRulesTests
 
     [Theory]
     [InlineData("08:30", 60, true)] // starts before opening
+    [InlineData("09:00", 60, false)] // starts exactly at opening
     [InlineData("20:00", 90, false)] // ends exactly at 21:30
     [InlineData("20:30", 90, true)] // ends at 22:00
+    [InlineData("21:00", 240, true)] // ends at 01:00 the next day
     public void Session_must_fit_opening_hours(string start, int minutes, bool broken)
     {
         var violations = ScheduleRules.Check([Session("T1", "R1", start, minutes)], Policy);
@@ -61,10 +94,21 @@ public sealed class ScheduleRulesTests
     }
 
     [Fact]
+    public void Outside_hours_message_shows_the_session_and_opening_hours()
+    {
+        var violation = Assert.Single(ScheduleRules.Check([Session("T1", "R1", "08:30", 60, Booked("A"))], Policy));
+
+        Assert.Equal(RuleCodes.OutsideHours, violation.Rule);
+        Assert.Equal("A in R1 with T1 runs 08:30–09:30, outside opening hours 09:00–21:30.", violation.Message);
+    }
+
+    [Fact]
     public void Three_attendees_are_too_many_but_a_cancelled_one_does_not_count()
     {
         var three = Session("T1", "R1", "11:00", 90, Booked("A"), Booked("B"), Booked("C"));
-        Assert.Equal(RuleCodes.TooManyAttendees, Assert.Single(ScheduleRules.Check([three], Policy)).Rule);
+        var violation = Assert.Single(ScheduleRules.Check([three], Policy));
+        Assert.Equal(RuleCodes.TooManyAttendees, violation.Rule);
+        Assert.Equal("The session in R1 with T1 at 11:00 has 3 attendees; the limit is 2.", violation.Message);
 
         var twoAndCancelled = Session("T1", "R1", "11:00", 90, Booked("A"), Booked("B"), Cancelled("C"));
         Assert.Empty(ScheduleRules.Check([twoAndCancelled], Policy));
@@ -76,6 +120,16 @@ public sealed class ScheduleRulesTests
         var violation = Assert.Single(ScheduleRules.Check(TutorDay(7), Policy));
         Assert.Equal(RuleCodes.TutorLoad, violation.Rule);
         Assert.Equal(7, violation.SessionIds.Count);
+        Assert.Equal("T1 T1 has 7 sessions on 2026-03-06; the limit is 6.", violation.Message);
+    }
+
+    [Fact]
+    public void Seven_sessions_over_two_days_are_within_the_load()
+    {
+        var sessions = TutorDay(7);
+        var lastSession = sessions[6];
+        sessions[6] = lastSession with { StartsAt = lastSession.StartsAt.AddDays(1), EndsAt = lastSession.EndsAt.AddDays(1) };
+        Assert.Empty(ScheduleRules.Check(sessions, Policy));
     }
 
     [Fact]
@@ -133,6 +187,45 @@ public sealed class ScheduleRulesTests
     {
         var violation = Assert.Single(ScheduleRules.Check([OnMonday(Session("T3", "R3", "10:00", 60))], Policy));
         Assert.Equal(RuleCodes.ClosedDay, violation.Rule);
+    }
+
+    [Fact]
+    public void Closed_day_message_names_the_day()
+    {
+        var violation = Assert.Single(ScheduleRules.Check([OnMonday(Session("T3", "R3", "10:00", 60, Booked("A")))], Policy));
+        Assert.Equal("A in R3 with T3 at 10:00 on Monday 2026-03-09; the centre is closed on Mondays.", violation.Message);
+    }
+
+    [Fact]
+    public void Violations_are_ordered_by_date_then_rule()
+    {
+        // Monday: closed, before opening and three attendees. Friday: two sessions in one room.
+        var monday = OnMonday(Session("T3", "R3", "08:00", 60, Booked("A"), Booked("B"), Booked("C")));
+        var fridayFirst = Session("T1", "R1", "09:00", 60);
+        var fridaySecond = Session("T2", "R1", "09:30", 60);
+
+        var violations = ScheduleRules.Check([monday, fridayFirst, fridaySecond], Policy);
+
+        var rules = violations.Select(violation => violation.Rule);
+        Assert.Equal(
+            [RuleCodes.RoomOverlap, RuleCodes.ClosedDay, RuleCodes.OutsideHours, RuleCodes.TooManyAttendees],
+            rules);
+    }
+
+    [Fact]
+    public void Lesson_ids_are_sorted_and_skip_missing_and_cancelled_attendees()
+    {
+        var session = Session(
+            "T1", "R1", "11:00", 90,
+            Booked("A") with { LessonId = "L2" },
+            Booked("B") with { LessonId = "L1" },
+            Booked("C"),
+            Cancelled("D") with { LessonId = "L3" });
+
+        var violation = Assert.Single(ScheduleRules.Check([session], Policy));
+
+        Assert.Equal(RuleCodes.TooManyAttendees, violation.Rule);
+        Assert.Equal(["L1", "L2"], violation.LessonIds);
     }
 
     private static void AssertViolation(
