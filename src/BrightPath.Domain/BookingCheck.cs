@@ -13,23 +13,28 @@ public static class BookingCheck
     /// the new booking's fault, unless the booking adds to it. <c>in-the-past</c> comes first.
     /// </summary>
     public static List<ScheduleViolation> FindConflicts(
-        RuleSession candidate, IEnumerable<RuleSession> sameDay, DateTimeOffset now, BookingPolicy policy)
+        RuleSession ruleSession, IEnumerable<RuleSession> sameDayRuleSessions, DateTimeOffset now, BookingPolicy policy)
     {
         var conflicts = new List<ScheduleViolation>();
-        if (candidate.StartsAt < now)
+        if (ruleSession.StartsAt < now)
         {
             conflicts.Add(new ScheduleViolation(
                 RuleCodes.InThePast,
-                DateTimeUtils.GetLocalDate(policy.Zone, candidate.StartsAt),
-                [candidate.Id],
+                DateTimeUtils.GetLocalDate(policy.Zone, ruleSession.StartsAt),
+                [ruleSession.Id],
                 [],
-                $"The session starts at {DateTimeUtils.FormatLocalDateTime(policy.Zone, candidate.StartsAt)}, " +
+                $"The session starts at {DateTimeUtils.FormatLocalDateTime(policy.Zone, ruleSession.StartsAt)}, " +
                 $"before now ({DateTimeUtils.FormatLocalDateTime(policy.Zone, now)})."));
         }
 
-        conflicts.AddRange(ScheduleRules
-            .Check([.. sameDay.Where(s => s.Id != candidate.Id), candidate], policy)
-            .Where(v => v.SessionIds.Contains(candidate.Id)));
+        // The day as it would be with the booking: an older copy of the candidate is replaced, not counted twice.
+        List<RuleSession> dayWithCandidate = [.. sameDayRuleSessions.Where(session => session.Id != ruleSession.Id), ruleSession];
+
+        var candidateViolations = ScheduleRules
+            .Check(dayWithCandidate, policy)
+            .Where(violation => violation.SessionIds.Contains(ruleSession.Id));
+
+        conflicts.AddRange(candidateViolations);
 
         return conflicts;
     }
