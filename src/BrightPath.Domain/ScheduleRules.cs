@@ -61,7 +61,7 @@ public static class ScheduleRules
         var active = sessions
             .Where(s => !s.Cancelled)
             .Select(s => s with { Attendees = s.Attendees.Where(a => a.Status != AttendeeStatus.Cancelled).ToList() })
-            .OrderBy(s => s.StartsAt).ThenBy(s => GetFirstLessonId(s), StringComparer.Ordinal)
+            .OrderBy(s => s.StartsAt).ThenBy(s => GetLowestLessonId(s), StringComparer.Ordinal)
             .ToList();
 
         List<ScheduleViolation> violations =
@@ -203,8 +203,9 @@ public static class ScheduleRules
     private static IEnumerable<(T A, T B)> ListPairs<T>(List<T> items) =>
         items.SelectMany((a, i) => items.Skip(i + 1).Select(b => (a, b)));
 
-    private static string GetFirstLessonId(RuleSession session) =>
-        session.Attendees.Select(a => a.LessonId).Where(lessonId => lessonId is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
+    /// <summary>The lowest lesson ID of the session's attendees (ordinal), or "" when none has one. A stable tie-breaker.</summary>
+    private static string GetLowestLessonId(RuleSession session) =>
+        session.Attendees.Select(attendee => attendee.LessonId).Where(lessonId => lessonId is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
 
     /// <summary>For example "R3 with T3".</summary>
     private static string GetRoomAndTutorId(string roomId, string tutorId) => $"{roomId} with {tutorId}";
