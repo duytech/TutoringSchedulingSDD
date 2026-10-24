@@ -27,14 +27,14 @@ public static class BookingCheck
                 $"before now ({DateTimeUtils.FormatLocalDateTime(policy.Zone, now)})."));
         }
 
-        // The day as it would be with the booking: an older copy of the candidate is replaced, not counted twice.
-        List<RuleSession> dayWithCandidate = [.. sameDayRuleSessions.Where(session => session.Id != ruleSession.Id), ruleSession];
+        // The day as it would be with the booking: an older copy of the rule session is replaced, not counted twice.
+        List<RuleSession> dayWithRuleSession = [.. sameDayRuleSessions.Where(session => session.Id != ruleSession.Id), ruleSession];
 
-        var candidateViolations = ScheduleRules
-            .Check(dayWithCandidate, policy)
+        var ruleSessionViolations = ScheduleRules
+            .Check(dayWithRuleSession, policy)
             .Where(violation => violation.SessionIds.Contains(ruleSession.Id));
 
-        conflicts.AddRange(candidateViolations);
+        conflicts.AddRange(ruleSessionViolations);
 
         return conflicts;
     }
