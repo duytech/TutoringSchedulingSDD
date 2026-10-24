@@ -58,123 +58,241 @@ public static class ScheduleRules
 {
     public static List<ScheduleViolation> Check(IEnumerable<RuleSession> sessions, BookingPolicy policy)
     {
-        var active = sessions
-            .Where(s => !s.Cancelled)
-            .Select(s => s with { Attendees = s.Attendees.Where(a => a.Status != AttendeeStatus.Cancelled).ToList() })
-            .OrderBy(s => s.StartsAt).ThenBy(s => GetFirstLessonId(s), StringComparer.Ordinal)
-            .ToList();
+        // Step 1: keep only what holds a slot.
+        var activeSessions = KeepActiveSessions(sessions);
 
-        List<ScheduleViolation> violations =
-        [
-            .. CheckRoomOverlaps(active, policy),
-            .. CheckTutorOverlaps(active, policy),
-            .. CheckStudentOverlaps(active, policy),
-            .. CheckTutorLoad(active, policy),
-            .. CheckClosedDays(active, policy),
-            .. CheckOpeningHours(active, policy),
-            .. CheckAttendeeLimit(active, policy),
-        ];
+        // Step 2: run each rule.
+        var violations = new List<ScheduleViolation>();
+        violations.AddRange(CheckRoomOverlaps(activeSessions, policy));
+        violations.AddRange(CheckTutorOverlaps(activeSessions, policy));
+        violations.AddRange(CheckStudentOverlaps(activeSessions, policy));
+        violations.AddRange(CheckTutorLoad(activeSessions, policy));
+        violations.AddRange(CheckClosedDays(activeSessions, policy));
+        violations.AddRange(CheckOpeningHours(activeSessions, policy));
+        violations.AddRange(CheckAttendeeLimit(activeSessions, policy));
 
-        return violations
-            .OrderBy(v => v.Date).ThenBy(v => Array.IndexOf(RuleCodes.All, v.Rule)).ThenBy(v => v.LessonIds.FirstOrDefault() ?? "", StringComparer.Ordinal).ThenBy(v => v.SessionIds[0])
+        // Step 3: a stable order for the report.
+        return SortViolations(violations);
+    }
+
+    /// <summary>Drops cancelled sessions and cancelled attendees, then orders by start time and first lesson id.</summary>
+    private static List<RuleSession> KeepActiveSessions(IEnumerable<RuleSession> sessions)
+    {
+        var activeSessions = new List<RuleSession>();
+        foreach (var session in sessions)
+        {
+            if (session.Cancelled)
+            {
+                continue;
+            }
+
+            var activeAttendees = session.Attendees.Where(attendee => attendee.Status != AttendeeStatus.Cancelled).ToList();
+            activeSessions.Add(session with { Attendees = activeAttendees });
+        }
+
+        return activeSessions
+            .OrderBy(session => session.StartsAt)
+            .ThenBy(session => GetFirstLessonId(session), StringComparer.Ordinal)
             .ToList();
     }
 
-    private static IEnumerable<ScheduleViolation> CheckRoomOverlaps(List<RuleSession> sessions, BookingPolicy policy) =>
-        FindOverlappingPairs(sessions, s => s.RoomId).Select(p => CreateViolation(
-            RuleCodes.RoomOverlap,
-            [p.A, p.B],
-            $"{p.A.RoomId} holds two sessions at once: {p.A.TutorId} at {GetLocalStartTime(p.A, policy)} and {p.B.TutorId} at {GetLocalStartTime(p.B, policy)}.",
-            policy));
+    private static List<ScheduleViolation> SortViolations(List<ScheduleViolation> violations) =>
+        violations
+            .OrderBy(violation => violation.Date)
+            .ThenBy(violation => Array.IndexOf(RuleCodes.All, violation.Rule))
+            .ThenBy(violation => violation.LessonIds.FirstOrDefault() ?? "", StringComparer.Ordinal)
+            .ThenBy(violation => violation.SessionIds[0])
+            .ToList();
 
-    private static IEnumerable<ScheduleViolation> CheckTutorOverlaps(List<RuleSession> sessions, BookingPolicy policy) =>
-        FindOverlappingPairs(sessions, s => s.TutorId).Select(p => CreateViolation(
-            RuleCodes.TutorOverlap,
-            [p.A, p.B],
-            (p.A.RoomId == p.B.RoomId, HaveSameStart(p.A, p.B)) switch
+    private static List<ScheduleViolation> CheckRoomOverlaps(List<RuleSession> sessions, BookingPolicy policy)
+    {
+        var violations = new List<ScheduleViolation>();
+        foreach (var (first, second) in FindOverlappingPairs(sessions, session => session.RoomId))
+        {
+            var message = $"{first.RoomId} holds two sessions at once: " +
+                $"{first.TutorId} at {FormatStartTime(first, policy)} and {second.TutorId} at {FormatStartTime(second, policy)}.";
+            violations.Add(CreateViolation(RuleCodes.RoomOverlap, [first, second], message, policy));
+        }
+
+        return violations;
+    }
+
+    private static List<ScheduleViolation> CheckTutorOverlaps(List<RuleSession> sessions, BookingPolicy policy)
+    {
+        var violations = new List<ScheduleViolation>();
+        foreach (var (first, second) in FindOverlappingPairs(sessions, session => session.TutorId))
+        {
+            var message = BuildTutorOverlapMessage(first, second, policy);
+            violations.Add(CreateViolation(RuleCodes.TutorOverlap, [first, second], message, policy));
+        }
+
+        return violations;
+    }
+
+    private static string BuildTutorOverlapMessage(RuleSession first, RuleSession second, BookingPolicy policy)
+    {
+        var tutor = $"{first.TutorId} {first.TutorName}";
+        var firstStart = FormatStartTime(first, policy);
+        var secondStart = FormatStartTime(second, policy);
+        var sameRoom = first.RoomId == second.RoomId;
+        var sameStart = HaveSameStart(first, second);
+
+        if (sameRoom && sameStart)
+        {
+            return $"{tutor} has two sessions in {first.RoomId} at {firstStart}.";
+        }
+
+        if (sameRoom)
+        {
+            return $"{tutor} has two sessions in {first.RoomId}, at {firstStart} and {secondStart}.";
+        }
+
+        if (sameStart)
+        {
+            return $"{tutor} is in {first.RoomId} and {second.RoomId} at {firstStart}.";
+        }
+
+        return $"{tutor} is in {first.RoomId} at {firstStart} and in {second.RoomId} at {secondStart}.";
+    }
+
+    private static List<ScheduleViolation> CheckStudentOverlaps(List<RuleSession> sessions, BookingPolicy policy)
+    {
+        var violations = new List<ScheduleViolation>();
+
+        // Step 1: for each student, the sessions they attend, in session order.
+        var bookingsByStudent = sessions
+            .SelectMany(session => session.Attendees.Select(attendee => (Attendee: attendee, Session: session)))
+            .GroupBy(booking => booking.Attendee.StudentId);
+
+        // Step 2: compare every two of a student's sessions.
+        foreach (var studentBookings in bookingsByStudent)
+        {
+            var bookings = studentBookings.ToList();
+            for (var i = 0; i < bookings.Count; i++)
             {
-                (true, true) => $"{p.A.TutorId} {p.A.TutorName} has two sessions in {p.A.RoomId} at {GetLocalStartTime(p.A, policy)}.",
-                (true, false) => $"{p.A.TutorId} {p.A.TutorName} has two sessions in {p.A.RoomId}, at {GetLocalStartTime(p.A, policy)} and {GetLocalStartTime(p.B, policy)}.",
-                (false, true) => $"{p.A.TutorId} {p.A.TutorName} is in {p.A.RoomId} and {p.B.RoomId} at {GetLocalStartTime(p.A, policy)}.",
-                (false, false) => $"{p.A.TutorId} {p.A.TutorName} is in {p.A.RoomId} at {GetLocalStartTime(p.A, policy)} and in {p.B.RoomId} at {GetLocalStartTime(p.B, policy)}.",
-            },
-            policy));
+                for (var j = i + 1; j < bookings.Count; j++)
+                {
+                    var (firstAttendee, first) = bookings[i];
+                    var (secondAttendee, second) = bookings[j];
+                    if (first.Id == second.Id || !Overlaps(first, second))
+                    {
+                        continue;
+                    }
 
-    private static IEnumerable<ScheduleViolation> CheckStudentOverlaps(List<RuleSession> sessions, BookingPolicy policy) =>
-        sessions
-            .SelectMany(s => s.Attendees.Select(a => (Attendee: a, Session: s)))
-            .GroupBy(x => x.Attendee.StudentId)
-            .SelectMany(g => ListPairs(g.ToList()))
-            .Where(p => p.A.Session.Id != p.B.Session.Id && Overlaps(p.A.Session, p.B.Session))
-            .Select(p =>
-            {
-                var (a, b) = (p.A.Session, p.B.Session);
-                var where = HaveSameStart(a, b)
-                    ? $"in {GetRoomAndTutorId(a.RoomId, a.TutorId)} and in {GetRoomAndTutorId(b.RoomId, b.TutorId)} at {GetLocalStartTime(a, policy)}"
-                    : $"in {GetRoomAndTutorId(a.RoomId, a.TutorId)} at {GetLocalStartTime(a, policy)} and in {GetRoomAndTutorId(b.RoomId, b.TutorId)} at {GetLocalStartTime(b, policy)}";
-                return CreateViolation(
-                    RuleCodes.StudentOverlap,
-                    [a, b],
-                    $"{p.A.Attendee.StudentName} is {where}.",
-                    policy,
-                    lessonIds: [p.A.Attendee.LessonId, p.B.Attendee.LessonId]);
-            });
+                    var message = BuildStudentOverlapMessage(firstAttendee.StudentName, first, second, policy);
+                    violations.Add(CreateViolation(
+                        RuleCodes.StudentOverlap,
+                        [first, second],
+                        message,
+                        policy,
+                        lessonIds: [firstAttendee.LessonId, secondAttendee.LessonId]));
+                }
+            }
+        }
 
-    private static IEnumerable<ScheduleViolation> CheckTutorLoad(List<RuleSession> sessions, BookingPolicy policy)
+        return violations;
+    }
+
+    private static string BuildStudentOverlapMessage(string studentName, RuleSession first, RuleSession second, BookingPolicy policy)
+    {
+        var firstPlace = GetRoomAndTutorId(first.RoomId, first.TutorId);
+        var secondPlace = GetRoomAndTutorId(second.RoomId, second.TutorId);
+
+        if (HaveSameStart(first, second))
+        {
+            return $"{studentName} is in {firstPlace} and in {secondPlace} at {FormatStartTime(first, policy)}.";
+        }
+
+        return $"{studentName} is in {firstPlace} at {FormatStartTime(first, policy)} and in {secondPlace} at {FormatStartTime(second, policy)}.";
+    }
+
+    private static List<ScheduleViolation> CheckTutorLoad(List<RuleSession> sessions, BookingPolicy policy)
     {
         var max = policy.Options.MaxSessionsPerTutorPerDay;
-        return sessions
-            .GroupBy(s => (s.TutorId, Date: DateTimeUtils.GetLocalDate(policy.Zone, s.StartsAt)))
-            .Where(g => g.Count() > max)
-            .Select(g => CreateViolation(
-                RuleCodes.TutorLoad,
-                g.ToList(),
-                $"{g.First().TutorId} {g.First().TutorName} has {g.Count()} sessions on {DateTimeUtils.FormatDate(g.Key.Date)}; the limit is {max}.",
-                policy));
+        var violations = new List<ScheduleViolation>();
+
+        var sessionsByTutorAndDay = sessions.GroupBy(session => (session.TutorId, Date: DateTimeUtils.GetLocalDate(policy.Zone, session.StartsAt)));
+        foreach (var tutorDay in sessionsByTutorAndDay)
+        {
+            var daySessions = tutorDay.ToList();
+            if (daySessions.Count <= max)
+            {
+                continue;
+            }
+
+            var tutor = daySessions[0];
+            var message = $"{tutor.TutorId} {tutor.TutorName} has {daySessions.Count} sessions on {DateTimeUtils.FormatDate(tutorDay.Key.Date)}; the limit is {max}.";
+            violations.Add(CreateViolation(RuleCodes.TutorLoad, daySessions, message, policy));
+        }
+
+        return violations;
     }
 
-    private static IEnumerable<ScheduleViolation> CheckClosedDays(List<RuleSession> sessions, BookingPolicy policy) =>
-        sessions
-            .Where(s => policy.Options.ClosedDays.Contains(DateTimeUtils.GetLocalDate(policy.Zone, s.StartsAt).DayOfWeek))
-            .Select(s =>
+    private static List<ScheduleViolation> CheckClosedDays(List<RuleSession> sessions, BookingPolicy policy)
+    {
+        var violations = new List<ScheduleViolation>();
+        foreach (var session in sessions)
+        {
+            var date = DateTimeUtils.GetLocalDate(policy.Zone, session.StartsAt);
+            if (!policy.Options.ClosedDays.Contains(date.DayOfWeek))
             {
-                var date = DateTimeUtils.GetLocalDate(policy.Zone, s.StartsAt);
-                return CreateViolation(
-                    RuleCodes.ClosedDay,
-                    [s],
-                    $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} at {GetLocalStartTime(s, policy)} on {date.DayOfWeek} {DateTimeUtils.FormatDate(date)}; the centre is closed on {date.DayOfWeek}s.",
-                    policy);
-            });
+                continue;
+            }
 
-    private static IEnumerable<ScheduleViolation> CheckOpeningHours(List<RuleSession> sessions, BookingPolicy policy)
+            var message = $"{GetStudentNames(session.Attendees)} in {GetRoomAndTutorId(session.RoomId, session.TutorId)} " +
+                $"at {FormatStartTime(session, policy)} on {date.DayOfWeek} {DateTimeUtils.FormatDate(date)}; " +
+                $"the centre is closed on {date.DayOfWeek}s.";
+            violations.Add(CreateViolation(RuleCodes.ClosedDay, [session], message, policy));
+        }
+
+        return violations;
+    }
+
+    private static List<ScheduleViolation> CheckOpeningHours(List<RuleSession> sessions, BookingPolicy policy)
     {
         var (opens, closes) = (policy.Options.OpensAt, policy.Options.ClosesAt);
-        return sessions
-            .Where(s =>
-                DateTimeUtils.GetLocalTime(policy.Zone, s.StartsAt) < opens
-                || DateTimeUtils.GetLocalTime(policy.Zone, s.EndsAt) > closes
-                || DateTimeUtils.GetLocalDate(policy.Zone, s.EndsAt) != DateTimeUtils.GetLocalDate(policy.Zone, s.StartsAt))
-            .Select(s => CreateViolation(
-                RuleCodes.OutsideHours,
-                [s],
-                $"{GetStudentNames(s.Attendees)} in {GetRoomAndTutorId(s.RoomId, s.TutorId)} runs {GetLocalStartTime(s, policy)}–{DateTimeUtils.FormatTime(DateTimeUtils.GetLocalTime(policy.Zone, s.EndsAt))}, " +
-                $"outside opening hours {DateTimeUtils.FormatTime(opens)}–{DateTimeUtils.FormatTime(closes)}.",
-                policy));
+        var violations = new List<ScheduleViolation>();
+        foreach (var session in sessions)
+        {
+            var startTime = DateTimeUtils.GetLocalTime(policy.Zone, session.StartsAt);
+            var endTime = DateTimeUtils.GetLocalTime(policy.Zone, session.EndsAt);
+            var startsBeforeOpening = startTime < opens;
+            var endsAfterClosing = endTime > closes;
+            var endsOnAnotherDay = DateTimeUtils.GetLocalDate(policy.Zone, session.EndsAt) != DateTimeUtils.GetLocalDate(policy.Zone, session.StartsAt);
+            if (!startsBeforeOpening && !endsAfterClosing && !endsOnAnotherDay)
+            {
+                continue;
+            }
+
+            var message = $"{GetStudentNames(session.Attendees)} in {GetRoomAndTutorId(session.RoomId, session.TutorId)} " +
+                $"runs {DateTimeUtils.FormatTime(startTime)}–{DateTimeUtils.FormatTime(endTime)}, " +
+                $"outside opening hours {DateTimeUtils.FormatTime(opens)}–{DateTimeUtils.FormatTime(closes)}.";
+            violations.Add(CreateViolation(RuleCodes.OutsideHours, [session], message, policy));
+        }
+
+        return violations;
     }
 
-    private static IEnumerable<ScheduleViolation> CheckAttendeeLimit(List<RuleSession> sessions, BookingPolicy policy)
+    private static List<ScheduleViolation> CheckAttendeeLimit(List<RuleSession> sessions, BookingPolicy policy)
     {
         var max = policy.Options.MaxAttendeesPerSession;
-        return sessions
-            .Where(s => s.Attendees.Count > max)
-            .Select(s => CreateViolation(
-                RuleCodes.TooManyAttendees,
-                [s],
-                $"The session in {GetRoomAndTutorId(s.RoomId, s.TutorId)} at {GetLocalStartTime(s, policy)} has {s.Attendees.Count} attendees; the limit is {max}.",
-                policy));
+        var violations = new List<ScheduleViolation>();
+        foreach (var session in sessions)
+        {
+            if (session.Attendees.Count <= max)
+            {
+                continue;
+            }
+
+            var message = $"The session in {GetRoomAndTutorId(session.RoomId, session.TutorId)} at {FormatStartTime(session, policy)} " +
+                $"has {session.Attendees.Count} attendees; the limit is {max}.";
+            violations.Add(CreateViolation(RuleCodes.TooManyAttendees, [session], message, policy));
+        }
+
+        return violations;
     }
 
-    /// <summary>Lesson IDs default to every attendee of the given sessions, in session order.</summary>
+    /// <summary>The date is the first session's local date. Lesson ids default to <see cref="ListLessonIds"/>.</summary>
     private static ScheduleViolation CreateViolation(
         string rule,
         List<RuleSession> sessions,
@@ -184,36 +302,54 @@ public static class ScheduleRules
         new(
             rule,
             DateTimeUtils.GetLocalDate(policy.Zone, sessions[0].StartsAt),
-            sessions.Select(s => s.Id).ToList(),
-            (lessonIds ?? sessions.SelectMany(s => s.Attendees.Select(a => a.LessonId).Order(StringComparer.Ordinal)))
-                .OfType<string>()
-                .ToList(),
+            sessions.Select(session => session.Id).ToList(),
+            (lessonIds ?? ListLessonIds(sessions)).OfType<string>().ToList(),
             message);
+
+    /// <summary>Every attendee's lesson id: session by session, sorted within each session.</summary>
+    private static IEnumerable<string?> ListLessonIds(List<RuleSession> sessions) =>
+        sessions.SelectMany(session => session.Attendees.Select(attendee => attendee.LessonId).Order(StringComparer.Ordinal));
+
+    /// <summary>
+    /// Every two sessions with the same key (room or tutor) that overlap. Each pair keeps the input order.
+    /// </summary>
+    private static List<(RuleSession First, RuleSession Second)> FindOverlappingPairs(
+        List<RuleSession> sessions, Func<RuleSession, string> getKey)
+    {
+        var pairs = new List<(RuleSession First, RuleSession Second)>();
+        foreach (var group in sessions.GroupBy(getKey))
+        {
+            var groupSessions = group.ToList();
+            for (var i = 0; i < groupSessions.Count; i++)
+            {
+                for (var j = i + 1; j < groupSessions.Count; j++)
+                {
+                    if (Overlaps(groupSessions[i], groupSessions[j]))
+                    {
+                        pairs.Add((groupSessions[i], groupSessions[j]));
+                    }
+                }
+            }
+        }
+
+        return pairs;
+    }
 
     // Half-open [start, end), the same as the tstzrange in the exclusion constraints.
     private static bool Overlaps(RuleSession first, RuleSession second) => first.StartsAt < second.EndsAt && second.StartsAt < first.EndsAt;
 
     private static bool HaveSameStart(RuleSession first, RuleSession second) => first.StartsAt == second.StartsAt;
 
-    private static IEnumerable<(RuleSession A, RuleSession B)> FindOverlappingPairs(
-        List<RuleSession> sessions, Func<RuleSession, string> key) =>
-        sessions.GroupBy(key).SelectMany(g => ListPairs(g.ToList())).Where(p => Overlaps(p.A, p.B));
-
-    /// <summary>Every unordered pair, keeping the input order inside each pair.</summary>
-    private static IEnumerable<(T A, T B)> ListPairs<T>(List<T> items) =>
-        items.SelectMany((a, i) => items.Skip(i + 1).Select(b => (a, b)));
-
     private static string GetFirstLessonId(RuleSession session) =>
-        session.Attendees.Select(a => a.LessonId).Where(lessonId => lessonId is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
+        session.Attendees.Select(attendee => attendee.LessonId).Where(lessonId => lessonId is not null).Order(StringComparer.Ordinal).FirstOrDefault() ?? "";
 
     /// <summary>For example "R3 with T3".</summary>
     private static string GetRoomAndTutorId(string roomId, string tutorId) => $"{roomId} with {tutorId}";
 
     /// <summary>For example "Le Minh Chau and Vu Ha My".</summary>
-    private static string GetStudentNames(IEnumerable<RuleAttendee> attendees) => string.Join(" and ", attendees.Select(a => a.StudentName));
+    private static string GetStudentNames(IEnumerable<RuleAttendee> attendees) => string.Join(" and ", attendees.Select(attendee => attendee.StudentName));
 
-
-
-    private static string GetLocalStartTime(RuleSession session, BookingPolicy policy) =>
+    /// <summary>For example "09:00", in the centre's time zone.</summary>
+    private static string FormatStartTime(RuleSession session, BookingPolicy policy) =>
         DateTimeUtils.FormatTime(DateTimeUtils.GetLocalTime(policy.Zone, session.StartsAt));
 }

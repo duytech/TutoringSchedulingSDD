@@ -43,6 +43,18 @@ public sealed class ScheduleRulesTests
         Assert.Equal(RuleCodes.RoomOverlap, violation.Rule);
     }
 
+    [Theory]
+    [InlineData("R1", "09:00", "T1 T1 has two sessions in R1 at 09:00.")]
+    [InlineData("R1", "09:30", "T1 T1 has two sessions in R1, at 09:00 and 09:30.")]
+    [InlineData("R2", "09:00", "T1 T1 is in R1 and R2 at 09:00.")]
+    [InlineData("R2", "09:30", "T1 T1 is in R1 at 09:00 and in R2 at 09:30.")]
+    public void Tutor_overlap_message_names_the_rooms_and_times(string secondRoom, string secondStart, string expected)
+    {
+        var violations = ScheduleRules.Check(
+            [Session("T1", "R1", "09:00", 60), Session("T1", secondRoom, secondStart, 60)], Policy);
+        Assert.Equal(expected, Assert.Single(violations, v => v.Rule == RuleCodes.TutorOverlap).Message);
+    }
+
     [Fact]
     public void Touching_sessions_do_not_overlap()
     {
